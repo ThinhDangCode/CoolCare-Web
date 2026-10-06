@@ -10,6 +10,7 @@ import { AuthRepository } from './modules/auth/auth.repository.js'
 import { createAuthRouter } from './modules/auth/auth.routes.js'
 import { AuthService } from './modules/auth/auth.service.js'
 import { GoogleTokenVerifier } from './modules/auth/google-token-verifier.js'
+import { createCatalogRouter } from './modules/catalog/catalog.routes.js'
 
 const authRepository = new AuthRepository()
 const authService = new AuthService({
@@ -38,5 +39,7 @@ app.get('/api/health', asyncHandler(async (_request, response) => {
 }))
 
 app.use('/api/auth', createAuthRouter(authController))
+app.use('/api/admin/catalog', createCatalogRouter())
+app.use('/api/catalog', createCatalogRouter(undefined, false))
 app.use(notFoundHandler)
 app.use(errorHandler)
