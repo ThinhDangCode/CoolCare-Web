@@ -168,10 +168,10 @@ export class AuthRepository {
     const result = await pool.query(
       `SELECT pr.id, pr.user_id, pr.token_hash, pr.expires_at, pr.used_at
        FROM password_reset_tokens pr
-       JOIN users u ON u.id = evt.user_id
+       JOIN users u ON u.id = pr.user_id
        WHERE LOWER(u.email) = $1
          AND u.email_verified_at IS NULL
-       ORDER BY evt.created_at DESC
+       ORDER BY pr.created_at DESC
        LIMIT 1`,
       [email],
     )
