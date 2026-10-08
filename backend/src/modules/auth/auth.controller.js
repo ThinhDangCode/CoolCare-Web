@@ -5,6 +5,9 @@ import {
   validateOtpInput,
   validateRegisterInput,
   validateResetPasswordInput,
+  validateProfileInput,
+  validateAvatarInput,
+  validateChangePasswordInput,
 } from './auth.validation.js'
 
 export class AuthController {
@@ -39,6 +42,15 @@ export class AuthController {
 
   logout = async (_request, response) => {
     response.status(204).send()
+  }
+
+  profile = async (request, response) => response.json({ data: await this.service.getProfile(request.auth.userId) })
+  updateProfile = async (request, response) => response.json({ data: await this.service.updateProfile(request.auth.userId, validateProfileInput(request.body)) })
+  updateAvatar = async (request, response) => response.json({ data: await this.service.updateAvatar(request.auth.userId, validateAvatarInput(request.body).avatarUrl) })
+  refresh = async (request, response) => response.json({ data: await this.service.refreshSession(request.auth.userId) })
+  changePassword = async (request, response) => {
+    await this.service.changePassword(request.auth.userId, validateChangePasswordInput(request.body))
+    response.json({ data: { message: 'Đổi mật khẩu thành công.' } })
   }
 
   forgotPassword = async (request, response) => {

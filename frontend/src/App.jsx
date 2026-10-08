@@ -1,7 +1,8 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
-import { ProtectedRoute } from './features/auth/components/ProtectedRoute.jsx'
-import { LoginPage } from './features/auth/pages/LoginPage.jsx'
-import { DashboardPage } from './features/dashboard/pages/DashboardPage.jsx'
+import { ProtectedRoute } from './routes/ProtectedRoute.jsx'
+import { LoginPage } from './pages/LoginPage.jsx'
+import { DashboardPage } from './pages/DashboardPage.jsx'
+import { ProfilePage } from './pages/ProfilePage.jsx'
 
 function App() {
   return (
@@ -9,6 +10,7 @@ function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route element={<ProtectedRoute />}>
         <Route path="/" element={<DashboardPage />} />
+        <Route path="/profile" element={<ProfilePage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

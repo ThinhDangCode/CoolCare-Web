@@ -1,23 +1,7 @@
 import { useState } from 'react'
-import { useAuth } from '../../auth/context/AuthContext.jsx'
-import { Brand } from '../../../shared/components/Brand.jsx'
-
-const mainNavigation = [
-  ['dashboard', 'Dashboard'],
-  ['booking', 'Booking', '12'],
-  ['user', 'User'],
-  ['technician', 'Technician'],
-]
-
-const technicianNavigation = ['Technician List', 'Certification', 'Verification', 'Penalty']
-
-const secondaryNavigation = [
-  ['services', 'Service'],
-  ['finance', 'Finance & Wallet'],
-  ['marketing', 'Marketing'],
-  ['complaint', 'Complaint'],
-  ['analytics', 'Analytics'],
-]
+import { Link } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext.jsx'
+import { AdminSidebar, DashboardIcon } from '../components/AdminSidebar.jsx'
 
 const metrics = [
   { label: 'TOTAL REVENUE', value: '$248,500', trend: '+14.8%', note: 'vs last month', tone: 'orange', icon: 'revenue' },
@@ -34,54 +18,13 @@ const bookingRows = [
   ['Customer Cancelled', '50 bookings', '1.3%', 'red'],
 ]
 
-function DashboardIcon({ name }) {
-  const paths = {
-    dashboard: <><rect x="4" y="4" width="6" height="6" rx="1" /><rect x="14" y="4" width="6" height="6" rx="1" /><rect x="4" y="14" width="6" height="6" rx="1" /><rect x="14" y="14" width="6" height="6" rx="1" /></>,
-    booking: <><rect x="4" y="6" width="16" height="14" rx="2" /><path d="M8 3v5m8-5v5M4 11h16" /></>,
-    user: <><circle cx="12" cy="8" r="3" /><path d="M6 20c.4-4 2.4-6 6-6s5.6 2 6 6" /></>,
-    technician: <><circle cx="12" cy="8" r="3" /><path d="M6 20c.4-4 2.4-6 6-6s5.6 2 6 6m5-13 1.5 1.5M6.5 1.5 8 3" /></>,
-    services: <><circle cx="12" cy="12" r="3" /><path d="M12 3v3m0 12v3M3 12h3m12 0h3M5.6 5.6l2.1 2.1m8.6 8.6 2.1 2.1m0-12.8-2.1 2.1m-8.6 8.6-2.1 2.1" /></>,
-    finance: <><rect x="3" y="6" width="18" height="13" rx="2" /><path d="M3 10h18m-5 4h2" /></>,
-    marketing: <><path d="m4 13 13-6v10L4 11v2Zm0-2v6m13-6c2 0 3 1 3 3s-1 3-3 3" /></>,
-    complaint: <><path d="M5 5h14v11H9l-4 4V5Z" /><path d="M12 8v4m0 2h.01" /></>,
-    analytics: <><path d="M4 20V10m5 10V4m6 16v-7m5 7V7" /></>,
-  }
-
-  return <svg className="dashboard-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">{paths[name] ?? paths.dashboard}</svg>
-}
-
 export function DashboardPage() {
   const { user, logout } = useAuth()
   const [showLogout, setShowLogout] = useState(false)
 
   return (
     <div className="dashboard-shell">
-      <aside className="dashboard-sidebar">
-        <Brand />
-
-        <div className="dashboard-admin-card">
-          <span className="dashboard-avatar">{user?.fullName?.split(' ').at(-1)?.slice(0, 2).toUpperCase() ?? 'MV'}</span>
-          <span><strong>{user?.fullName ?? 'Marcus Vance'}</strong><small>Super Admin</small></span>
-          <i aria-label="Đang hoạt động" />
-        </div>
-
-        <span className="dashboard-nav-label">MAIN NAVIGATION</span>
-        <nav aria-label="Điều hướng quản trị">
-          {mainNavigation.map(([icon, label, badge]) => (
-            <a key={label} className={label === 'Dashboard' ? 'active' : ''} href={label === 'Dashboard' ? '#overview' : `#${icon}`}>
-              <DashboardIcon name={icon} /><span>{label}</span>{badge && <em>{badge}</em>}
-            </a>
-          ))}
-          <div className="dashboard-subnav">
-            {technicianNavigation.map((label) => <span key={label}>{label}</span>)}
-          </div>
-          {secondaryNavigation.map(([icon, label]) => (
-            <a key={label} href={`#${icon}`}><DashboardIcon name={icon} /><span>{label}</span></a>
-          ))}
-        </nav>
-
-        <button className="dashboard-logout" type="button" onClick={() => setShowLogout(true)}>Đăng xuất</button>
-      </aside>
+      <AdminSidebar user={user} activePage="dashboard" onLogout={() => setShowLogout(true)} />
 
       <main className="dashboard-main" id="overview">
         <header className="dashboard-topbar">
@@ -94,7 +37,7 @@ export function DashboardPage() {
             <button type="button">▣&nbsp;&nbsp; Last 30 Days⌄</button>
             <button className="round-action" type="button" aria-label="Tìm kiếm">⌕</button>
             <button className="round-action notification" type="button" aria-label="Thông báo">●</button>
-            <span className="top-avatar">MV</span>
+            <Link className="top-avatar" to="/profile" aria-label="Mở hồ sơ cá nhân" style={user?.avatarUrl ? { backgroundImage: `url(${user.avatarUrl})` } : undefined}>{!user?.avatarUrl && (user?.fullName?.split(' ').at(-1)?.slice(0, 2).toUpperCase() ?? 'MV')}</Link>
           </div>
         </header>
 

@@ -1,4 +1,4 @@
--- COOLCARE DEMO v1 — Can Tho, 12 accounts, 20 bookings.
+-- COOLCARE DEMO v2 — Can Tho after the 2025 administrative merger, 12 accounts, 20 bookings.
 -- Run ONCE after the team's finalized CoolCare_database_final.sql, on a fresh demo DB.
 -- All persons, phones, addresses, certificates and payment references are synthetic.
 -- Do not send SMS/email or call payment providers for these records.
@@ -34,6 +34,9 @@ DECLARE
     selected_voucher uuid; method_id uuid; cat uuid;
     names text[] := ARRAY['Nguyễn Minh An','Trần Ngọc Bình','Lê Hoài Chi','Phạm Gia Dũng',
         'Nguyễn Thanh Hải','Trần Quốc Huy','Lê Minh Khang','Phạm Tuấn Kiệt','Võ Thành Long','Đặng Hoàng Minh'];
+    wards text[] := ARRAY['Phường Ninh Kiều','Phường Cái Khế','Phường Tân An','Phường An Bình',
+        'Phường Bình Thủy','Phường Long Tuyền','Phường Cái Răng','Phường Hưng Phú',
+        'Phường Ô Môn','Phường Sóc Trăng'];
     brands text[] := ARRAY['Daikin','Panasonic','LG','Samsung','Toshiba'];
     service_names text[] := ARRAY['Vệ sinh máy lạnh','Kiểm tra/chẩn đoán','Bảo dưỡng máy lạnh','Sửa chữa cơ bản'];
     service_prices numeric[] := ARRAY[150000,100000,250000,200000];
@@ -59,9 +62,9 @@ BEGIN
         INSERT INTO customer_profiles(id,user_id,date_of_birth,gender,created_at,updated_at)
         VALUES(cid,uid,make_date(1990+i,1+i,10),CASE WHEN i IN (2,3) THEN 'FEMALE' ELSE 'MALE' END,origin,origin);
         FOR j IN 1..CASE WHEN i<=5 THEN 2 ELSE 1 END LOOP
-            INSERT INTO customer_addresses(id,customer_id,recipient_name,phone,address_line,ward,district,city,is_default,created_at,updated_at)
+            INSERT INTO customer_addresses(id,customer_id,recipient_name,phone,address_line,ward,city,is_default,created_at,updated_at)
             VALUES(pg_temp.demo_id('address-'||i||'-'||j),cid,names[i],'09099000'||lpad(i::text,2,'0'),
-                'Địa chỉ giả lập '||i||'-'||j||', đường Demo',NULL,'Khu vực demo Cần Thơ','Cần Thơ',j=1,origin,origin);
+                'Số '||(i*10+j)||', đường Demo '||i,wards[i],'Thành phố Cần Thơ',j=1,origin,origin);
         END LOOP;
     END LOOP;
 
@@ -101,8 +104,8 @@ BEGIN
             CASE WHEN i<=4 THEN 'ONLINE' ELSE 'OFFLINE' END,i<=4,origin,CURRENT_TIMESTAMP);
         INSERT INTO technician_accounts(id,technician_id,is_receiving_jobs_allowed,created_at)
         VALUES(pg_temp.demo_id('account-'||i),tid,i<=4,origin);
-        INSERT INTO technician_areas(id,technician_id,city,district)
-        VALUES(pg_temp.demo_id('area-'||i),tid,'Cần Thơ','Khu vực demo Cần Thơ');
+        INSERT INTO technician_areas(id,technician_id,city,ward)
+        VALUES(pg_temp.demo_id('area-'||i),tid,'Thành phố Cần Thơ',wards[i]);
         IF i<=5 THEN
             cert_id:=pg_temp.demo_id('certificate-'||i);
             INSERT INTO technician_certifications(id,technician_id,certificate_name,certificate_number,issued_by,issued_date,
@@ -154,9 +157,9 @@ BEGIN
         extra_s:=CASE WHEN n%4=0 THEN 2 ELSE 0 END;
         subtotal_value:=service_prices[s]*unit_count+CASE WHEN extra_s>0 THEN service_prices[extra_s] ELSE 0 END;
         INSERT INTO bookings(id,booking_code,customer_id,customer_address_id,recipient_name,recipient_phone,description,
-            service_address,ward,district,city,scheduled_at,subtotal,total_amount,created_at)
+            service_address,ward,city,scheduled_at,subtotal,total_amount,created_at)
         SELECT bid,'DEMO-BK-'||lpad(n::text,3,'0'),cid,id,recipient_name,phone,
-            'Booking demo '||n||'; thông tin giả lập, không gửi thông báo thực tế.',address_line,ward,district,city,
+            'Booking demo '||n||'; thông tin giả lập, không gửi thông báo thực tế.',address_line,ward,city,
             CASE WHEN n<=8 THEN CURRENT_TIMESTAMP-interval '3 hours'
                  WHEN n IN (16,17,18) THEN CURRENT_TIMESTAMP-interval '1 hour'
                  ELSE CURRENT_TIMESTAMP+make_interval(days=>1+n%7) END,

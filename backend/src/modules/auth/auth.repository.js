@@ -10,7 +10,10 @@ const userSelect = `
          u.google_sub,
          u.email_verified_at,
          u.full_name,
+         u.avatar_url,
          u.status,
+         TO_CHAR(cp.date_of_birth, 'YYYY-MM-DD') AS date_of_birth,
+         cp.gender,
          r.code AS role,
          EXISTS (
            SELECT 1
@@ -19,6 +22,7 @@ const userSelect = `
          ) AS has_technician_profile
   FROM users u
   JOIN roles r ON r.id = u.role_id
+  LEFT JOIN customer_profiles cp ON cp.user_id = u.id
 `
 
 export class AuthRepository {
@@ -37,6 +41,26 @@ export class AuthRepository {
       'UPDATE users SET last_login_at = CURRENT_TIMESTAMP WHERE id = $1',
       [userId],
     )
+  }
+
+  async updateProfile(userId, { fullName, phone, dateOfBirth, gender }) {
+    await withTransaction(async (client) => {
+      await client.query('UPDATE users SET full_name = $1, phone = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3', [fullName, phone, userId])
+      await client.query('UPDATE customer_profiles SET date_of_birth = $1, gender = $2, updated_at = CURRENT_TIMESTAMP WHERE user_id = $3', [dateOfBirth, gender, userId])
+    })
+    return this.findUserById(userId)
+  }
+
+  async updateAvatar(userId, avatarUrl) {
+    await pool.query(
+      'UPDATE users SET avatar_url = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+      [avatarUrl, userId],
+    )
+    return this.findUserById(userId)
+  }
+
+  async updatePassword(userId, passwordHash) {
+    await pool.query('UPDATE users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [passwordHash, userId])
   }
 
   async createCustomer({ email, phone, passwordHash, fullName }) {

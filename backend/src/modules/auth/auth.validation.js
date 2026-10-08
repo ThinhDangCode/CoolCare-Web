@@ -78,3 +78,52 @@ export function validateResetPasswordInput(body = {}) {
   })
   return { resetToken, newPassword }
 }
+
+export function validateProfileInput(body = {}) {
+  const fullName = normalizeFullName(body.fullName)
+  const phone = normalizePhone(body.phone) || null
+  const dateOfBirth = body.dateOfBirth ? String(body.dateOfBirth) : null
+  const gender = body.gender ? String(body.gender) : null
+  const parsedBirthDate = dateOfBirth && /^\d{4}-\d{2}-\d{2}$/.test(dateOfBirth)
+    ? new Date(`${dateOfBirth}T00:00:00.000Z`)
+    : null
+  const birthDateIsValid = !dateOfBirth || (
+    parsedBirthDate
+    && !Number.isNaN(parsedBirthDate.getTime())
+    && parsedBirthDate.toISOString().slice(0, 10) === dateOfBirth
+    && parsedBirthDate <= new Date()
+  )
+  requireValidBody({
+    fullName: fullName.length < 2 || fullName.length > 100 || !isValidFullName(fullName) ? 'Họ tên không hợp lệ.' : null,
+    phone: phone && !isValidVietnamesePhone(phone) ? 'Số điện thoại Việt Nam không hợp lệ.' : null,
+    dateOfBirth: !birthDateIsValid ? 'Ngày sinh không hợp lệ hoặc nằm trong tương lai.' : null,
+    gender: gender && !['MALE', 'FEMALE', 'OTHER'].includes(gender) ? 'Giới tính không hợp lệ.' : null,
+  })
+  return { fullName, phone, dateOfBirth, gender }
+}
+
+export function validateAvatarInput(body = {}) {
+  const avatarUrl = body.avatarUrl == null ? null : String(body.avatarUrl).trim()
+  let validUrl = true
+  if (avatarUrl) {
+    try {
+      const parsed = new URL(avatarUrl)
+      validUrl = parsed.protocol === 'https:' && parsed.hostname === 'res.cloudinary.com' && avatarUrl.length <= 2048
+    } catch {
+      validUrl = false
+    }
+  }
+  requireValidBody({ avatarUrl: validUrl ? null : 'URL ảnh đại diện Cloudinary không hợp lệ.' })
+  return { avatarUrl }
+}
+
+export function validateChangePasswordInput(body = {}) {
+  const currentPassword = String(body.currentPassword ?? '')
+  const newPassword = body.newPassword
+  requireValidBody({
+    currentPassword: !currentPassword ? 'Vui lòng nhập mật khẩu hiện tại.' : null,
+    newPassword: !isStrongPassword(newPassword) ? 'Mật khẩu mới cần 8–72 ký tự, gồm chữ hoa, chữ thường, số và ký tự đặc biệt.' : null,
+    passwordReuse: currentPassword && newPassword === currentPassword ? 'Mật khẩu mới phải khác mật khẩu hiện tại.' : null,
+  })
+  return { currentPassword, newPassword }
+}
