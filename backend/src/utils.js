@@ -15,7 +15,7 @@ export function asyncHandler(handler) {
 }
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-const phonePattern = /^(0|\+84)\d{9}$/
+const phonePattern = /^(?:0|\+84)(?:3[2-9]|5[25689]|7[06789]|8[1-689]|9[0-46-9])\d{7}$/
 const fullNamePattern = /^[A-Za-zÀ-ÖØ-öø-ỹĐđ\u0300-\u036f]+(?:[ '\-][A-Za-zÀ-ÖØ-öø-ỹĐđ\u0300-\u036f]+)*$/u
 
 export function normalizeEmail(value) {
@@ -39,7 +39,9 @@ export function isValidEmail(value) {
 }
 
 export function isValidVietnamesePhone(value) {
-  return phonePattern.test(normalizePhone(value))
+  const normalized = normalizePhone(value)
+  const localPhone = normalized.startsWith('+84') ? `0${normalized.slice(3)}` : normalized
+  return phonePattern.test(normalized) && !/^0(\d)\1{8}$/.test(localPhone)
 }
 
 export function isStrongPassword(value) {

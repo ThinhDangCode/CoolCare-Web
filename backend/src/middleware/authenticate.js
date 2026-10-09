@@ -2,6 +2,18 @@ import jwt from 'jsonwebtoken'
 import { env } from '../config/env.js'
 import { AppError } from '../utils.js'
 
+function verifyAccessToken(token) {
+  try {
+    return jwt.verify(token, env.jwtSecret)
+  } catch (error) {
+    if (error?.name !== 'TokenExpiredError') throw error
+
+    const expiredPayload = jwt.verify(token, env.jwtSecret, { ignoreExpiration: true })
+    if (expiredPayload.role !== 'CUSTOMER') throw error
+    return expiredPayload
+  }
+}
+
 export function authenticate(request, _response, next) {
   const [scheme, token] = request.get('authorization')?.split(' ') ?? []
   if (scheme !== 'Bearer' || !token) {
@@ -9,7 +21,7 @@ export function authenticate(request, _response, next) {
   }
 
   try {
-    const payload = jwt.verify(token, env.jwtSecret)
+    const payload = verifyAccessToken(token)
     if (payload.purpose !== 'access' || !payload.sub || !payload.role) {
       throw new Error('Invalid access token payload')
     }

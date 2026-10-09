@@ -14,6 +14,7 @@ function App() {
       <Route element={<ProtectedRoute />}>
         <Route element={<AdminLayout />}>
         <Route path="/" element={<DashboardPage />} />
+        <Route path="/profile" element={<ProfilePage />} />
         <Route path="/catalog/models" element={<AcModelsPage />} />
         <Route path="/catalog/models/new" element={<CreateAcModelPage />} />
         <Route path="/catalog/:kind" element={<CatalogPage key={location.pathname} />} />

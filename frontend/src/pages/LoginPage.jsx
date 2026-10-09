@@ -52,10 +52,7 @@ export function LoginPage() {
 
         <div className="admin-brand-lockup">
           <span className="admin-brand-mark" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none">
-              <path d="M12 4v16M5.1 8l13.8 8M5.1 16l13.8-8M8 5.1l8 13.8M16 5.1L8 18.9" />
-              <circle cx="12" cy="12" r="2.25" />
-            </svg>
+            <img src="/coolcare-logo.png" alt="" />
           </span>
           <span className="admin-brand-copy">
             <span className="admin-brand-line"><strong>CoolCare</strong><em>ADMIN</em></span>
@@ -104,6 +101,8 @@ export function LoginPage() {
               <p>Đăng nhập để tiếp tục quản lý hoạt động của CoolCare.</p>
             </header>
 
+            {location.state?.sessionExpired && <div className="form-notice" role="status">Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.</div>}
+
             <label className="admin-field">
               <span>Email</span>
               <span className="admin-input-wrap">
@@ -125,7 +124,6 @@ export function LoginPage() {
 
             <div className="admin-login-options">
               <label><input type="checkbox" name="remember" checked={form.remember} onChange={updateField} /> Ghi nhớ đăng nhập</label>
-              <a href="mailto:support@coolcare.vn">Quên mật khẩu?</a>
             </div>
 
             {error && <div className="form-error" role="alert">{error}</div>}
@@ -137,7 +135,7 @@ export function LoginPage() {
               <span aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none"><path d="M12 3 5 6v5c0 4.6 2.8 8.2 7 10 4.2-1.8 7-5.4 7-10V6l-7-3Z" /><path d="m9.5 12 1.7 1.7 3.6-3.9" /></svg>
               </span>
-              Phiên đăng nhập được mã hóa và tự động khóa sau 30 phút không hoạt động.
+              Phiên đăng nhập được mã hóa và tự động khóa sau 15 phút không hoạt động.
             </p>
           </form>
         </div>

@@ -1,3 +1,7 @@
+import { useState } from 'react'
+import { Link } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext.jsx'
+import { AdminSidebar, DashboardIcon } from '../components/AdminSidebar.jsx'
 import { DashboardIcon } from '../../../shared/components/AdminSidebar.jsx'
 
 const metrics = [
@@ -18,6 +22,9 @@ const bookingRows = [
 export function DashboardPage() {
 
   return (
+    <div className="dashboard-shell">
+      <AdminSidebar user={user} activePage="dashboard" onLogout={() => setShowLogout(true)} />
+
       <main className="dashboard-main" id="overview">
         <header className="dashboard-topbar">
           <div>
@@ -29,7 +36,7 @@ export function DashboardPage() {
             <button type="button">▣&nbsp;&nbsp; Last 30 Days⌄</button>
             <button className="round-action" type="button" aria-label="Tìm kiếm">⌕</button>
             <button className="round-action notification" type="button" aria-label="Thông báo">●</button>
-            <span className="top-avatar">MV</span>
+            <Link className="top-avatar" to="/profile" aria-label="Mở hồ sơ cá nhân" style={user?.avatarUrl ? { backgroundImage: `url(${user.avatarUrl})` } : undefined}>{!user?.avatarUrl && (user?.fullName?.split(' ').at(-1)?.slice(0, 2).toUpperCase() ?? 'MV')}</Link>
           </div>
         </header>
 
@@ -71,6 +78,6 @@ export function DashboardPage() {
           </div>
         </section>
       </main>
-
+    </div>          
   )
 }

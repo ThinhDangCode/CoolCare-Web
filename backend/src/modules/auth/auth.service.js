@@ -10,6 +10,9 @@ function publicUser(user) {
     email: user.email,
     phone: user.phone,
     fullName: user.full_name,
+    avatarUrl: user.avatar_url,
+    dateOfBirth: user.date_of_birth,
+    gender: user.gender,
     role: user.role,
     hasTechnicianProfile: Boolean(user.has_technician_profile),
   }
@@ -27,10 +30,17 @@ export class AuthService {
   }
 
   createAccessToken(user) {
+    const tokenOptions = {
+      subject: user.id,
+      jwtid: randomUUID(),
+    }
+
+    if (user.role !== 'CUSTOMER') tokenOptions.expiresIn = env.jwtExpiresIn
+
     return jwt.sign(
       { role: user.role, purpose: 'access' },
       env.jwtSecret,
-      { subject: user.id, jwtid: randomUUID(), expiresIn: env.jwtExpiresIn },
+      tokenOptions,
     )
   }
 
@@ -103,6 +113,33 @@ export class AuthService {
 
     await this.repository.updateLastLogin(user.id)
     return { token: this.createAccessToken(user), user: publicUser(user) }
+  }
+
+  async getProfile(userId) {
+    const user = await this.repository.findUserById(userId)
+    if (!user) throw new AppError(404, 'PROFILE_NOT_FOUND', 'Không tìm thấy hồ sơ.')
+    return publicUser(user)
+  }
+
+  async updateProfile(userId, input) {
+    return publicUser(await this.repository.updateProfile(userId, input))
+  }
+
+  async updateAvatar(userId, avatarUrl) {
+    return publicUser(await this.repository.updateAvatar(userId, avatarUrl))
+  }
+
+  async refreshSession(userId) {
+    const user = await this.repository.findUserById(userId)
+    if (!user) throw new AppError(404, 'PROFILE_NOT_FOUND', 'Không tìm thấy hồ sơ.')
+    return { token: this.createAccessToken(user), user: publicUser(user) }
+  }
+
+  async changePassword(userId, { currentPassword, newPassword }) {
+    const user = await this.repository.findUserById(userId)
+    if (!user?.password_hash) throw new AppError(409, 'PASSWORD_UNAVAILABLE', 'Tài khoản Google chưa có mật khẩu.')
+    if (!(await bcrypt.compare(currentPassword, user.password_hash))) throw new AppError(401, 'INVALID_CURRENT_PASSWORD', 'Mật khẩu hiện tại không đúng.')
+    await this.repository.updatePassword(userId, await bcrypt.hash(newPassword, 12))
   }
 
   async loginWithGoogle({ idToken }) {

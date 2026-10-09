@@ -46,4 +46,19 @@ export const authApi = {
   logout(token) {
     return request('/auth/logout', { method: 'POST', token })
   },
+  refresh(token) {
+    return request('/auth/refresh', { method: 'POST', token })
+  },
+  getProfile(token) {
+    return request('/auth/profile', { token })
+  },
+  updateProfile(token, profile) {
+    return request('/auth/profile', { method: 'PATCH', body: profile, token })
+  },
+  updateAvatar(token, avatarUrl) {
+    return request('/auth/profile/avatar', { method: 'PATCH', body: { avatarUrl }, token })
+  },
+  changePassword(token, passwords) {
+    return request('/auth/change-password', { method: 'POST', body: passwords, token })
+  },
 }
