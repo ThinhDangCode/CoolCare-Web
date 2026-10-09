@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext.jsx'
 import { AdminSidebar, DashboardIcon } from '../components/AdminSidebar.jsx'
-import { DashboardIcon } from '../../../shared/components/AdminSidebar.jsx'
 
 const metrics = [
   { label: 'TOTAL REVENUE', value: '$248,500', trend: '+14.8%', note: 'vs last month', tone: 'orange', icon: 'revenue' },
@@ -20,6 +19,8 @@ const bookingRows = [
 ]
 
 export function DashboardPage() {
+  const { user, logout } = useAuth()
+  const [showLogout, setShowLogout] = useState(false)
 
   return (
     <div className="dashboard-shell">
@@ -78,6 +79,19 @@ export function DashboardPage() {
           </div>
         </section>
       </main>
-    </div>          
+
+      {showLogout && (
+        <div className="dialog-backdrop" role="presentation" onMouseDown={() => setShowLogout(false)}>
+          <div className="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="logout-title" onMouseDown={(event) => event.stopPropagation()}>
+            <h2 id="logout-title">Bạn có chắc muốn đăng xuất?</h2>
+            <p>Phiên đăng nhập quản trị hiện tại sẽ kết thúc.</p>
+            <div className="confirm-dialog-actions">
+              <button type="button" onClick={() => setShowLogout(false)}>Hủy</button>
+              <button className="danger" type="button" onClick={logout}>Đăng xuất</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   )
 }

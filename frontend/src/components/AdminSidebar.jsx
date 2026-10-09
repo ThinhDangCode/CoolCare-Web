@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link, NavLink } from 'react-router-dom'
 import { Brand } from './Brand.jsx'
 
 const mainNavigation = [
@@ -51,7 +51,21 @@ export function AdminSidebar({ user, activePage = 'dashboard', profileMode = 'vi
       <Link className={activePage === 'dashboard' ? 'active' : ''} to="/"><DashboardIcon name="dashboard" /><span>Dashboard</span></Link>
       {mainNavigation.map(([icon, label, badge]) => <a key={label} href={`/#${icon}`}><DashboardIcon name={icon} /><span>{label}</span>{badge && <em>{badge}</em>}</a>)}
       <div className="dashboard-subnav">{technicianNavigation.map((label) => <span key={label}>{label}</span>)}</div>
-      {secondaryNavigation.map(([icon, label]) => <a key={label} href={`/#${icon}`}><DashboardIcon name={icon} /><span>{label}</span></a>)}
+      {secondaryNavigation.map(([icon, label]) => (
+        icon === 'services' ? (
+          <div key={label}>
+            <Link to="/catalog/services"><DashboardIcon name={icon} /><span>{label}</span></Link>
+            <div className="dashboard-subnav dashboard-catalog-subnav">
+              <NavLink to="/catalog/categories">Category</NavLink>
+              <NavLink to="/catalog/services">Services</NavLink>
+              <NavLink to="/catalog/brands">AC Brands</NavLink>
+              <NavLink to="/catalog/models">AC Models</NavLink>
+            </div>
+          </div>
+        ) : (
+          <a key={label} href={`/#${icon}`}><DashboardIcon name={icon} /><span>{label}</span></a>
+        )
+      ))}
       {settingsOpen
         ? <button className="settings-trigger settings-open" type="button" aria-expanded="true"><DashboardIcon name="settings" /><span>Settings</span><b className="nav-chevron">⌄</b></button>
         : <Link to="/profile"><DashboardIcon name="settings" /><span>Settings</span><b className="nav-chevron">⌄</b></Link>}

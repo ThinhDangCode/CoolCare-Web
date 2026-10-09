@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, NavLink } from 'react-router-dom'
-import { useAuth } from '../../features/auth/context/AuthContext.jsx'
-import { Brand } from './Brand.jsx'
+import { useAuth } from '../../context/AuthContext.jsx'
+import { Brand } from '../../components/Brand.jsx'
 
 const mainNavigation = [
   ['dashboard', 'Dashboard'],

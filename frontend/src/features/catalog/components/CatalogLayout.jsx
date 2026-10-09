@@ -1,4 +1,4 @@
-import { useAuth } from '../../auth/context/AuthContext.jsx'
+import { useAuth } from '../../../context/AuthContext.jsx'
 
 export function CatalogLayout({ children }) {
   const { user } = useAuth()

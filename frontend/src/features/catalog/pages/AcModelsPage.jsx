@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useAuth } from '../../auth/context/AuthContext.jsx'
+import { useAuth } from '../../../context/AuthContext.jsx'
 import { catalogRequest } from '../api/catalogApi.js'
 import { CatalogLayout } from '../components/CatalogLayout.jsx'
 import { Modal } from '../components/Modal.jsx'
