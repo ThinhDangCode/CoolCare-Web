@@ -5,6 +5,7 @@ import { DashboardPage } from './features/dashboard/pages/DashboardPage.jsx'
 import { CatalogPage, CreateCatalogPage } from './features/catalog/pages/CatalogPage.jsx'
 import { AdminLayout } from './shared/components/AdminLayout.jsx'
 import { AcModelsPage, CreateAcModelPage } from './features/catalog/pages/AcModelsPage.jsx'
+import { ProfilePage } from './pages/ProfilePage.jsx'
 
 function App() {
   const location = useLocation()
