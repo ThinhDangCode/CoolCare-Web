@@ -37,11 +37,7 @@ export class AuthService {
 
     if (user.role !== 'CUSTOMER') tokenOptions.expiresIn = env.jwtExpiresIn
 
-    return jwt.sign(
-      { role: user.role, purpose: 'access' },
-      env.jwtSecret,
-      tokenOptions,
-    )
+    return jwt.sign({ role: user.role, purpose: 'access' }, env.jwtSecret, tokenOptions)
   }
 
   ensureEmailDelivery() {
@@ -49,7 +45,7 @@ export class AuthService {
       throw new AppError(
         503,
         'EMAIL_NOT_CONFIGURED',
-        'Gửi email chưa được cấu hình. Vui lòng thiết lập SMTP cho CoolCare.',
+        'Gửi email chưa được cấu hình. Vui lòng thiết lập SMTP cho CoolCare.'
       )
     }
   }
@@ -61,7 +57,7 @@ export class AuthService {
         throw new AppError(
           409,
           'GOOGLE_SIGN_IN_REQUIRED',
-          'Email này đã được đăng ký bằng Google. Vui lòng chọn “Continue with Google”.',
+          'Email này đã được đăng ký bằng Google. Vui lòng chọn “Continue with Google”.'
         )
       }
       if (!existingUser.email_verified_at && existingUser.password_hash) {
@@ -71,7 +67,7 @@ export class AuthService {
       throw new AppError(
         409,
         'EMAIL_ALREADY_REGISTERED',
-        'Email này đã được đăng ký. Vui lòng đăng nhập.',
+        'Email này đã được đăng ký. Vui lòng đăng nhập.'
       )
     }
     this.ensureEmailDelivery()
@@ -84,7 +80,10 @@ export class AuthService {
   async login({ email, password }) {
     const user = await this.repository.findUserByEmail(email)
     if (!user) {
-      await bcrypt.compare(password, '$2b$12$invalidinvalidinvalidinvalidinvalidinvalidinvalidinvalidinv')
+      await bcrypt.compare(
+        password,
+        '$2b$12$invalidinvalidinvalidinvalidinvalidinvalidinvalidinvalidinv'
+      )
       throw new AppError(401, 'INVALID_CREDENTIALS', 'Email hoặc mật khẩu không đúng.')
     }
     if (user.status !== 'ACTIVE') {
@@ -94,14 +93,14 @@ export class AuthService {
       throw new AppError(
         403,
         'EMAIL_NOT_VERIFIED',
-        'Email chưa được xác thực. Vui lòng xác thực email trước khi đăng nhập.',
+        'Email chưa được xác thực. Vui lòng xác thực email trước khi đăng nhập.'
       )
     }
     if (isGoogleOnlyAccount(user)) {
       throw new AppError(
         409,
         'GOOGLE_SIGN_IN_REQUIRED',
-        'Tài khoản này dùng Google. Vui lòng chọn “Continue with Google”.',
+        'Tài khoản này dùng Google. Vui lòng chọn “Continue with Google”.'
       )
     }
     const passwordMatches = user.password_hash
@@ -137,14 +136,20 @@ export class AuthService {
 
   async changePassword(userId, { currentPassword, newPassword }) {
     const user = await this.repository.findUserById(userId)
-    if (!user?.password_hash) throw new AppError(409, 'PASSWORD_UNAVAILABLE', 'Tài khoản Google chưa có mật khẩu.')
-    if (!(await bcrypt.compare(currentPassword, user.password_hash))) throw new AppError(401, 'INVALID_CURRENT_PASSWORD', 'Mật khẩu hiện tại không đúng.')
+    if (!user?.password_hash)
+      throw new AppError(409, 'PASSWORD_UNAVAILABLE', 'Tài khoản Google chưa có mật khẩu.')
+    if (!(await bcrypt.compare(currentPassword, user.password_hash)))
+      throw new AppError(401, 'INVALID_CURRENT_PASSWORD', 'Mật khẩu hiện tại không đúng.')
     await this.repository.updatePassword(userId, await bcrypt.hash(newPassword, 12))
   }
 
   async loginWithGoogle({ idToken }) {
     if (!this.googleTokenVerifier) {
-      throw new AppError(503, 'GOOGLE_NOT_CONFIGURED', 'Đăng nhập Google chưa được cấu hình trên máy chủ.')
+      throw new AppError(
+        503,
+        'GOOGLE_NOT_CONFIGURED',
+        'Đăng nhập Google chưa được cấu hình trên máy chủ.'
+      )
     }
     const identity = await this.googleTokenVerifier.verify(idToken)
     const user = await this.repository.findOrCreateGoogleCustomer(identity)
@@ -162,7 +167,7 @@ export class AuthService {
       throw new AppError(
         409,
         'GOOGLE_SIGN_IN_REQUIRED',
-        'Tài khoản này dùng Google và không có mật khẩu để đặt lại. Vui lòng chọn “Continue with Google”.',
+        'Tài khoản này dùng Google và không có mật khẩu để đặt lại. Vui lòng chọn “Continue with Google”.'
       )
     }
     if (!user.email_verified_at) return
@@ -192,9 +197,7 @@ export class AuthService {
     this.ensureEmailDelivery()
     const otp = String(randomInt(0, 1_000_000)).padStart(6, '0')
     const otpHash = await bcrypt.hash(otp, 10)
-    const expiresAt = new Date(
-      Date.now() + env.emailVerificationOtpExpiresMinutes * 60_000,
-    )
+    const expiresAt = new Date(Date.now() + env.emailVerificationOtpExpiresMinutes * 60_000)
     await this.repository.replaceEmailVerificationToken({
       userId: user.id,
       tokenHash: otpHash,
@@ -245,15 +248,11 @@ export class AuthService {
       throw new AppError(400, 'INVALID_OTP', 'Mã OTP không hợp lệ.')
     }
 
-    return jwt.sign(
-      { purpose: 'password_reset', requestId: request.id },
-      env.jwtSecret,
-      {
-        subject: request.user_id,
-        jwtid: randomUUID(),
-        expiresIn: env.resetTokenExpiresIn,
-      },
-    )
+    return jwt.sign({ purpose: 'password_reset', requestId: request.id }, env.jwtSecret, {
+      subject: request.user_id,
+      jwtid: randomUUID(),
+      expiresIn: env.resetTokenExpiresIn,
+    })
   }
 
   async resetPassword({ resetToken, newPassword }) {
@@ -261,7 +260,11 @@ export class AuthService {
     try {
       payload = jwt.verify(resetToken, env.jwtSecret)
     } catch {
-      throw new AppError(400, 'INVALID_RESET_TOKEN', 'Quyền đặt lại mật khẩu không hợp lệ hoặc đã hết hạn.')
+      throw new AppError(
+        400,
+        'INVALID_RESET_TOKEN',
+        'Quyền đặt lại mật khẩu không hợp lệ hoặc đã hết hạn.'
+      )
     }
     if (payload.purpose !== 'password_reset' || !payload.requestId || !payload.sub) {
       throw new AppError(400, 'INVALID_RESET_TOKEN', 'Quyền đặt lại mật khẩu không hợp lệ.')

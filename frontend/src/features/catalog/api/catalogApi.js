@@ -4,8 +4,13 @@ export async function catalogRequest(path, token, { method = 'GET', body, signal
   let response
   try {
     response = await fetch(`${base}/admin/catalog${path}`, {
-      method, signal,
-      headers: { Authorization: `Bearer ${token}`, Accept: 'application/json', ...(body ? { 'Content-Type': 'application/json' } : {}) },
+      method,
+      signal,
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/json',
+        ...(body ? { 'Content-Type': 'application/json' } : {}),
+      },
       ...(body ? { body: JSON.stringify(body) } : {}),
     })
   } catch (error) {

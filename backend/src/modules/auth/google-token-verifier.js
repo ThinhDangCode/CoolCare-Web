@@ -13,7 +13,7 @@ export class GoogleTokenVerifier {
       throw new AppError(
         503,
         'GOOGLE_NOT_CONFIGURED',
-        'Đăng nhập Google chưa được cấu hình trên máy chủ.',
+        'Đăng nhập Google chưa được cấu hình trên máy chủ.'
       )
     }
 
@@ -25,7 +25,11 @@ export class GoogleTokenVerifier {
       })
       payload = ticket.getPayload()
     } catch (_) {
-      throw new AppError(401, 'INVALID_GOOGLE_TOKEN', 'Xác thực Google không hợp lệ hoặc đã hết hạn.')
+      throw new AppError(
+        401,
+        'INVALID_GOOGLE_TOKEN',
+        'Xác thực Google không hợp lệ hoặc đã hết hạn.'
+      )
     }
 
     const googleSub = String(payload?.sub ?? '').trim()

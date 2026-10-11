@@ -51,7 +51,11 @@ export function AuthProvider({ children }) {
     const nextSession = await authApi.login({ email: email.trim().toLowerCase(), password })
     if (nextSession.user?.role !== 'ADMIN') {
       await authApi.logout(nextSession.token).catch(() => {})
-      throw new ApiError({ status: 403, code: 'ADMIN_ONLY', message: 'Cổng này chỉ dành cho quản trị viên.' })
+      throw new ApiError({
+        status: 403,
+        code: 'ADMIN_ONLY',
+        message: 'Cổng này chỉ dành cho quản trị viên.',
+      })
     }
     const now = Date.now()
     const sessionWithActivity = { ...nextSession, lastActivityAt: now, refreshedAt: now }
@@ -104,7 +108,8 @@ export function AuthProvider({ children }) {
         try {
           const storage = sessionStorageTarget()
           const stored = JSON.parse(storage.getItem(storageKey))
-          if (stored?.token) storage.setItem(storageKey, JSON.stringify({ ...stored, lastActivityAt: now }))
+          if (stored?.token)
+            storage.setItem(storageKey, JSON.stringify({ ...stored, lastActivityAt: now }))
         } catch {
           clearSession()
         }
@@ -119,7 +124,12 @@ export function AuthProvider({ children }) {
         return
       }
       const hasActivitySinceRefresh = lastActivityRef.current > lastRefreshRef.current
-      if (!hasActivitySinceRefresh || now - lastRefreshRef.current < refreshIntervalMs || refreshingRef.current) return
+      if (
+        !hasActivitySinceRefresh ||
+        now - lastRefreshRef.current < refreshIntervalMs ||
+        refreshingRef.current
+      )
+        return
 
       refreshingRef.current = true
       try {
@@ -128,7 +138,11 @@ export function AuthProvider({ children }) {
         lastRefreshRef.current = Date.now()
         setSession((current) => {
           if (!current) return current
-          const nextSession = { ...refreshed, lastActivityAt: lastActivityRef.current, refreshedAt: lastRefreshRef.current }
+          const nextSession = {
+            ...refreshed,
+            lastActivityAt: lastActivityRef.current,
+            refreshedAt: lastRefreshRef.current,
+          }
           writeStoredSession(nextSession)
           return nextSession
         })
@@ -140,7 +154,9 @@ export function AuthProvider({ children }) {
     }
 
     const activityEvents = ['pointerdown', 'keydown', 'scroll', 'touchstart']
-    activityEvents.forEach((eventName) => window.addEventListener(eventName, recordActivity, { passive: true }))
+    activityEvents.forEach((eventName) =>
+      window.addEventListener(eventName, recordActivity, { passive: true })
+    )
     const syncSessionAcrossTabs = (event) => {
       if (event.key !== storageKey) return
       if (!event.newValue) {
@@ -153,7 +169,8 @@ export function AuthProvider({ children }) {
           setSession(stored)
           return
         }
-        if (Number(stored?.lastActivityAt) > lastActivityRef.current) lastActivityRef.current = Number(stored.lastActivityAt)
+        if (Number(stored?.lastActivityAt) > lastActivityRef.current)
+          lastActivityRef.current = Number(stored.lastActivityAt)
       } catch {
         // Ignore malformed state written by an older application version.
       }
@@ -169,15 +186,18 @@ export function AuthProvider({ children }) {
     }
   }, [clearSession, session?.lastActivityAt, session?.refreshedAt, session?.token])
 
-  const value = useMemo(() => ({
-    user: session?.user ?? null,
-    isAuthenticated: Boolean(session?.token),
-    login,
-    logout,
-    clearSession,
-    token: session?.token ?? null,
-    updateUser,
-  }), [clearSession, login, logout, session, updateUser])
+  const value = useMemo(
+    () => ({
+      user: session?.user ?? null,
+      isAuthenticated: Boolean(session?.token),
+      login,
+      logout,
+      clearSession,
+      token: session?.token ?? null,
+      updateUser,
+    }),
+    [clearSession, login, logout, session, updateUser]
+  )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

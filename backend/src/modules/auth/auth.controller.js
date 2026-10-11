@@ -22,7 +22,9 @@ export class AuthController {
 
   resendRegistrationEmailVerification = async (request, response) => {
     await this.service.requestEmailVerification(validateForgotPasswordInput(request.body))
-    response.status(202).json({ data: { message: 'Nếu có yêu cầu chờ xác thực, CoolCare đã gửi lại mã OTP.' } })
+    response
+      .status(202)
+      .json({ data: { message: 'Nếu có yêu cầu chờ xác thực, CoolCare đã gửi lại mã OTP.' } })
   }
 
   verifyRegistrationEmail = async (request, response) => {
@@ -44,12 +46,29 @@ export class AuthController {
     response.status(204).send()
   }
 
-  profile = async (request, response) => response.json({ data: await this.service.getProfile(request.auth.userId) })
-  updateProfile = async (request, response) => response.json({ data: await this.service.updateProfile(request.auth.userId, validateProfileInput(request.body)) })
-  updateAvatar = async (request, response) => response.json({ data: await this.service.updateAvatar(request.auth.userId, validateAvatarInput(request.body).avatarUrl) })
-  refresh = async (request, response) => response.json({ data: await this.service.refreshSession(request.auth.userId) })
+  profile = async (request, response) =>
+    response.json({ data: await this.service.getProfile(request.auth.userId) })
+  updateProfile = async (request, response) =>
+    response.json({
+      data: await this.service.updateProfile(
+        request.auth.userId,
+        validateProfileInput(request.body)
+      ),
+    })
+  updateAvatar = async (request, response) =>
+    response.json({
+      data: await this.service.updateAvatar(
+        request.auth.userId,
+        validateAvatarInput(request.body).avatarUrl
+      ),
+    })
+  refresh = async (request, response) =>
+    response.json({ data: await this.service.refreshSession(request.auth.userId) })
   changePassword = async (request, response) => {
-    await this.service.changePassword(request.auth.userId, validateChangePasswordInput(request.body))
+    await this.service.changePassword(
+      request.auth.userId,
+      validateChangePasswordInput(request.body)
+    )
     response.json({ data: { message: 'Đổi mật khẩu thành công.' } })
   }
 

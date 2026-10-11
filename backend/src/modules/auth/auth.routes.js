@@ -5,7 +5,10 @@ import { authenticate } from '../../middleware/authenticate.js'
 export function createAuthRouter(controller) {
   const router = Router()
   router.post('/register', asyncHandler(controller.register))
-  router.post('/register/resend-verification', asyncHandler(controller.resendRegistrationEmailVerification))
+  router.post(
+    '/register/resend-verification',
+    asyncHandler(controller.resendRegistrationEmailVerification)
+  )
   router.post('/register/verify-email', asyncHandler(controller.verifyRegistrationEmail))
   router.post('/login', asyncHandler(controller.login))
   router.post('/google', asyncHandler(controller.googleLogin))

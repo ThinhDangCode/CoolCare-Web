@@ -10,7 +10,7 @@ class DevelopmentEmailSender {
     throw new AppError(
       503,
       'EMAIL_NOT_CONFIGURED',
-      'Gửi email chưa được cấu hình. Vui lòng thiết lập SMTP cho CoolCare.',
+      'Gửi email chưa được cấu hình. Vui lòng thiết lập SMTP cho CoolCare.'
     )
   }
 
@@ -19,7 +19,7 @@ class DevelopmentEmailSender {
     throw new AppError(
       503,
       'EMAIL_NOT_CONFIGURED',
-      'Gửi email chưa được cấu hình. Vui lòng thiết lập SMTP cho CoolCare.',
+      'Gửi email chưa được cấu hình. Vui lòng thiết lập SMTP cho CoolCare.'
     )
   }
 }

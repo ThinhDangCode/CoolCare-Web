@@ -37,16 +37,19 @@ export class AuthRepository {
   }
 
   async updateLastLogin(userId) {
-    await pool.query(
-      'UPDATE users SET last_login_at = CURRENT_TIMESTAMP WHERE id = $1',
-      [userId],
-    )
+    await pool.query('UPDATE users SET last_login_at = CURRENT_TIMESTAMP WHERE id = $1', [userId])
   }
 
   async updateProfile(userId, { fullName, phone, dateOfBirth, gender }) {
     await withTransaction(async (client) => {
-      await client.query('UPDATE users SET full_name = $1, phone = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3', [fullName, phone, userId])
-      await client.query('UPDATE customer_profiles SET date_of_birth = $1, gender = $2, updated_at = CURRENT_TIMESTAMP WHERE user_id = $3', [dateOfBirth, gender, userId])
+      await client.query(
+        'UPDATE users SET full_name = $1, phone = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3',
+        [fullName, phone, userId]
+      )
+      await client.query(
+        'UPDATE customer_profiles SET date_of_birth = $1, gender = $2, updated_at = CURRENT_TIMESTAMP WHERE user_id = $3',
+        [dateOfBirth, gender, userId]
+      )
     })
     return this.findUserById(userId)
   }
@@ -54,20 +57,21 @@ export class AuthRepository {
   async updateAvatar(userId, avatarUrl) {
     await pool.query(
       'UPDATE users SET avatar_url = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
-      [avatarUrl, userId],
+      [avatarUrl, userId]
     )
     return this.findUserById(userId)
   }
 
   async updatePassword(userId, passwordHash) {
-    await pool.query('UPDATE users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [passwordHash, userId])
+    await pool.query(
+      'UPDATE users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+      [passwordHash, userId]
+    )
   }
 
   async createCustomer({ email, phone, passwordHash, fullName }) {
     return withTransaction(async (client) => {
-      const roleResult = await client.query(
-        "SELECT id FROM roles WHERE code = 'CUSTOMER' LIMIT 1",
-      )
+      const roleResult = await client.query("SELECT id FROM roles WHERE code = 'CUSTOMER' LIMIT 1")
       if (!roleResult.rows[0]) throw new Error('CUSTOMER role is missing from master data')
 
       const userId = randomUUID()
@@ -76,12 +80,12 @@ export class AuthRepository {
         `INSERT INTO users (id, role_id, email, email_verified_at, phone, password_hash, full_name, created_at, updated_at)
          VALUES ($1, $2, $3, NULL, $4, $5, $6, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
          RETURNING id, email, phone, full_name`,
-        [userId, roleResult.rows[0].id, email, phone, passwordHash, fullName],
+        [userId, roleResult.rows[0].id, email, phone, passwordHash, fullName]
       )
       await client.query(
         `INSERT INTO customer_profiles (id, user_id, created_at, updated_at)
          VALUES ($1, $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
-        [profileId, userId],
+        [profileId, userId]
       )
 
       return {
@@ -96,7 +100,7 @@ export class AuthRepository {
     return withTransaction(async (client) => {
       const matchedGoogleAccount = await client.query(
         `${userSelect} WHERE u.google_sub = $1 LIMIT 1`,
-        [googleSub],
+        [googleSub]
       )
       if (matchedGoogleAccount.rows[0]) return matchedGoogleAccount.rows[0]
 
@@ -106,7 +110,7 @@ export class AuthRepository {
          WHERE LOWER(email) = $1
          LIMIT 1
          FOR UPDATE`,
-        [email],
+        [email]
       )
       const existingUser = emailResult.rows[0]
       if (existingUser) {
@@ -114,7 +118,7 @@ export class AuthRepository {
           throw new AppError(
             409,
             'GOOGLE_ACCOUNT_LINKED',
-            'Email này đã được liên kết với một tài khoản Google khác.',
+            'Email này đã được liên kết với một tài khoản Google khác.'
           )
         }
         await client.query(
@@ -123,14 +127,12 @@ export class AuthRepository {
                email_verified_at = COALESCE(email_verified_at, CURRENT_TIMESTAMP),
                updated_at = CURRENT_TIMESTAMP
            WHERE id = $2`,
-          [googleSub, existingUser.id],
+          [googleSub, existingUser.id]
         )
         return this.findUserById(existingUser.id, client)
       }
 
-      const roleResult = await client.query(
-        "SELECT id FROM roles WHERE code = 'CUSTOMER' LIMIT 1",
-      )
+      const roleResult = await client.query("SELECT id FROM roles WHERE code = 'CUSTOMER' LIMIT 1")
       if (!roleResult.rows[0]) throw new Error('CUSTOMER role is missing from master data')
 
       const userId = randomUUID()
@@ -139,12 +141,12 @@ export class AuthRepository {
         `INSERT INTO users
            (id, role_id, google_sub, email, email_verified_at, password_hash, full_name, created_at, updated_at)
          VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP, NULL, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
-        [userId, roleResult.rows[0].id, googleSub, email, fullName],
+        [userId, roleResult.rows[0].id, googleSub, email, fullName]
       )
       await client.query(
         `INSERT INTO customer_profiles (id, user_id, created_at, updated_at)
          VALUES ($1, $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
-        [profileId, userId],
+        [profileId, userId]
       )
       return this.findUserById(userId, client)
     })
@@ -156,14 +158,14 @@ export class AuthRepository {
         `UPDATE password_reset_tokens
          SET used_at = CURRENT_TIMESTAMP
          WHERE user_id = $1 AND used_at IS NULL`,
-        [userId],
+        [userId]
       )
       const result = await client.query(
         `INSERT INTO password_reset_tokens
            (id, user_id, token_hash, expires_at, created_at)
          VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)
          RETURNING id, user_id, expires_at`,
-        [randomUUID(), userId, tokenHash, expiresAt],
+        [randomUUID(), userId, tokenHash, expiresAt]
       )
       return result.rows[0]
     })
@@ -175,14 +177,14 @@ export class AuthRepository {
         `UPDATE password_reset_tokens
          SET used_at = CURRENT_TIMESTAMP
          WHERE user_id = $1 AND used_at IS NULL`,
-        [userId],
+        [userId]
       )
       const result = await client.query(
         `INSERT INTO password_reset_tokens
            (id, user_id, token_hash, expires_at, created_at)
          VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)
          RETURNING id, user_id, expires_at`,
-        [randomUUID(), userId, tokenHash, expiresAt],
+        [randomUUID(), userId, tokenHash, expiresAt]
       )
       return result.rows[0]
     })
@@ -197,7 +199,7 @@ export class AuthRepository {
          AND u.email_verified_at IS NULL
        ORDER BY pr.created_at DESC
        LIMIT 1`,
-      [email],
+      [email]
     )
     return result.rows[0] ?? null
   }
@@ -209,7 +211,7 @@ export class AuthRepository {
          FROM password_reset_tokens
          WHERE id = $1 AND user_id = $2
          FOR UPDATE`,
-        [requestId, userId],
+        [requestId, userId]
       )
       const request = requestResult.rows[0]
       if (!request) return { status: 'missing' }
@@ -223,14 +225,14 @@ export class AuthRepository {
          WHERE id = $1
            AND email_verified_at IS NULL
          RETURNING id`,
-        [userId],
+        [userId]
       )
       if (!userResult.rows[0]) return { status: 'used' }
       await client.query(
         `UPDATE password_reset_tokens
          SET used_at = CURRENT_TIMESTAMP
          WHERE id = $1`,
-        [requestId],
+        [requestId]
       )
       return { status: 'verified', user: await this.findUserById(userId, client) }
     })
@@ -246,7 +248,7 @@ export class AuthRepository {
          AND u.email_verified_at IS NOT NULL
        ORDER BY pr.created_at DESC
        LIMIT 1`,
-      [email],
+      [email]
     )
     return result.rows[0] ?? null
   }
@@ -258,7 +260,7 @@ export class AuthRepository {
          FROM password_reset_tokens
          WHERE id = $1 AND user_id = $2
          FOR UPDATE`,
-        [requestId, userId],
+        [requestId, userId]
       )
       const resetRequest = requestResult.rows[0]
       if (!resetRequest) return { status: 'missing' }
@@ -271,14 +273,14 @@ export class AuthRepository {
          WHERE id = $2
            AND password_hash IS NOT NULL
          RETURNING id`,
-        [passwordHash, userId],
+        [passwordHash, userId]
       )
       if (!passwordResult.rows[0]) return { status: 'missing' }
       await client.query(
         `UPDATE password_reset_tokens
          SET used_at = CURRENT_TIMESTAMP
          WHERE id = $1`,
-        [requestId],
+        [requestId]
       )
       return { status: 'updated' }
     })

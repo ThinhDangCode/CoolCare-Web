@@ -5,7 +5,10 @@ export function Brand() {
         <img src="/coolcare-logo.png" alt="" />
       </span>
       <span className="brand-copy">
-        <span className="brand-title"><span className="brand-name">CoolCare</span><em>ADMIN</em></span>
+        <span className="brand-title">
+          <span className="brand-name">CoolCare</span>
+          <em>ADMIN</em>
+        </span>
         <span className="brand-subtitle">HVAC Platform Mgmt</span>
       </span>
     </div>

@@ -21,14 +21,11 @@ export class AddressRepository {
   // LOCATION
 
   async getProvinces() {
-    const response = await fetch(
-      `${LOCATION_API_URL}/p/`,
-      {
-        headers: {
-          Accept: 'application/json',
-        },
+    const response = await fetch(`${LOCATION_API_URL}/p/`, {
+      headers: {
+        Accept: 'application/json',
       },
-    )
+    })
 
     if (!response.ok) {
       throw new Error('Unable to load provinces.')
@@ -49,7 +46,7 @@ export class AddressRepository {
         headers: {
           Accept: 'application/json',
         },
-      },
+      }
     )
 
     if (response.status === 404) {
@@ -79,7 +76,7 @@ export class AddressRepository {
         WHERE user_id = $1
         LIMIT 1
       `,
-      [userId],
+      [userId]
     )
 
     return result.rows[0] ?? null
@@ -95,7 +92,7 @@ export class AddressRepository {
         WHERE customer_id = $1
         ORDER BY is_default DESC, created_at DESC
       `,
-      [customerId],
+      [customerId]
     )
 
     return result.rows
@@ -110,7 +107,7 @@ export class AddressRepository {
           AND customer_id = $2
         LIMIT 1
       `,
-      [addressId, customerId],
+      [addressId, customerId]
     )
 
     return result.rows[0] ?? null
@@ -124,14 +121,12 @@ export class AddressRepository {
           FROM customer_addresses
           WHERE customer_id = $1
         `,
-        [customerId],
+        [customerId]
       )
 
-      const isFirstAddress =
-        countResult.rows[0].count === 0
+      const isFirstAddress = countResult.rows[0].count === 0
 
-      const shouldBeDefault =
-        isFirstAddress || input.isDefault
+      const shouldBeDefault = isFirstAddress || input.isDefault
 
       if (shouldBeDefault) {
         await client.query(
@@ -142,7 +137,7 @@ export class AddressRepository {
               updated_at = CURRENT_TIMESTAMP
             WHERE customer_id = $1
           `,
-          [customerId],
+          [customerId]
         )
       }
 
@@ -177,7 +172,7 @@ export class AddressRepository {
           input.latitude,
           input.longitude,
           shouldBeDefault,
-        ],
+        ]
       )
 
       return result.rows[0]
@@ -186,18 +181,13 @@ export class AddressRepository {
 
   async update(addressId, customerId, input) {
     return withTransaction(async (client) => {
-      const existing = await this.findById(
-        addressId,
-        customerId,
-        client,
-      )
+      const existing = await this.findById(addressId, customerId, client)
 
       if (!existing) {
         return null
       }
 
-      const shouldBeDefault =
-        existing.is_default || input.isDefault
+      const shouldBeDefault = existing.is_default || input.isDefault
 
       if (input.isDefault && !existing.is_default) {
         await client.query(
@@ -209,7 +199,7 @@ export class AddressRepository {
             WHERE customer_id = $1
               AND id <> $2
           `,
-          [customerId, addressId],
+          [customerId, addressId]
         )
       }
 
@@ -241,7 +231,7 @@ export class AddressRepository {
           shouldBeDefault,
           addressId,
           customerId,
-        ],
+        ]
       )
 
       return result.rows[0] ?? null
@@ -250,11 +240,7 @@ export class AddressRepository {
 
   async delete(addressId, customerId) {
     return withTransaction(async (client) => {
-      const existing = await this.findById(
-        addressId,
-        customerId,
-        client,
-      )
+      const existing = await this.findById(addressId, customerId, client)
 
       if (!existing) {
         return null
@@ -266,7 +252,7 @@ export class AddressRepository {
           WHERE id = $1
             AND customer_id = $2
         `,
-        [addressId, customerId],
+        [addressId, customerId]
       )
 
       // Nếu xóa default address,
@@ -280,7 +266,7 @@ export class AddressRepository {
             ORDER BY created_at DESC
             LIMIT 1
           `,
-          [customerId],
+          [customerId]
         )
 
         if (nextResult.rows[0]) {
@@ -293,10 +279,7 @@ export class AddressRepository {
               WHERE id = $1
                 AND customer_id = $2
             `,
-            [
-              nextResult.rows[0].id,
-              customerId,
-            ],
+            [nextResult.rows[0].id, customerId]
           )
         }
       }
@@ -307,11 +290,7 @@ export class AddressRepository {
 
   async setDefault(addressId, customerId) {
     return withTransaction(async (client) => {
-      const existing = await this.findById(
-        addressId,
-        customerId,
-        client,
-      )
+      const existing = await this.findById(addressId, customerId, client)
 
       if (!existing) {
         return null
@@ -325,7 +304,7 @@ export class AddressRepository {
             updated_at = CURRENT_TIMESTAMP
           WHERE customer_id = $1
         `,
-        [customerId],
+        [customerId]
       )
 
       const result = await client.query(
@@ -338,10 +317,7 @@ export class AddressRepository {
             AND customer_id = $2
           RETURNING ${ADDRESS_FIELDS}
         `,
-        [
-          addressId,
-          customerId,
-        ],
+        [addressId, customerId]
       )
 
       return result.rows[0] ?? null

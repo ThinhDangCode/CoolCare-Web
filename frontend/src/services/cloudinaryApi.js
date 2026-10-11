@@ -3,7 +3,9 @@ const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET?.trim()
 
 export async function uploadProfilePhoto(file) {
   if (!cloudName || !uploadPreset) {
-    throw new Error('Cloudinary chưa được cấu hình. Cần VITE_CLOUDINARY_CLOUD_NAME và VITE_CLOUDINARY_UPLOAD_PRESET.')
+    throw new Error(
+      'Cloudinary chưa được cấu hình. Cần VITE_CLOUDINARY_CLOUD_NAME và VITE_CLOUDINARY_UPLOAD_PRESET.'
+    )
   }
   if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
     throw new Error('Chỉ hỗ trợ ảnh JPG, PNG hoặc WEBP.')
@@ -17,7 +19,10 @@ export async function uploadProfilePhoto(file) {
 
   let response
   try {
-    response = await fetch(`https://api.cloudinary.com/v1_1/${encodeURIComponent(cloudName)}/image/upload`, { method: 'POST', body })
+    response = await fetch(
+      `https://api.cloudinary.com/v1_1/${encodeURIComponent(cloudName)}/image/upload`,
+      { method: 'POST', body }
+    )
   } catch {
     throw new Error('Không thể kết nối Cloudinary. Vui lòng kiểm tra kết nối mạng.')
   }

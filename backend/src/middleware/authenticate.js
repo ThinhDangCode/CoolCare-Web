@@ -39,7 +39,9 @@ export function authenticate(request, _response, next) {
 export function requireRole(...allowedRoles) {
   return function roleGuard(request, _response, next) {
     if (!allowedRoles.includes(request.auth?.role)) {
-      return next(new AppError(403, 'FORBIDDEN', 'Tài khoản không có quyền truy cập chức năng này.'))
+      return next(
+        new AppError(403, 'FORBIDDEN', 'Tài khoản không có quyền truy cập chức năng này.')
+      )
     }
     next()
   }

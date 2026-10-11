@@ -1,4 +1,7 @@
-const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000/api').replace(/\/$/, '')
+const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000/api').replace(
+  /\/$/,
+  ''
+)
 
 export class ApiError extends Error {
   constructor({ status, code, message, details }) {
@@ -10,20 +13,32 @@ export class ApiError extends Error {
   }
 }
 
-async function request(path, { method = 'GET', body, token } = {}) {
+const wait = (milliseconds) => new Promise((resolve) => window.setTimeout(resolve, milliseconds))
+
+async function request(path, { method = 'GET', body, token, networkRetries = 0 } = {}) {
   let response
-  try {
-    response = await fetch(`${apiBaseUrl}${path}`, {
-      method,
-      headers: {
-        Accept: 'application/json',
-        ...(body ? { 'Content-Type': 'application/json' } : {}),
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
-      ...(body ? { body: JSON.stringify(body) } : {}),
-    })
-  } catch {
-    throw new ApiError({ status: 0, code: 'NETWORK_ERROR', message: 'Không thể kết nối máy chủ CoolCare.' })
+  for (let attempt = 0; attempt <= networkRetries; attempt += 1) {
+    try {
+      response = await fetch(`${apiBaseUrl}${path}`, {
+        method,
+        headers: {
+          Accept: 'application/json',
+          ...(body ? { 'Content-Type': 'application/json' } : {}),
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        ...(body ? { body: JSON.stringify(body) } : {}),
+      })
+      break
+    } catch {
+      if (attempt === networkRetries)
+        throw new ApiError({
+          status: 0,
+          code: 'NETWORK_ERROR',
+          message:
+            'Không thể kết nối máy chủ CoolCare. Vui lòng kiểm tra backend đang chạy ở cổng 3000.',
+        })
+      await wait(500)
+    }
   }
 
   if (response.status === 204) return null
@@ -41,7 +56,7 @@ async function request(path, { method = 'GET', body, token } = {}) {
 
 export const authApi = {
   login(credentials) {
-    return request('/auth/login', { method: 'POST', body: credentials })
+    return request('/auth/login', { method: 'POST', body: credentials, networkRetries: 1 })
   },
   logout(token) {
     return request('/auth/logout', { method: 'POST', token })

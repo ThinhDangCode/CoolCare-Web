@@ -16,10 +16,13 @@ export function asyncHandler(handler) {
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const phonePattern = /^(?:0|\+84)(?:3[2-9]|5[25689]|7[06789]|8[1-689]|9[0-46-9])\d{7}$/
-const fullNamePattern = /^[A-Za-zÀ-ÖØ-öø-ỹĐđ\u0300-\u036f]+(?:[ '\-][A-Za-zÀ-ÖØ-öø-ỹĐđ\u0300-\u036f]+)*$/u
+const fullNamePattern =
+  /^[A-Za-zÀ-ÖØ-öø-ỹĐđ\u0300-\u036f]+(?:[ '\-][A-Za-zÀ-ÖØ-öø-ỹĐđ\u0300-\u036f]+)*$/u
 
 export function normalizeEmail(value) {
-  return String(value ?? '').trim().toLowerCase()
+  return String(value ?? '')
+    .trim()
+    .toLowerCase()
 }
 
 export function normalizePhone(value) {
@@ -27,7 +30,9 @@ export function normalizePhone(value) {
 }
 
 export function normalizeFullName(value) {
-  return String(value ?? '').trim().replace(/\s+/g, ' ')
+  return String(value ?? '')
+    .trim()
+    .replace(/\s+/g, ' ')
 }
 
 export function isValidFullName(value) {
@@ -45,17 +50,21 @@ export function isValidVietnamesePhone(value) {
 }
 
 export function isStrongPassword(value) {
-  return typeof value === 'string'
-    && value.length >= 8
-    && value.length <= 72
-    && /[a-z]/.test(value)
-    && /[A-Z]/.test(value)
-    && /\d/.test(value)
-    && /[^A-Za-z0-9]/.test(value)
+  return (
+    typeof value === 'string' &&
+    value.length >= 8 &&
+    value.length <= 72 &&
+    /[a-z]/.test(value) &&
+    /[A-Z]/.test(value) &&
+    /\d/.test(value) &&
+    /[^A-Za-z0-9]/.test(value)
+  )
 }
 
 export function requireValidBody(details) {
-  const errors = Object.fromEntries(Object.entries(details).filter(([, message]) => Boolean(message)))
+  const errors = Object.fromEntries(
+    Object.entries(details).filter(([, message]) => Boolean(message))
+  )
   if (Object.keys(errors).length > 0) {
     throw new AppError(422, 'VALIDATION_ERROR', 'Dữ liệu gửi lên chưa hợp lệ.', errors)
   }

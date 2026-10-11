@@ -28,7 +28,7 @@ export const env = Object.freeze({
   otpExpiresMinutes: asPositiveNumber(process.env.OTP_EXPIRES_MINUTES, 10),
   emailVerificationOtpExpiresMinutes: asPositiveNumber(
     process.env.EMAIL_VERIFICATION_OTP_EXPIRES_MINUTES,
-    10,
+    10
   ),
   corsOrigins: (process.env.CORS_ORIGINS ?? '')
     .split(',')
