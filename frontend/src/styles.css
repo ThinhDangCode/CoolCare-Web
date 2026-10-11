@@ -823,6 +823,26 @@ a:focus-visible {
 .dashboard-sidebar nav .dashboard-catalog-subnav a.active {
   color: #fff;
 }
+.dashboard-sidebar nav .dashboard-finance-subnav .sidebar-wallet-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.dashboard-sidebar nav .dashboard-finance-subnav .dashboard-wallet-subnav {
+  margin-left: 11px;
+  padding-left: 10px;
+}
+.dashboard-sidebar nav .dashboard-finance-subnav button:disabled {
+  cursor: default;
+}
+.dashboard-sidebar nav .dashboard-finance-subnav button:disabled:hover {
+  color: #a6b1c4;
+  background: transparent;
+}
+.dashboard-sidebar nav .dashboard-finance-subnav a.active {
+  color: #fff;
+  background: #ff7415;
+}
 .settings-subnav {
   gap: 3px;
   padding-top: 5px;

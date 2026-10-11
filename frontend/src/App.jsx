@@ -14,6 +14,8 @@ import { BlogsPage } from './features/management/pages/BlogsPage.jsx'
 import { ComplaintsPage } from './features/management/pages/ComplaintsPage.jsx'
 import { BlogEditorPage } from './features/management/pages/BlogEditorPage.jsx'
 import { ComplaintDetailPage } from './features/management/pages/ComplaintDetailPage.jsx'
+import { WithdrawalsPage } from './features/settlement/pages/WithdrawalsPage.jsx'
+import { WithdrawalDetailPage } from './features/settlement/pages/WithdrawalDetailPage.jsx'
 
 function App() {
   const location = useLocation()
@@ -43,6 +45,8 @@ function App() {
           <Route path="/admin/blogs/:id/edit" element={<BlogEditorPage />} />
           <Route path="/admin/complaints" element={<ComplaintsPage />} />
           <Route path="/admin/complaints/:id" element={<ComplaintDetailPage />} />
+          <Route path="/admin/settlement/withdrawals" element={<WithdrawalsPage />} />
+          <Route path="/admin/settlement/withdrawals/:id" element={<WithdrawalDetailPage />} />
         </Route>
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

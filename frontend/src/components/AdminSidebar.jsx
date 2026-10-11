@@ -11,7 +11,7 @@ const mainNavigation = [
 const technicianNavigation = ['Technician List', 'Certification', 'Verification', 'Penalty']
 const secondaryNavigation = [
   ['services', 'Service'],
-  ['finance', 'Finance & Wallet'],
+  ['finance', 'Finance'],
   ['marketing', 'Marketing'],
   ['complaint', 'Complaint'],
   ['analytics', 'Analytics'],
@@ -107,6 +107,7 @@ export function AdminSidebar({
   onLogout,
 }) {
   const location = useLocation()
+  const withdrawalActive = location.pathname.startsWith('/admin/settlement/withdrawals')
   const sidebarRef = useRef(null)
   const [technicianOpen, setTechnicianOpen] = useState(
     () => sessionStorage.getItem('admin-sidebar-technician') === 'true'
@@ -118,7 +119,23 @@ export function AdminSidebar({
     () => sessionStorage.getItem('admin-sidebar-marketing') === 'true'
   )
   const [settingsOpen, setSettingsOpen] = useState(activePage === 'profile')
+  const [financeOpen, setFinanceOpen] = useState(
+    () => withdrawalActive || sessionStorage.getItem('admin-sidebar-finance') === 'true'
+  )
+  const [walletOpen, setWalletOpen] = useState(
+    () => withdrawalActive || sessionStorage.getItem('admin-sidebar-wallet') === 'true'
+  )
   const [failedAvatarUrl, setFailedAvatarUrl] = useState('')
+  const [sidebarPath, setSidebarPath] = useState(location.pathname)
+
+  // Open the current section on route entry, while still allowing manual collapse.
+  if (sidebarPath !== location.pathname) {
+    setSidebarPath(location.pathname)
+    if (withdrawalActive) {
+      setFinanceOpen(true)
+      setWalletOpen(true)
+    }
+  }
 
   useLayoutEffect(() => {
     const sidebar = sidebarRef.current
@@ -222,6 +239,63 @@ export function AdminSidebar({
                   <NavLink to="/catalog/services">Services</NavLink>
                   <NavLink to="/catalog/brands">AC Brands</NavLink>
                   <NavLink to="/catalog/models">AC Models</NavLink>
+                </div>
+              )}
+            </div>
+          ) : icon === 'finance' ? (
+            <div key={label} className="sidebar-accordion">
+              <button
+                className={`sidebar-trigger ${withdrawalActive ? 'section-active' : ''}`}
+                type="button"
+                aria-expanded={financeOpen}
+                aria-controls="sidebar-finance-menu"
+                onClick={() => toggleGroup('finance', setFinanceOpen)}
+              >
+                <DashboardIcon name={icon} />
+                <span>{label}</span>
+                <b className={`nav-chevron ${financeOpen ? 'open' : ''}`}>⌄</b>
+              </button>
+              {financeOpen && (
+                <div
+                  id="sidebar-finance-menu"
+                  className="dashboard-subnav dashboard-finance-subnav"
+                >
+                  <button className="dashboard-subnav-action" type="button" disabled>
+                    Payments
+                  </button>
+                  <button className="dashboard-subnav-action" type="button" disabled>
+                    Revenue
+                  </button>
+                  <button
+                    className="dashboard-subnav-action sidebar-wallet-trigger"
+                    type="button"
+                    aria-expanded={walletOpen}
+                    aria-controls="sidebar-wallet-menu"
+                    onClick={() => toggleGroup('wallet', setWalletOpen)}
+                  >
+                    Wallet
+                    <b className={`nav-chevron ${walletOpen ? 'open' : ''}`}>⌄</b>
+                  </button>
+                  {walletOpen && (
+                    <div
+                      id="sidebar-wallet-menu"
+                      className="dashboard-subnav dashboard-wallet-subnav"
+                    >
+                      <NavLink
+                        className="dashboard-subnav-action"
+                        to="/admin/settlement/withdrawals"
+                        onClick={rememberScroll}
+                      >
+                        Withdrawal
+                      </NavLink>
+                      <button className="dashboard-subnav-action" type="button" disabled>
+                        Top-up
+                      </button>
+                    </div>
+                  )}
+                  <button className="dashboard-subnav-action" type="button" disabled>
+                    Invoice
+                  </button>
                 </div>
               )}
             </div>
