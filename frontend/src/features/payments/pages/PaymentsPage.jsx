@@ -11,6 +11,7 @@ import {
   TableState,
 } from '../../management/components/ManagementShared.jsx'
 import { listPayments } from '../api/paymentsApi.js'
+import ExportRevenueDialog from '../components/ExportRevenueDialog.jsx'
 import {
   initialPaymentFilters,
   readPaymentFilters,
@@ -60,11 +61,13 @@ export default function PaymentsPage() {
   const [refresh, setRefresh] = useState(0)
   const [response, setResponse] = useState({ key: '', data: null, error: '' })
   const [calendarOpen, setCalendarOpen] = useState(false)
+  const [exportOpen, setExportOpen] = useState(false)
   const [draftRange, setDraftRange] = useState(emptyRange)
   const searchRef = useRef(null)
   const dateFilterRef = useRef(null)
   const dateButtonRef = useRef(null)
   const dateFromRef = useRef(null)
+  const exportTriggerRef = useRef(null)
 
   const query = new URLSearchParams({
     search: filters.search,
@@ -342,6 +345,17 @@ export default function PaymentsPage() {
               <img src="/payments/refresh.svg" width="14" height="14" alt="" aria-hidden="true" />
               Refresh
             </button>
+            <button
+              ref={exportTriggerRef}
+              type="button"
+              className="payments-export"
+              onClick={() => {
+                setCalendarOpen(false)
+                setExportOpen(true)
+              }}
+            >
+              Export Revenue Report
+            </button>
           </div>
         </div>
         {hasFilters && (
@@ -442,6 +456,16 @@ export default function PaymentsPage() {
           </div>
         </div>
       </section>
+      {exportOpen && (
+        <ExportRevenueDialog
+          token={token}
+          initialSearch={search}
+          initialMethod={filters.method}
+          onClose={() => setExportOpen(false)}
+          onUnauthorized={clearSession}
+          returnFocusRef={exportTriggerRef}
+        />
+      )}
     </main>
   )
 }

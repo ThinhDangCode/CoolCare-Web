@@ -118,7 +118,72 @@ Every detail query runs within the same repeatable-read, read-only transaction.
 Successful reads log READ_DETAIL with actor/payment/booking IDs and status only.
 Idempotency keys, passwords, bank credentials and account balances are not exposed.
 
-No PDF generation, export, refund or mutation endpoint is included.
+## Revenue report export (STT 115)
+
+`GET /api/admin/payments/export` runs before the UUID detail route and requires
+the same Admin token. Query parameters are only:
+
+| Parameter | Meaning |
+| --- | --- |
+| from / to | Required real calendar dates YYYY-MM-DD, years 1900–9999, inclusive |
+| method | ALL (default), CASH, VNPAY, ZALOPAY, FREE |
+| search | Optional literal substring of payment code/UUID, booking code, customer name/phone, up to 150 characters |
+
+Repeated/malformed values, unknown parameters, status/page/limit and reversed
+dates return 422 `VALIDATION_ERROR`. This report includes only SUCCESS payments
+with paid_at recorded. Its period uses **paid_at**, unlike the list's created_at
+filter. Boundaries use fixed UTC+7 throughout the supported calendar to match the
+confirmed report policy; historical IANA timezone offset changes are not applied.
+
+Count, SQL exact monetary sums, known/missing counts and sorted rows run in one
+repeatable-read/read-only transaction. More than 10,000 results returns 422
+`REPORT_TOO_LARGE` before fetching detail rows; no partial/truncated file is sent.
+The report includes each successful payment attempt once, newest paid_at/id first.
+KTV identity comes only from that payment's technician_id, with optional left joins.
+Current assignments or service prices never supply report money or identity.
+
+The response is a real XLSX with:
+
+- Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+- Content-Disposition: attachment; filename="coolcare-revenue-{from}-{to}.xlsx"
+- Cache-Control: no-store
+- X-Report-Row-Count: the full exported count
+- Access-Control-Expose-Headers: Content-Disposition, X-Report-Row-Count (export only)
+
+**Revenue Summary** lists selected period/filter, UTC+7 timezone, generated time,
+row count and monetary metrics. Gross successful payment amount is the primary
+total. Stored commission, platform-funded discount and technician entitlement
+snapshots are separate metrics, not calculated net platform revenue. Each metric
+shows complete total, known rows, missing rows, explicitly known-value sum and
+completeness. If snapshots are missing the total remains blank; missing money is
+never coerced to zero. Zero results are a valid header/summary report with count
+and complete sums of zero.
+
+**Paid Payments** contains payment UUID/code, booking code, customer name/phone,
+payment technician name, method code/name, status, gross amount, commission,
+platform discount, technician entitlement, created/paid/settled dates and payment
+kind. No bank details, JWT/password, idempotency key or account balances appear.
+All text is stored as literal Excel strings, including formula-like prefixes;
+there are no generated formulas or hyperlinks. Phones keep leading zeroes.
+
+ExcelJS 4.4.0 builds the workbook using its documented writeBuffer/cell-value APIs
+([official documentation](https://github.com/exceljs/exceljs#writing-xlsx)). Individual
+14-digit NUMERIC snapshots fit numeric Excel cells. Values above 15 minor-unit
+digits are conservatively preserved as decimal text rather than losing any digits.
+SQL SUM computes totals; no floating-point accumulation occurs in JavaScript.
+Date cells intentionally represent fixed UTC+7 wall-clock time and are labelled
+accordingly. Early dates before 1900-03-01 and out-of-range dates stay labelled
+text because of Excel's fictional 1900 leap day/calendar limitations.
+
+EXPORT audit logs only actor, period, method, hasSearch and count, after workbook
+generation succeeds. It does not log search text, customer data or amounts. No
+schema, seed, payment status, balance, ledger or other feature's rules are changed.
+
+Run `node --test tests/payments.export.test.js`. Set
+`RUN_PAYMENT_EXPORT_DB_TESTS=1` to run tests/payments.export.database.test.js against
+existing local fixtures without changing any database data.
+
+No PDF generation, refund or mutation endpoint is included.
 Run `node --test tests/payments.test.js` from backend for focused tests.
 `RUN_PAYMENTS_DB_TESTS=1 node --test tests/payments.database.test.js` additionally
 verifies existing local fixtures without changing database data.
