@@ -13,6 +13,7 @@ import { AuthService } from './modules/auth/auth.service.js'
 import { GoogleTokenVerifier } from './modules/auth/google-token-verifier.js'
 import { createCatalogRouter } from './modules/catalog/catalog.routes.js'
 import { createManagementRouter } from './modules/management/management.routes.js'
+import { createPaymentsRouter } from './modules/payments/payments.routes.js'
 
 import { AddressRepository } from './modules/address/address.repository.js'
 import { AddressService } from './modules/address/address.service.js'
@@ -72,6 +73,7 @@ app.get(
 // AUTH
 app.use('/api/auth', createAuthRouter(authController))
 app.use('/api/admin/catalog', createCatalogRouter())
+app.use('/api/admin/payments', createPaymentsRouter())
 app.use('/api/admin', createManagementRouter())
 app.use('/api/catalog', createCatalogRouter(undefined, false))
 

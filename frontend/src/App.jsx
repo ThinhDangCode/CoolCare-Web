@@ -14,6 +14,8 @@ import { BlogsPage } from './features/management/pages/BlogsPage.jsx'
 import { ComplaintsPage } from './features/management/pages/ComplaintsPage.jsx'
 import { BlogEditorPage } from './features/management/pages/BlogEditorPage.jsx'
 import { ComplaintDetailPage } from './features/management/pages/ComplaintDetailPage.jsx'
+import PaymentsPage from './features/payments/pages/PaymentsPage.jsx'
+import PaymentDetailPage from './features/payments/pages/PaymentDetailPage.jsx'
 
 function App() {
   const location = useLocation()
@@ -35,6 +37,8 @@ function App() {
             element={<CreateCatalogPage key={location.pathname} />}
           />
           <Route path="/admin/users" element={<UsersPage />} />
+          <Route path="/admin/payments" element={<PaymentsPage />} />
+          <Route path="/admin/payments/:id" element={<PaymentDetailPage />} />
           <Route path="/admin/vouchers" element={<VouchersPage />} />
           <Route path="/admin/vouchers/new" element={<CreateVoucherPage />} />
           <Route path="/admin/voucher-usages" element={<VoucherUsagePage />} />

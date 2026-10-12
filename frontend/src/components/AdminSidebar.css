@@ -1,0 +1,30 @@
+.dashboard-sidebar nav .finance-subnav a.active,
+.dashboard-sidebar nav .finance-subnav a.active:hover {
+  color: #fff;
+  background: #ff7415;
+  box-shadow: 0 6px 16px rgba(255, 116, 21, 0.17);
+}
+
+.dashboard-sidebar nav .finance-wallet-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.finance-wallet-subnav {
+  display: grid;
+  margin: 2px 0 4px 12px;
+  padding-left: 10px;
+  border-left: 1px solid rgba(255, 255, 255, 0.09);
+}
+
+.dashboard-sidebar nav .finance-subnav button:disabled {
+  color: #7f8ca3;
+  cursor: default;
+}
+
+.dashboard-sidebar nav .finance-subnav button:disabled:hover {
+  color: #7f8ca3;
+  background: transparent;
+}
