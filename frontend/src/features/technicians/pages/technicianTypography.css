@@ -1,0 +1,93 @@
+/* Shared typography for the three technician administration screens. */
+.technician-main:is(.technician-directory-page, .certification-page, .verification-page) {
+  --technician-font:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: var(--technician-font);
+  font-size: 14px;
+  line-height: 1.5;
+}
+.technician-main:is(.technician-directory-page, .certification-page, .verification-page)
+  :is(input, select, button) {
+  font-family: var(--technician-font);
+}
+.technician-main:is(.technician-directory-page, .certification-page, .verification-page)
+  :is(.figma-header-title h1, .verification-heading h1) {
+  font-size: 28px;
+  line-height: 1.25;
+  font-weight: 700;
+  letter-spacing: -0.6px;
+}
+.technician-main:is(.technician-directory-page, .certification-page, .verification-page)
+  .figma-header-title
+  p {
+  font-size: 13px;
+  line-height: 1.5;
+}
+.technician-main:is(.technician-directory-page, .certification-page, .verification-page)
+  :is(
+    table td,
+    table td strong,
+    .technician-list-name strong,
+    .technician-list-rating,
+    .verification-person strong,
+    .certification-technician
+  ) {
+  font-size: 14px;
+  line-height: 1.5;
+}
+.technician-main.verification-page table td.verification-phone {
+  font-family: var(--technician-font);
+  font-size: 14px !important;
+  font-weight: 400;
+}
+.technician-main:is(.technician-directory-page, .certification-page, .verification-page) table th {
+  font-size: 12px;
+  line-height: 1.4;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+}
+.technician-main:is(.technician-directory-page, .certification-page, .verification-page)
+  :is(
+    .technician-search input,
+    .technician-filter select,
+    .certification-search input,
+    .certification-toolbar select,
+    .verification-search input,
+    .verification-toolbar select
+  ) {
+  font-size: 14px;
+  line-height: 1.5;
+}
+.technician-main:is(.technician-directory-page, .certification-page, .verification-page)
+  :is(
+    .technician-filter > span,
+    .figma-status,
+    .certification-status,
+    .verification-status,
+    .technician-unrated,
+    .certification-code,
+    .technician-review-profile,
+    .verification-status-tabs button,
+    .verification-queue > header > span,
+    .verification-queue h2,
+    .certification-section-label,
+    .verification-live
+  ) {
+  font-size: 12px;
+  line-height: 1.4;
+}
+.technician-main:is(.technician-directory-page, .certification-page, .verification-page)
+  :is(
+    .technician-page-size,
+    .technician-page-size select,
+    .certification-footer,
+    .certification-footer select,
+    .verification-footer,
+    .verification-footer select,
+    .figma-pagination,
+    .figma-pagination button,
+    .verification-action-note
+  ) {
+  font-size: 12px;
+  line-height: 1.5;
+}

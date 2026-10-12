@@ -174,6 +174,8 @@ export function PageHeader({ title, subtitle, children, onRefresh, refreshing = 
       <div className="figma-header-actions">
         <button
           className="figma-refresh"
+          aria-label="Refresh data"
+          title="Refresh data"
           type="button"
           disabled={refreshing}
           onClick={onRefresh ?? (() => window.location.reload())}

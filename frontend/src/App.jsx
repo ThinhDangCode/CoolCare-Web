@@ -14,6 +14,14 @@ import { BlogsPage } from './features/management/pages/BlogsPage.jsx'
 import { ComplaintsPage } from './features/management/pages/ComplaintsPage.jsx'
 import { BlogEditorPage } from './features/management/pages/BlogEditorPage.jsx'
 import { ComplaintDetailPage } from './features/management/pages/ComplaintDetailPage.jsx'
+import { TechniciansPage } from './features/technicians/pages/TechniciansPage.jsx'
+import { TechnicianDetailPage } from './features/technicians/pages/TechnicianDetailPage.jsx'
+import { CertificationsPage } from './features/technicians/pages/CertificationsPage.jsx'
+import { VerificationPage } from './features/technicians/pages/VerificationPage.jsx'
+import { PenaltiesPage } from './features/technicians/pages/PenaltiesPage.jsx'
+import { BookingsPage } from './features/bookings/pages/BookingsPage.jsx'
+import { BookingDetailPage } from './features/bookings/pages/BookingDetailPage.jsx'
+import './features/technicians/pages/technicianTypography.css'
 
 function App() {
   const location = useLocation()
@@ -27,6 +35,16 @@ function App() {
         <Route path="/profile" element={<ProfilePage />} />
 
         <Route element={<AdminLayout />}>
+          <Route path="/admin/bookings" element={<BookingsPage />} />
+          <Route path="/admin/bookings/:id" element={<BookingDetailPage key={location.pathname} />} />
+          <Route path="/admin/technicians" element={<TechniciansPage />} />
+          <Route path="/admin/technicians/certifications" element={<CertificationsPage />} />
+          <Route path="/admin/technicians/verification" element={<VerificationPage />} />
+          <Route path="/admin/technicians/penalties" element={<PenaltiesPage />} />
+          <Route
+            path="/admin/technicians/:id"
+            element={<TechnicianDetailPage key={location.pathname} />}
+          />
           <Route path="/catalog/models" element={<AcModelsPage />} />
           <Route path="/catalog/models/new" element={<CreateAcModelPage />} />
           <Route path="/catalog/:kind" element={<CatalogPage key={location.pathname} />} />

@@ -13,6 +13,8 @@ import { AuthService } from './modules/auth/auth.service.js'
 import { GoogleTokenVerifier } from './modules/auth/google-token-verifier.js'
 import { createCatalogRouter } from './modules/catalog/catalog.routes.js'
 import { createManagementRouter } from './modules/management/management.routes.js'
+import { createTechnicianRouter } from './modules/technicians/technician.routes.js'
+import { createBookingRouter } from './modules/bookings/booking.routes.js'
 
 import { AddressRepository } from './modules/address/address.repository.js'
 import { AddressService } from './modules/address/address.service.js'
@@ -73,6 +75,8 @@ app.get(
 app.use('/api/auth', createAuthRouter(authController))
 app.use('/api/admin/catalog', createCatalogRouter())
 app.use('/api/admin', createManagementRouter())
+app.use('/api/admin/technicians', createTechnicianRouter())
+app.use('/api/admin/bookings', createBookingRouter())
 app.use('/api/catalog', createCatalogRouter(undefined, false))
 
 // ADDRESS
