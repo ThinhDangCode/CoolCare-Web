@@ -1,0 +1,275 @@
+.export-revenue-backdrop {
+  position: fixed;
+  z-index: 120;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: #0f172a80;
+}
+.export-revenue-dialog {
+  width: min(620px, 100%);
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  color: #334155;
+  background: #fff;
+  box-shadow: 0 20px 60px #0f172a40;
+  outline: none;
+}
+.export-revenue-dialog button,
+.export-revenue-dialog input,
+.export-revenue-dialog select {
+  font: inherit;
+}
+.export-revenue-dialog button,
+.export-revenue-dialog select {
+  cursor: pointer;
+}
+.export-revenue-dialog button:disabled,
+.export-revenue-dialog fieldset:disabled select,
+.export-revenue-dialog fieldset:disabled input {
+  cursor: default;
+  opacity: 0.55;
+}
+.export-revenue-dialog button:focus-visible,
+.export-revenue-dialog input:focus-visible,
+.export-revenue-dialog select:focus-visible {
+  outline: 2px solid var(--orange);
+  outline-offset: 3px;
+}
+.export-revenue-dialog > header {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  justify-content: space-between;
+  padding: 24px;
+  border-bottom: 1px solid #e2e8f0;
+}
+.export-revenue-dialog h2 {
+  margin: 0;
+  color: #15223b;
+  font-size: 22px;
+  line-height: 1.35;
+  letter-spacing: -0.4px;
+}
+.export-revenue-dialog > header p {
+  margin: 7px 0 0;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.export-revenue-close {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  place-items: center;
+  border: 0;
+  border-radius: 6px;
+  color: #64748b;
+  background: #f1f5f9;
+}
+.export-revenue-close svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+}
+.export-revenue-body {
+  padding: 24px;
+}
+.export-revenue-basis {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 22px;
+  padding: 14px;
+  border: 1px solid #bfdbfe;
+  border-radius: 9px;
+  color: #1e40af;
+  background: #eff6ff;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.export-revenue-basis p {
+  margin: 0;
+  color: #475569;
+  font-size: 11px;
+}
+.export-revenue-dialog fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.export-revenue-dialog legend {
+  margin-bottom: 10px;
+  padding: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+.export-revenue-modes {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 5px;
+  margin-bottom: 18px;
+  padding: 4px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+.export-revenue-modes button {
+  min-height: 34px;
+  padding: 5px;
+  border: 0;
+  border-radius: 5px;
+  color: #64748b;
+  background: transparent;
+  font-size: 12px;
+}
+.export-revenue-modes button.active {
+  color: #fff;
+  background: var(--orange);
+  font-weight: 600;
+}
+.export-revenue-period-fields,
+.export-revenue-filters {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+.export-revenue-dialog label {
+  display: grid;
+  gap: 7px;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 600;
+}
+.export-revenue-dialog input,
+.export-revenue-dialog select {
+  width: 100%;
+  min-width: 0;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 7px;
+  color: #334155;
+  background: #fff;
+  font-size: 13px;
+  font-weight: 400;
+}
+.export-revenue-dialog input::placeholder {
+  color: #94a3b8;
+}
+.export-revenue-select {
+  position: relative;
+  display: block;
+}
+.export-revenue-select select {
+  appearance: none;
+  padding-right: 34px;
+}
+.export-revenue-select > svg {
+  position: absolute;
+  top: 50%;
+  right: 14px;
+  width: 12px;
+  height: 12px;
+  transform: translateY(-50%);
+  pointer-events: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.export-revenue-range,
+.export-revenue-validation {
+  margin: 10px 0 20px;
+  font-size: 11px;
+  line-height: 1.5;
+}
+.export-revenue-range {
+  color: #64748b;
+}
+.export-revenue-validation {
+  color: #b91c1c;
+}
+.export-revenue-filter-help {
+  margin: 10px 0 0;
+  color: #64748b;
+  font-size: 11px;
+  line-height: 1.5;
+}
+.export-revenue-progress {
+  margin: 20px 0 0;
+  color: #64748b;
+  font-size: 12px;
+}
+.export-revenue-message {
+  display: grid;
+  gap: 5px;
+  margin-top: 20px;
+  padding: 12px 14px;
+  border: 1px solid #a7f3d0;
+  border-radius: 8px;
+  color: #047857;
+  background: #ecfdf5;
+  font-size: 12px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.export-revenue-message.error {
+  border-color: #fecaca;
+  color: #b91c1c;
+  background: #fef2f2;
+}
+.export-revenue-dialog form > footer {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 24px;
+  border-top: 1px solid #e2e8f0;
+  background: #fff;
+}
+.export-revenue-dialog form > footer button {
+  padding: 9px 16px;
+  border: 1px solid #cbd5e1;
+  border-radius: 7px;
+  color: #475569;
+  background: #fff;
+  font-size: 12px;
+  font-weight: 600;
+}
+.export-revenue-dialog form > footer .export-revenue-submit {
+  border-color: var(--orange);
+  color: #fff;
+  background: var(--orange);
+}
+@media (max-width: 600px) {
+  .export-revenue-backdrop {
+    padding: 12px;
+  }
+  .export-revenue-dialog {
+    max-height: calc(100vh - 24px);
+  }
+  .export-revenue-dialog > header,
+  .export-revenue-body {
+    padding: 20px;
+  }
+  .export-revenue-dialog h2 {
+    font-size: 20px;
+  }
+  .export-revenue-period-fields,
+  .export-revenue-filters {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .export-revenue-dialog form > footer {
+    padding: 16px 20px;
+  }
+}
