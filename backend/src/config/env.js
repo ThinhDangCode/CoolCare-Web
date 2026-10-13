@@ -22,6 +22,9 @@ export const env = Object.freeze({
     ssl: asBoolean(process.env.DB_SSL),
   },
   jwtSecret: process.env.JWT_SECRET ?? '',
+  // Keep a separate key in production. Falling back to JWT_SECRET preserves
+  // local development environments created before compensation vouchers existed.
+  voucherSecret: process.env.VOUCHER_SECRET ?? process.env.JWT_SECRET ?? '',
   jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? '15m',
   googleClientId: process.env.GOOGLE_WEB_CLIENT_ID ?? '',
   resetTokenExpiresIn: process.env.RESET_TOKEN_EXPIRES_IN ?? '10m',
@@ -48,6 +51,8 @@ export function validateRuntimeEnv() {
   const missing = []
   if (!env.database.password) missing.push('DB_PASSWORD')
   if (env.jwtSecret.length < 32) missing.push('JWT_SECRET (minimum 32 characters)')
+  if (env.nodeEnv === 'production' && (process.env.VOUCHER_SECRET ?? '').length < 32)
+    missing.push('VOUCHER_SECRET (minimum 32 characters)')
 
   if (missing.length > 0) {
     throw new Error(`Missing or invalid environment configuration: ${missing.join(', ')}`)

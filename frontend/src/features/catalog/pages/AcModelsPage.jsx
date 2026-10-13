@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useAuth } from '../../../context/AuthContext.jsx'
-import { useAutoDismiss } from '../../../hooks/useAutoDismiss.js'
+import { useAuth } from '../../../shared/context/AuthContext.jsx'
+import { useUiPreferences } from '../../../shared/context/UiPreferencesContext.jsx'
+import { useAutoDismiss } from '../../../shared/hooks/useAutoDismiss.js'
 import { catalogRequest } from '../api/catalogApi.js'
 import { CatalogLayout } from '../components/CatalogLayout.jsx'
 import { Modal } from '../components/Modal.jsx'
-import './catalog.css'
+import '../styles/catalog.css'
 
 const types = [
   ['WALL_MOUNTED', 'Wall mounted', '▱'],
@@ -66,6 +67,7 @@ function useBrands(token) {
 
 export function AcModelsPage() {
   const { token, logout } = useAuth()
+  const { t } = useUiPreferences()
   const brandOptions = useBrands(token)
   const [search, setSearch] = useState('')
   const [querySearch, setQuerySearch] = useState('')
@@ -161,12 +163,12 @@ export function AcModelsPage() {
     <CatalogLayout>
       <section className="catalog-content">
         <div className="catalog-breadcrumb">
-          Catalog <span>/</span> AC Models
+          {t('Catalog')} <span>/</span> {t('AC Models')}
         </div>
         <div className="catalog-page-heading">
           <div>
-            <h1>AC Models</h1>
-            <p>Manage air conditioner models, specifications and availability.</p>
+            <h1>{t('AC Models')}</h1>
+            <p>{t('Manage air conditioner models, specifications and availability.')}</p>
           </div>
         </div>
         {notice && (
@@ -195,7 +197,7 @@ export function AcModelsPage() {
               <span>⌕</span>
               <input
                 aria-label="Search AC models"
-                placeholder="Search model name…"
+                placeholder={t('Search model name…')}
                 value={search}
                 maxLength={150}
                 onChange={(event) => {
@@ -210,7 +212,7 @@ export function AcModelsPage() {
               disabled={brandOptions.loading}
               onChange={(event) => filter('brand_id', event.target.value)}
             >
-              <option value="">{brandOptions.loading ? 'Loading brands…' : 'All brands'}</option>
+              <option value="">{t(brandOptions.loading ? 'Loading brands…' : 'All brands')}</option>
               {brandOptions.brands.map((brand) => (
                 <option key={brand.id} value={brand.id}>
                   {brand.name}
@@ -222,7 +224,7 @@ export function AcModelsPage() {
               value={filters.ac_type}
               onChange={(event) => filter('ac_type', event.target.value)}
             >
-              <option value="">All AC types</option>
+              <option value="">{t('All AC types')}</option>
               {types.map(([code, label]) => (
                 <option key={code} value={code}>
                   {label}
@@ -236,7 +238,7 @@ export function AcModelsPage() {
                 max="2147483647"
                 step="1"
                 aria-label="Filter by BTU"
-                placeholder="All BTU"
+                placeholder={t('All BTU')}
                 value={filters.capacity_btu}
                 onChange={(event) => filter('capacity_btu', event.target.value)}
               />
@@ -246,7 +248,7 @@ export function AcModelsPage() {
               value={filters.inverter}
               onChange={(event) => filter('inverter', event.target.value)}
             >
-              <option value="">All inverter</option>
+              <option value="">{t('All inverter')}</option>
               <option value="true">Inverter</option>
               <option value="false">Non-inverter</option>
             </select>
@@ -255,9 +257,9 @@ export function AcModelsPage() {
               value={filters.status}
               onChange={(event) => filter('status', event.target.value)}
             >
-              <option value="all">All statuses</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
+              <option value="all">{t('All statuses')}</option>
+              <option value="active">{t('Active')}</option>
+              <option value="inactive">{t('Inactive')}</option>
             </select>
             <button
               className="catalog-button"
@@ -274,10 +276,10 @@ export function AcModelsPage() {
                 reload()
               }}
             >
-              Reset filters
+              {t('Reset filters')}
             </button>
             <Link className="catalog-button primary catalog-add-button" to="/catalog/models/new">
-              ＋ Add AC Model
+              ＋ {t('Add AC Model')}
             </Link>
           </div>
           <div className="catalog-table-scroll">
@@ -285,13 +287,13 @@ export function AcModelsPage() {
               <thead>
                 <tr>
                   <th>#</th>
-                  <th>MODEL NAME</th>
-                  <th>BRAND</th>
-                  <th>AC TYPE</th>
-                  <th>CAPACITY</th>
-                  <th>INVERTER</th>
-                  <th>STATUS</th>
-                  <th>ACTIONS</th>
+                  <th>{t('MODEL NAME')}</th>
+                  <th>{t('BRAND')}</th>
+                  <th>{t('AC TYPE')}</th>
+                  <th>{t('CAPACITY')}</th>
+                  <th>{t('INVERTER')}</th>
+                  <th>{t('STATUS')}</th>
+                  <th>{t('ACTIONS')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -300,7 +302,7 @@ export function AcModelsPage() {
                     <td colSpan={8}>
                       <div className="catalog-state" role="status">
                         <span className="catalog-spinner" />
-                        Loading models…
+                        {t('Loading models…')}
                       </div>
                     </td>
                   </tr>
@@ -315,8 +317,8 @@ export function AcModelsPage() {
                     <td colSpan={8}>
                       <div className="catalog-state">
                         <span className="catalog-empty-icon">❄</span>
-                        <strong>No AC models found</strong>
-                        <p>Try changing the filters or add a new model.</p>
+                        <strong>{t('No AC models found')}</strong>
+                        <p>{t('Try changing the filters or add a new model.')}</p>
                       </div>
                     </td>
                   </tr>
@@ -345,7 +347,7 @@ export function AcModelsPage() {
                       <td>
                         <span className={`catalog-status ${row.is_active ? 'active' : 'inactive'}`}>
                           <i />
-                          {row.is_active ? 'Active' : 'Inactive'}
+                          {t(row.is_active ? 'Active' : 'Inactive')}
                         </span>
                       </td>
                       <td>
@@ -483,6 +485,7 @@ export function AcModelsPage() {
 
 function AcModelForm({ row, onCancel, onSaved, onBusyChange }) {
   const { token, logout } = useAuth()
+  const { t } = useUiPreferences()
   const options = useBrands(token)
   const [values, setValues] = useState(() => ({
     model_name: row?.model_name ?? '',
@@ -550,8 +553,8 @@ function AcModelForm({ row, onCancel, onSaved, onBusyChange }) {
       <div className="catalog-form-body">
         <p className="catalog-form-intro">
           {row
-            ? 'Update model specifications and operational status.'
-            : 'Define a model and its specifications for your AC catalog.'}
+            ? t('Update model specifications and operational status.')
+            : t('Define a model and its specifications for your AC catalog.')}
         </p>
         {error && (
           <div className="catalog-error" role="alert">
@@ -562,17 +565,17 @@ function AcModelForm({ row, onCancel, onSaved, onBusyChange }) {
           <div className="catalog-error" role="alert">
             {options.error}
             <button type="button" onClick={options.reload}>
-              Retry brands
+              {t('Retry brands')}
             </button>
           </div>
         )}
         <div className="model-form-columns">
           <div>
-            <div className="catalog-form-section-label">MODEL IDENTIFICATION</div>
+            <div className="catalog-form-section-label">{t('MODEL IDENTIFICATION')}</div>
             <div className="catalog-form-grid">
               <label className="catalog-field">
                 <span>
-                  Model name <em>*</em>
+                  {t('Model name')} <em>*</em>
                 </span>
                 <input
                   name="model_name"
@@ -580,7 +583,7 @@ function AcModelForm({ row, onCancel, onSaved, onBusyChange }) {
                   maxLength={100}
                   required
                   disabled={busy}
-                  placeholder="Enter model name"
+                  placeholder={t('Enter model name')}
                   aria-invalid={Boolean(errors.model_name)}
                   onChange={(event) => change('model_name', event.target.value)}
                 />
@@ -588,7 +591,7 @@ function AcModelForm({ row, onCancel, onSaved, onBusyChange }) {
               </label>
               <label className="catalog-field">
                 <span>
-                  AC brand <em>*</em>
+                  {t('AC brand')} <em>*</em>
                 </span>
                 <select
                   name="brand_id"
@@ -598,28 +601,28 @@ function AcModelForm({ row, onCancel, onSaved, onBusyChange }) {
                   aria-invalid={Boolean(errors.brand_id)}
                   onChange={(event) => change('brand_id', event.target.value)}
                 >
-                  <option value="">{options.loading ? 'Loading brands…' : 'Select brand'}</option>
+                  <option value="">{options.loading ? t('Loading brands…') : t('Select brand')}</option>
                   {options.brands.map((brand) => (
                     <option key={brand.id} value={brand.id}>
                       {brand.name}
-                      {brand.is_active ? '' : ' (Inactive)'}
+                      {brand.is_active ? '' : ` (${t('Inactive')})`}
                     </option>
                   ))}
                 </select>
                 {validation('brand_id')}
                 {!options.loading && !options.error && !options.brands.length && (
                   <small>
-                    No brands available. <Link to="/catalog/brands/new">Create an AC brand</Link>{' '}
-                    first.
+                    {t('No brands available.')} <Link to="/catalog/brands/new">{t('Create an AC brand')}</Link>{' '}
+                    {t('first.')}
                   </small>
                 )}
               </label>
             </div>
-            <div className="catalog-form-section-label">TECHNICAL SPECIFICATIONS</div>
+            <div className="catalog-form-section-label">{t('TECHNICAL SPECIFICATIONS')}</div>
             <div className="catalog-form-grid">
               <label className="catalog-field">
                 <span>
-                  Cooling capacity (BTU) <em>*</em>
+                  {t('Cooling capacity (BTU)')} <em>*</em>
                 </span>
                 <input
                   name="capacity_btu"
@@ -644,7 +647,7 @@ function AcModelForm({ row, onCancel, onSaved, onBusyChange }) {
               </label>
               <label className="catalog-field">
                 <span>
-                  Inverter technology <em>*</em>
+                  {t('Inverter technology')} <em>*</em>
                 </span>
                 <select
                   name="inverter"
@@ -654,7 +657,7 @@ function AcModelForm({ row, onCancel, onSaved, onBusyChange }) {
                   aria-invalid={Boolean(errors.inverter)}
                   onChange={(event) => change('inverter', event.target.value)}
                 >
-                  <option value="">Select technology</option>
+                  <option value="">{t('Select technology')}</option>
                   <option value="true">Inverter</option>
                   <option value="false">Non-inverter</option>
                 </select>
@@ -663,7 +666,7 @@ function AcModelForm({ row, onCancel, onSaved, onBusyChange }) {
             </div>
             <fieldset className="model-types" disabled={busy}>
               <legend>
-                AC type <em>*</em>
+                {t('AC type')} <em>*</em>
               </legend>
               <div>
                 {types.map(([code, label, icon]) => (
@@ -677,28 +680,28 @@ function AcModelForm({ row, onCancel, onSaved, onBusyChange }) {
                       onChange={() => change('ac_type', code)}
                     />
                     <span>{icon}</span>
-                    <strong>{label}</strong>
+                    <strong>{t(label)}</strong>
                   </label>
                 ))}
               </div>
               {validation('ac_type')}
             </fieldset>
             <label className="catalog-field">
-              <span>Description</span>
+              <span>{t('Description')}</span>
               <textarea
                 name="description"
                 rows={3}
                 maxLength={5000}
                 value={values.description}
                 disabled={busy}
-                placeholder="Additional notes about this model…"
+                placeholder={t('Additional notes about this model…')}
                 onChange={(event) => change('description', event.target.value)}
               />
               {validation('description')}
             </label>
           </div>
           <aside className="model-status-panel">
-            <div className="catalog-form-section-label">OPERATIONAL STATUS</div>
+            <div className="catalog-form-section-label">{t('OPERATIONAL STATUS')}</div>
             <div className="catalog-status-options">
               {[true, false].map((active) => (
                 <label
@@ -713,28 +716,28 @@ function AcModelForm({ row, onCancel, onSaved, onBusyChange }) {
                     onChange={() => change('is_active', active)}
                   />
                   <span>
-                    <strong>{active ? 'Active model' : 'Inactive model'}</strong>
+                    <strong>{t(active ? 'Active model' : 'Inactive model')}</strong>
                     <small>
-                      {active ? 'Available for selection' : 'Unavailable for selection'}
+                      {t(active ? 'Available for selection' : 'Unavailable for selection')}
                     </small>
                   </span>
                 </label>
               ))}
             </div>
-            <p>Deactivation keeps this model and all existing booking references.</p>
+            <p>{t('Deactivation keeps this model and all existing booking references.')}</p>
           </aside>
         </div>
       </div>
       <footer className="catalog-form-actions">
         <button type="button" className="catalog-button" disabled={busy} onClick={onCancel}>
-          Cancel
+          {t('Cancel')}
         </button>
         <button
           type="submit"
           className="catalog-button primary"
           disabled={busy || options.loading || Boolean(options.error) || !options.brands.length}
         >
-          {busy ? 'Saving…' : row ? 'Save changes' : '＋ Create AC Model'}
+          {busy ? t('Saving…') : row ? t('Save changes') : `＋ ${t('Create AC Model')}`}
         </button>
       </footer>
     </form>
@@ -743,18 +746,19 @@ function AcModelForm({ row, onCancel, onSaved, onBusyChange }) {
 
 export function CreateAcModelPage() {
   const navigate = useNavigate()
+  const { t } = useUiPreferences()
   return (
     <CatalogLayout>
       <section className="catalog-content">
         <div className="catalog-page-heading">
           <div>
-            <h1>Create AC Model</h1>
-            <p>Add an air conditioner model to the catalog.</p>
+            <h1>{t('Create AC Model')}</h1>
+            <p>{t('Add an air conditioner model to the catalog.')}</p>
           </div>
         </div>
         <div className="catalog-create-context">
           <Link className="catalog-button" to="/catalog/models">
-            ← Back to AC Models
+            ← {t('Back to AC Models')}
           </Link>
         </div>
         <div className="catalog-create-panel model-create-panel">

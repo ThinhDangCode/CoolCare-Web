@@ -12,7 +12,26 @@ import { createAuthRouter } from './modules/auth/auth.routes.js'
 import { AuthService } from './modules/auth/auth.service.js'
 import { GoogleTokenVerifier } from './modules/auth/google-token-verifier.js'
 import { createCatalogRouter } from './modules/catalog/catalog.routes.js'
-import { createManagementRouter } from './modules/management/management.routes.js'
+import { BlogController } from './modules/blogs/blog.controller.js'
+import { BlogRepository } from './modules/blogs/blog.repository.js'
+import { createAdminBlogRouter, createBlogRouter } from './modules/blogs/blog.routes.js'
+import { BlogService } from './modules/blogs/blog.service.js'
+import { ReviewController } from './modules/reviews/review.controller.js'
+import { ReviewRepository } from './modules/reviews/review.repository.js'
+import { createReviewRouter } from './modules/reviews/review.routes.js'
+import { ReviewService } from './modules/reviews/review.service.js'
+import { VoucherController } from './modules/vouchers/voucher.controller.js'
+import { VoucherRepository } from './modules/vouchers/voucher.repository.js'
+import { createAdminVoucherRouter, createVoucherRouter } from './modules/vouchers/voucher.routes.js'
+import { VoucherService } from './modules/vouchers/voucher.service.js'
+import { UserController } from './modules/users/user.controller.js'
+import { UserRepository } from './modules/users/user.repository.js'
+import { createUserRouter } from './modules/users/user.routes.js'
+import { UserService } from './modules/users/user.service.js'
+import { ComplaintController } from './modules/complaints/complaint.controller.js'
+import { ComplaintRepository } from './modules/complaints/complaint.repository.js'
+import { createComplaintRouter } from './modules/complaints/complaint.routes.js'
+import { ComplaintService } from './modules/complaints/complaint.service.js'
 
 import { AddressRepository } from './modules/address/address.repository.js'
 import { AddressService } from './modules/address/address.service.js'
@@ -34,6 +53,19 @@ const authController = new AuthController(authService)
 const addressRepository = new AddressRepository()
 const addressService = new AddressService(addressRepository)
 const addressController = new AddressController(addressService)
+
+// BLOG
+const blogController = new BlogController(new BlogService(new BlogRepository()))
+
+// REVIEW
+const reviewController = new ReviewController(new ReviewService(new ReviewRepository()))
+
+// VOUCHER
+const voucherController = new VoucherController(new VoucherService(new VoucherRepository()))
+
+// USER MANAGEMENT
+const userController = new UserController(new UserService(new UserRepository()))
+const complaintController = new ComplaintController(new ComplaintService(new ComplaintRepository()))
 
 // APP
 export const app = express()
@@ -72,8 +104,14 @@ app.get(
 // AUTH
 app.use('/api/auth', createAuthRouter(authController))
 app.use('/api/admin/catalog', createCatalogRouter())
-app.use('/api/admin', createManagementRouter())
+app.use('/api/admin/users', createUserRouter(userController))
+app.use('/api/admin/blogs', createAdminBlogRouter(blogController))
+app.use('/api/admin/complaints', createComplaintRouter(complaintController))
+app.use('/api/admin', createAdminVoucherRouter(voucherController))
 app.use('/api/catalog', createCatalogRouter(undefined, false))
+app.use('/api/customer/blogs', createBlogRouter(blogController))
+app.use('/api/customer', createReviewRouter(reviewController))
+app.use('/api/customer', createVoucherRouter(voucherController))
 
 // ADDRESS
 app.use('/api/addresses', createAddressRouter(addressController))

@@ -1,0 +1,904 @@
+:root {
+  color-scheme: light;
+  --app-bg: #f7f8fa;
+  --app-surface: #ffffff;
+  --app-surface-soft: #f7f9fb;
+  --app-text: #172126;
+  --app-muted: #718087;
+  --app-border: #e1e8ea;
+}
+html[data-theme='dark'] {
+  color-scheme: dark;
+  --app-bg: #071426;
+  --app-surface: #0d1d32;
+  --app-surface-soft: #132640;
+  --app-text: #f4f7fb;
+  --app-muted: #a9b7c9;
+  --app-border: #293d59;
+}
+.preference-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.language-control {
+  position: relative;
+  z-index: 20;
+}
+.language-trigger,
+.theme-control {
+  display: inline-flex;
+  height: 42px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 10px;
+  color: var(--app-muted);
+  background: transparent;
+  cursor: pointer;
+  transition:
+    color 160ms ease,
+    background 160ms ease;
+}
+.language-trigger {
+  min-width: 136px;
+  gap: 9px;
+  padding: 0 12px;
+  font: inherit;
+}
+.language-trigger:hover,
+.language-trigger[aria-expanded='true'],
+.theme-control:hover {
+  color: var(--app-text);
+  background: var(--app-surface-soft);
+}
+.language-flag {
+  display: inline-grid;
+  width: 24px;
+  height: 16px;
+  flex: 0 0 24px;
+  place-items: center;
+  border-radius: 4px;
+  overflow: hidden;
+  line-height: 1;
+}
+.vietnam-flag {
+  color: #ffeb3b;
+  background: #e61f2d;
+  font-size: 9px;
+}
+.british-flag {
+  border-radius: 3px;
+}
+.language-name {
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.language-trigger > svg {
+  width: 17px !important;
+  height: 17px !important;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.theme-control {
+  width: 42px !important;
+  min-width: 42px;
+  padding: 0;
+}
+.theme-control > svg {
+  width: 24px !important;
+  height: 24px !important;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.language-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 200px;
+  padding: 10px;
+  border: 1px solid var(--app-border);
+  border-radius: 14px;
+  color: var(--app-text);
+  background: var(--app-surface);
+  box-shadow: 0 16px 38px rgba(15, 23, 42, 0.2);
+}
+.language-menu button {
+  display: grid !important;
+  width: 100% !important;
+  height: 44px !important;
+  grid-template-columns: 24px 1fr 20px;
+  align-items: center;
+  gap: 9px;
+  border: 0 !important;
+  border-radius: 9px !important;
+  padding: 0 11px !important;
+  color: var(--app-muted) !important;
+  background: transparent !important;
+  font: inherit;
+  font-size: 14px !important;
+  text-align: left;
+  cursor: pointer;
+}
+.language-menu button:hover,
+.language-menu button.active {
+  color: var(--app-text) !important;
+  background: var(--app-surface-soft) !important;
+}
+.language-check {
+  color: #f97316;
+  font-weight: 700;
+}
+.preference-controls.compact {
+  gap: 6px;
+}
+.preference-controls.compact .language-trigger {
+  min-width: 118px;
+  padding-inline: 8px;
+}
+.preference-controls.compact .theme-control {
+  min-width: 38px;
+  width: 38px !important;
+}
+@media (max-width: 820px) {
+  .language-trigger {
+    min-width: 48px;
+    padding-inline: 8px;
+  }
+  .language-name {
+    display: none;
+  }
+}
+html[data-theme='dark'] .figma-utility-header,
+html[data-theme='dark'] .catalog-topbar,
+html[data-theme='dark'] .dashboard-topbar {
+  background: #20272f;
+  border-color: #343d47;
+}
+html[data-theme='dark'] .language-trigger,
+html[data-theme='dark'] .theme-control {
+  color: #9aa8b8;
+}
+html[data-theme='dark'] .language-trigger:hover,
+html[data-theme='dark'] .language-trigger[aria-expanded='true'],
+html[data-theme='dark'] .theme-control:hover {
+  color: #f8fafc;
+  background: #313a45;
+}
+html[data-theme='dark'] .language-menu {
+  color: #f8fafc;
+  background: #2b333e;
+  border-color: #3b4652;
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.35);
+}
+html[data-theme='dark'] .language-menu button:hover,
+html[data-theme='dark'] .language-menu button.active {
+  color: #f8fafc !important;
+  background: #414b57 !important;
+}
+html[data-theme='dark'] body,
+html[data-theme='dark'] .figma-admin-main,
+html[data-theme='dark'] .dashboard-main {
+  background: var(--app-bg);
+  color: var(--app-text);
+}
+html[data-theme='dark'] .figma-utility-header,
+html[data-theme='dark'] .admin-login-content,
+html[data-theme='dark'] .profile-utility,
+html[data-theme='dark'] .figma-users-table,
+html[data-theme='dark'] .figma-voucher-table,
+html[data-theme='dark'] .complaints-table,
+html[data-theme='dark'] .blog-editor-card,
+html[data-theme='dark'] .complaint-info-card,
+html[data-theme='dark'] .complaint-related > section,
+html[data-theme='dark'] .complaint-detail-resolution,
+html[data-theme='dark'] .profile-card {
+  background: var(--app-surface);
+  color: var(--app-text);
+  border-color: var(--app-border);
+}
+html[data-theme='dark'] h1,
+html[data-theme='dark'] h2,
+html[data-theme='dark'] h3,
+html[data-theme='dark'] strong,
+html[data-theme='dark'] label {
+  color: var(--app-text);
+}
+html[data-theme='dark'] input,
+html[data-theme='dark'] textarea,
+html[data-theme='dark'] select {
+  color: var(--app-text);
+  background: var(--app-surface-soft);
+  border-color: var(--app-border);
+}
+html[data-theme='dark'] select option {
+  color: #f4f7fb;
+  background: #132640;
+}
+html[data-theme='dark'] .admin-input-wrap {
+  color: var(--app-text);
+  background: var(--app-surface-soft);
+  border-color: var(--app-border);
+}
+html[data-theme='dark'] .admin-input-wrap:focus-within {
+  background: #172b46;
+  border-color: var(--orange);
+}
+html[data-theme='dark'] .admin-input-wrap input:-webkit-autofill,
+html[data-theme='dark'] .admin-input-wrap input:-webkit-autofill:hover,
+html[data-theme='dark'] .admin-input-wrap input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--app-text);
+  box-shadow: 0 0 0 1000px var(--app-surface-soft) inset;
+}
+html[data-theme='dark'] .form-error {
+  color: #fecaca;
+  background: rgba(127, 29, 29, 0.25);
+  border-color: rgba(248, 113, 113, 0.45);
+}
+html[data-theme='dark'] .admin-security-note {
+  color: var(--app-muted);
+  background: var(--app-surface-soft);
+  border-color: var(--app-border);
+}
+html[data-theme='dark'] .voucher-section,
+html[data-theme='dark'] .voucher-create-layout aside section,
+html[data-theme='dark'] .voucher-create-actions {
+  color: var(--app-text);
+  background: var(--app-surface);
+  border-color: var(--app-border);
+}
+html[data-theme='dark'] .voucher-section > header,
+html[data-theme='dark'] .voucher-create-layout aside header {
+  color: var(--app-text);
+  border-color: var(--app-border);
+}
+html[data-theme='dark'] .voucher-section label,
+html[data-theme='dark'] .voucher-section label > span:first-child,
+html[data-theme='dark'] .voucher-choice button,
+html[data-theme='dark'] .voucher-create-layout aside section > button {
+  color: var(--app-text);
+}
+html[data-theme='dark'] .voucher-section input,
+html[data-theme='dark'] .voucher-section textarea,
+html[data-theme='dark'] .voucher-section .input-with-icon,
+html[data-theme='dark'] .voucher-field-grid label > div,
+html[data-theme='dark'] .voucher-choice button,
+html[data-theme='dark'] .voucher-create-layout aside section > button {
+  color: var(--app-text);
+  background: var(--app-surface-soft);
+  border-color: var(--app-border);
+}
+html[data-theme='dark'] .voucher-section .input-with-icon input,
+html[data-theme='dark'] .voucher-field-grid label > div input {
+  background: transparent;
+}
+html[data-theme='dark'] .voucher-choice button.selected,
+html[data-theme='dark'] .voucher-create-layout aside section > button.selected {
+  color: var(--app-text);
+  background: #2b2d35;
+  border-color: #f97316;
+}
+html[data-theme='dark'] .voucher-create-actions a {
+  color: var(--app-text);
+  background: var(--app-surface-soft);
+}
+html[data-theme='dark'] .voucher-create-context a,
+html[data-theme='dark'] .voucher-create-tools button {
+  color: var(--app-text);
+  background: var(--app-surface);
+  border-color: var(--app-border);
+}
+html[data-theme='dark'] .complaint-resolution-dialog,
+html[data-theme='dark'] .complaint-resolution-dialog > header,
+html[data-theme='dark'] .complaint-resolution-dialog-body,
+html[data-theme='dark'] .complaint-resolution-dialog > footer {
+  color: var(--app-text);
+  background: var(--app-surface);
+  border-color: var(--app-border);
+}
+html[data-theme='dark'] .complaint-resolution-dialog h2,
+html[data-theme='dark'] .complaint-resolution-dialog-body > label:not(.complaint-notify-customer) {
+  color: var(--app-text);
+}
+html[data-theme='dark'] .complaint-resolution-dialog select,
+html[data-theme='dark'] .complaint-resolution-dialog textarea,
+html[data-theme='dark'] .complaint-voucher-dialog input,
+html[data-theme='dark'] .complaint-notify-customer,
+html[data-theme='dark'] .complaint-voucher-fields > p,
+html[data-theme='dark'] .complaint-resolution-dialog > footer button:not(.confirm) {
+  color: var(--app-text);
+  background: var(--app-surface-soft);
+  border-color: var(--app-border);
+}
+html[data-theme='dark'] .metric-card,
+html[data-theme='dark'] .dashboard-panel {
+  color: var(--app-text);
+  background: var(--app-surface);
+  border-color: var(--app-border);
+}
+html[data-theme='dark'] .metric-card > strong,
+html[data-theme='dark'] .dashboard-panel h2,
+html[data-theme='dark'] .revenue-summary > strong {
+  color: var(--app-text);
+}
+html[data-theme='dark'] .metric-card > small,
+html[data-theme='dark'] .metric-card > p,
+html[data-theme='dark'] .dashboard-panel header p,
+html[data-theme='dark'] .booking-row,
+html[data-theme='dark'] .revenue-summary {
+  color: var(--app-muted);
+}
+html[data-theme='dark'] .booking-progress {
+  background: #20334d;
+}
+html[data-theme='dark'] .record-detail-dialog {
+  color: var(--app-text);
+  background: var(--app-surface);
+  border-color: var(--app-border);
+}
+html[data-theme='dark'] .record-detail-dialog > header,
+html[data-theme='dark'] .record-detail-dialog dt,
+html[data-theme='dark'] .record-detail-dialog dl > div {
+  border-color: var(--app-border);
+}
+html[data-theme='dark'] .record-detail-dialog h2,
+html[data-theme='dark'] .record-detail-dialog h3,
+html[data-theme='dark'] .record-detail-dialog dd,
+html[data-theme='dark'] .blog-detail-content {
+  color: var(--app-text);
+}
+html[data-theme='dark'] .record-detail-dialog dt,
+html[data-theme='dark'] .record-detail-dialog header p {
+  color: var(--app-muted);
+}
+html[data-theme='dark'] table th {
+  background: var(--app-surface-soft);
+  color: var(--app-muted);
+}
+html[data-theme='dark'] table td {
+  color: var(--app-text);
+  border-color: var(--app-border);
+}
+
+/* Keep every existing admin surface readable while features migrate to tokens. */
+html[data-theme='dark'] .figma-page-header,
+html[data-theme='dark'] .figma-page-heading,
+html[data-theme='dark'] .figma-user-toolbar,
+html[data-theme='dark'] .figma-table-card,
+html[data-theme='dark'] .management-toolbar,
+html[data-theme='dark'] .usage-table,
+html[data-theme='dark'] .catalog-topbar,
+html[data-theme='dark'] .catalog-page-heading,
+html[data-theme='dark'] .catalog-panel,
+html[data-theme='dark'] .catalog-toolbar,
+html[data-theme='dark'] .catalog-pagination,
+html[data-theme='dark'] .catalog-create-panel,
+html[data-theme='dark'] .catalog-modal,
+html[data-theme='dark'] .catalog-form-actions,
+html[data-theme='dark'] .model-status-panel {
+  color: var(--app-text);
+  background: var(--app-surface);
+  border-color: var(--app-border);
+}
+
+html[data-theme='dark'] .figma-header-title h1,
+html[data-theme='dark'] .figma-header-actions > small strong,
+html[data-theme='dark'] .catalog-page-heading h1,
+html[data-theme='dark'] .catalog-topbar small strong,
+html[data-theme='dark'] .catalog-name strong,
+html[data-theme='dark'] .catalog-table .catalog-price,
+html[data-theme='dark'] .catalog-state strong,
+html[data-theme='dark'] .catalog-modal h2,
+html[data-theme='dark'] .catalog-field,
+html[data-theme='dark'] .catalog-field > span,
+html[data-theme='dark'] .catalog-status-options strong,
+html[data-theme='dark'] .catalog-confirm strong,
+html[data-theme='dark'] .catalog-record-details dt {
+  color: var(--app-text);
+}
+
+html[data-theme='dark'] .figma-header-title p,
+html[data-theme='dark'] .figma-header-actions > small em,
+html[data-theme='dark'] .catalog-page-heading p,
+html[data-theme='dark'] .catalog-topbar small em,
+html[data-theme='dark'] .catalog-count,
+html[data-theme='dark'] .catalog-pagination,
+html[data-theme='dark'] .catalog-description,
+html[data-theme='dark'] .catalog-table .catalog-date,
+html[data-theme='dark'] .catalog-table .catalog-index {
+  color: var(--app-muted);
+}
+
+html[data-theme='dark'] .figma-user-search,
+html[data-theme='dark'] .figma-status-filter,
+html[data-theme='dark'] .figma-role-tabs,
+html[data-theme='dark'] .catalog-search,
+html[data-theme='dark'] .catalog-toolbar select,
+html[data-theme='dark'] .catalog-button:not(.primary):not(.danger),
+html[data-theme='dark'] .catalog-pagination button,
+html[data-theme='dark'] .catalog-field input,
+html[data-theme='dark'] .catalog-field textarea,
+html[data-theme='dark'] .catalog-field select,
+html[data-theme='dark'] .model-btu-filter input,
+html[data-theme='dark'] .model-types label,
+html[data-theme='dark'] .catalog-status-options label {
+  color: var(--app-text);
+  background: var(--app-surface-soft);
+  border-color: var(--app-border);
+}
+
+html[data-theme='dark'] .figma-user-search input,
+html[data-theme='dark'] .figma-status-filter select,
+html[data-theme='dark'] .management-toolbar input,
+html[data-theme='dark'] .catalog-search input {
+  color: var(--app-text);
+  background: transparent;
+}
+
+html[data-theme='dark'] input::placeholder,
+html[data-theme='dark'] textarea::placeholder {
+  color: #8191a8;
+  opacity: 1;
+}
+
+html[data-theme='dark'] .figma-role-tabs button {
+  color: var(--app-muted);
+}
+
+html[data-theme='dark'] .figma-role-tabs button:hover,
+html[data-theme='dark'] .figma-role-tabs button.active {
+  color: #ff8a3d;
+  background: #1c304d;
+}
+
+html[data-theme='dark'] .figma-users-table thead,
+html[data-theme='dark'] .catalog-table thead,
+html[data-theme='dark'] .management-table thead {
+  background: #132944;
+}
+
+html[data-theme='dark'] .figma-users-table th,
+html[data-theme='dark'] .catalog-table th,
+html[data-theme='dark'] .management-table th {
+  color: #c5d2e5;
+  background: #132944;
+}
+
+html[data-theme='dark'] .figma-users-table tbody tr:hover,
+html[data-theme='dark'] .catalog-table tbody tr:hover,
+html[data-theme='dark'] .management-table tbody tr:hover {
+  background: #11243c;
+}
+
+html[data-theme='dark'] .catalog-number,
+html[data-theme='dark'] .model-inverter {
+  color: #c8d5e7;
+  background: #1b304d;
+}
+
+/* Action controls need their own contrast instead of inheriting table text. */
+html[data-theme='dark'] .figma-lock,
+html[data-theme='dark'] .catalog-row-actions button,
+html[data-theme='dark'] .voucher-inline-actions button,
+html[data-theme='dark'] .voucher-inline-actions a,
+html[data-theme='dark'] .voucher-action > button {
+  color: #b9c9df;
+  background: #152b47;
+  border: 1px solid #38506f;
+}
+
+html[data-theme='dark'] .figma-lock:hover:not(:disabled),
+html[data-theme='dark'] .catalog-row-actions button:hover:not(:disabled),
+html[data-theme='dark'] .voucher-inline-actions button:hover:not(:disabled),
+html[data-theme='dark'] .voucher-inline-actions a:hover,
+html[data-theme='dark'] .voucher-action > button:hover:not(:disabled) {
+  color: #ff9a57;
+  background: #2b2d35;
+  border-color: #f97316;
+}
+
+html[data-theme='dark'] .catalog-row-actions .danger-text:hover:not(:disabled),
+html[data-theme='dark'] .voucher-inline-actions .deactivate:hover:not(:disabled) {
+  color: #ff8da4;
+  background: #3a1f2b;
+  border-color: #e84b70;
+}
+
+html[data-theme='dark'] .figma-lock:focus-visible,
+html[data-theme='dark'] .catalog-row-actions button:focus-visible,
+html[data-theme='dark'] .voucher-inline-actions button:focus-visible,
+html[data-theme='dark'] .voucher-inline-actions a:focus-visible {
+  outline: 2px solid #fb923c;
+  outline-offset: 2px;
+}
+
+html[data-theme='dark'] .figma-lock:disabled,
+html[data-theme='dark'] .catalog-row-actions button:disabled,
+html[data-theme='dark'] .voucher-inline-actions button:disabled {
+  color: #607089;
+  background: #101f34;
+  border-color: #253a56;
+  opacity: 0.6;
+}
+
+html[data-theme='dark'] .figma-header-actions .figma-notification,
+html[data-theme='dark'] .catalog-topbar .catalog-notification {
+  color: #c7d4e6;
+  background: #172a43;
+  border: 1px solid #314761;
+}
+
+html[data-theme='dark'] .figma-header-actions .preference-controls button {
+  color: var(--app-text);
+  background: transparent;
+  border: 0;
+  border-radius: 9px;
+}
+
+html[data-theme='dark'] .preference-controls .language-trigger,
+html[data-theme='dark'] .preference-controls .theme-control {
+  color: #9aa8b8 !important;
+  background: transparent !important;
+  border: 0 !important;
+}
+
+html[data-theme='dark'] .preference-controls .language-trigger:hover,
+html[data-theme='dark'] .preference-controls .language-trigger[aria-expanded='true'],
+html[data-theme='dark'] .preference-controls .theme-control:hover {
+  color: #f8fafc !important;
+  background: #313a45 !important;
+}
+
+html[data-theme='dark'] .figma-header-actions > .language-control .language-trigger,
+html[data-theme='dark'] .figma-header-actions > .theme-control,
+html[data-theme='dark'] .catalog-topbar .language-trigger,
+html[data-theme='dark'] .catalog-topbar .theme-control,
+html[data-theme='dark'] .dashboard-actions .language-trigger,
+html[data-theme='dark'] .dashboard-actions .theme-control {
+  color: #9aa8b8;
+  background: transparent;
+  border: 0;
+  border-radius: 10px;
+}
+
+html[data-theme='dark'] .figma-header-actions > .language-control .language-trigger:hover,
+html[data-theme='dark']
+  .figma-header-actions
+  > .language-control
+  .language-trigger[aria-expanded='true'],
+html[data-theme='dark'] .figma-header-actions > .theme-control:hover,
+html[data-theme='dark'] .catalog-topbar .language-trigger:hover,
+html[data-theme='dark'] .catalog-topbar .theme-control:hover,
+html[data-theme='dark'] .dashboard-actions .language-trigger:hover,
+html[data-theme='dark'] .dashboard-actions .theme-control:hover {
+  color: #f8fafc;
+  background: #313a45;
+}
+
+/* Blog editor, dialogs and voucher surfaces that previously retained light colors. */
+html[data-theme='dark'] .blog-editor-page form,
+html[data-theme='dark'] .blog-editor-layout,
+html[data-theme='dark'] .blog-editor-actions,
+html[data-theme='dark'] .blog-rich-editor,
+html[data-theme='dark'] .blog-rich-toolbar,
+html[data-theme='dark'] .blog-preview-modal,
+html[data-theme='dark'] .blog-preview-modal > header,
+html[data-theme='dark'] .blog-preview-content,
+html[data-theme='dark'] .voucher-toolbar,
+html[data-theme='dark'] .voucher-filter,
+html[data-theme='dark'] .voucher-edit-modal,
+html[data-theme='dark'] .management-modal {
+  color: var(--app-text);
+  background: var(--app-surface);
+  border-color: var(--app-border);
+}
+
+html[data-theme='dark'] .blog-rich-toolbar button,
+html[data-theme='dark'] .blog-editor-heading > a,
+html[data-theme='dark'] .blog-editor-heading > button,
+html[data-theme='dark'] .blog-editor-actions > a,
+html[data-theme='dark'] .voucher-toolbar button,
+html[data-theme='dark'] .voucher-toolbar select,
+html[data-theme='dark'] .voucher-filter select {
+  color: #d5dfed;
+  background: var(--app-surface-soft);
+  border-color: var(--app-border);
+}
+
+html[data-theme='dark'] .blog-rich-toolbar button:hover,
+html[data-theme='dark'] .blog-editor-heading > a:hover,
+html[data-theme='dark'] .blog-editor-heading > button:hover,
+html[data-theme='dark'] .blog-editor-actions > a:hover,
+html[data-theme='dark'] .voucher-toolbar button:hover {
+  color: #ff9a57;
+  border-color: #f97316;
+}
+
+html[data-theme='dark'] .blog-rich-editor textarea,
+html[data-theme='dark'] .blog-editor-card input:not([type='checkbox']):not([type='radio']),
+html[data-theme='dark'] .blog-editor-card textarea {
+  color: var(--app-text);
+  background: #10233b;
+  border-color: #3a506d;
+}
+
+html[data-theme='dark'] .blog-settings-card > button {
+  color: var(--app-text);
+  background: #142942;
+  border-color: #3a506d;
+}
+
+html[data-theme='dark'] .blog-settings-card > button.selected {
+  background: #193b3b;
+}
+
+html[data-theme='dark'] .blog-preview-modal h2,
+html[data-theme='dark'] .blog-preview-content,
+html[data-theme='dark'] .figma-voucher-table td strong,
+html[data-theme='dark'] .management-table td strong,
+html[data-theme='dark'] .complaints-table td > strong,
+html[data-theme='dark'] .blog-table td > strong {
+  color: var(--app-text);
+}
+
+html[data-theme='dark'] .figma-voucher-table code {
+  color: #d7e3f4;
+  background: #1a304c;
+}
+
+html[data-theme='dark'] .figma-voucher-table td small,
+html[data-theme='dark'] .management-table td small,
+html[data-theme='dark'] .blog-author span,
+html[data-theme='dark'] .blog-setting-block > span {
+  color: var(--app-muted);
+}
+
+html[data-theme='dark'] .figma-modal-backdrop {
+  background: rgba(2, 8, 18, 0.74);
+}
+
+html[data-theme='dark'] .blog-preview-modal > header button {
+  color: #c5d2e5;
+  background: #172a43;
+  border-color: #344b68;
+}
+
+html[data-theme='dark'] .usage-filters,
+html[data-theme='dark'] .usage-filters > label,
+html[data-theme='dark'] .usage-type-filter,
+html[data-theme='dark'] .usage-calendar,
+html[data-theme='dark'] .usage-table {
+  color: var(--app-text);
+  background: var(--app-surface);
+  border-color: var(--app-border);
+}
+
+html[data-theme='dark'] .usage-filters input,
+html[data-theme='dark'] .usage-type-filter select,
+html[data-theme='dark'] .usage-type-filter select option,
+html[data-theme='dark'] .usage-calendar input,
+html[data-theme='dark'] .usage-calendar footer button:not(.apply) {
+  color: var(--app-text);
+  background: var(--app-surface-soft);
+  border-color: var(--app-border);
+}
+
+html[data-theme='dark'] .usage-filters button.active {
+  color: #ff9a57;
+  background: #302b2a;
+  border-color: #f97316;
+}
+
+html[data-theme='dark'] .usage-calendar label {
+  color: var(--app-text);
+}
+
+html[data-theme='dark'] .usage-table td,
+html[data-theme='dark'] .usage-table td strong {
+  color: var(--app-text);
+}
+
+html[data-theme='dark'] .voucher-edit-modal > header,
+html[data-theme='dark'] .voucher-edit-modal > footer,
+html[data-theme='dark'] .voucher-edit-body {
+  color: var(--app-text);
+  background: var(--app-surface);
+  border-color: var(--app-border);
+}
+
+html[data-theme='dark'] .voucher-edit-modal h2,
+html[data-theme='dark'] .voucher-edit-body label > span,
+html[data-theme='dark'] .voucher-edit-types legend {
+  color: var(--app-text);
+}
+
+html[data-theme='dark'] .edit-input,
+html[data-theme='dark'] .edit-status-control,
+html[data-theme='dark'] .voucher-edit-description textarea,
+html[data-theme='dark'] .voucher-edit-types button,
+html[data-theme='dark'] .voucher-edit-modal > footer button:not(.save) {
+  color: var(--app-text);
+  background: var(--app-surface-soft);
+  border-color: #3a506d;
+}
+
+html[data-theme='dark'] .edit-input input {
+  color: var(--app-text);
+  background: transparent;
+}
+
+html[data-theme='dark'] .edit-input > b {
+  color: #c5d2e5;
+  background: #1a304c;
+}
+
+html[data-theme='dark'] .edit-status-control button.selected,
+html[data-theme='dark'] .voucher-edit-types button.selected {
+  color: #ff9a57;
+  background: #302b2a;
+  border-color: #f97316;
+}
+
+html[data-theme='dark'] .blog-cover-upload {
+  color: var(--app-text);
+  background: #10233b;
+  border-color: #3a506d;
+}
+
+html[data-theme='dark'] .blog-cover-upload strong {
+  color: #dce6f3;
+}
+
+html[data-theme='dark'] .blog-cover-upload small {
+  color: #9fb0c6;
+}
+
+html[data-theme='dark'] .figma-header-actions .preference-controls button:hover {
+  color: #ff9a57;
+  border-color: #f97316;
+}
+
+/* Detail and settings pages use their own legacy surfaces. Keep those surfaces on
+   the same tokens as the rest of the administration shell. */
+html[data-theme='dark'] .complaint-info-card,
+html[data-theme='dark'] .complaint-related > section,
+html[data-theme='dark'] .complaint-figma-main > .complaint-detail-resolution,
+html[data-theme='dark'] .complaint-quote,
+html[data-theme='dark'] .complaint-facts > div,
+html[data-theme='dark'] .complaint-detail-actions button,
+html[data-theme='dark'] .complaint-detail-actions a {
+  color: var(--app-text);
+  background: var(--app-surface);
+  border-color: var(--app-border);
+}
+
+html[data-theme='dark'] .complaint-facts > div,
+html[data-theme='dark'] .complaint-detail-actions button,
+html[data-theme='dark'] .complaint-detail-actions a {
+  background: var(--app-surface-soft);
+}
+
+html[data-theme='dark'] .complaint-info-card > header,
+html[data-theme='dark'] .complaint-quote footer,
+html[data-theme='dark'] .complaint-related section > header,
+html[data-theme='dark'] .complaint-resolution-heading {
+  border-color: var(--app-border);
+}
+
+html[data-theme='dark'] .complaint-info-card > header strong,
+html[data-theme='dark'] .complaint-facts strong,
+html[data-theme='dark'] .complaint-quote blockquote,
+html[data-theme='dark'] .related-person > span > strong,
+html[data-theme='dark'] .complaint-related dd,
+html[data-theme='dark'] .complaint-resolution-heading h3 {
+  color: var(--app-text);
+}
+
+html[data-theme='dark'] .complaint-info-card > header small,
+html[data-theme='dark'] .complaint-facts small,
+html[data-theme='dark'] .complaint-quote > small,
+html[data-theme='dark'] .complaint-related dt,
+html[data-theme='dark'] .complaint-resolution-heading p,
+html[data-theme='dark'] .complaint-resolution-summary {
+  color: var(--app-muted);
+}
+
+html[data-theme='dark'] .profile-shell .profile-card,
+html[data-theme='dark'] .profile-shell .profile-hero,
+html[data-theme='dark'] .profile-shell .password-form {
+  color: var(--app-text);
+  background: var(--app-surface);
+  border-color: var(--app-border);
+}
+
+html[data-theme='dark'] .profile-identity h2,
+html[data-theme='dark'] .profile-clearance strong,
+html[data-theme='dark'] .profile-shell .profile-field,
+html[data-theme='dark'] .profile-shell .password-form .profile-field,
+html[data-theme='dark'] .password-card-heading h2 {
+  color: var(--app-text);
+}
+
+html[data-theme='dark'] .profile-identity p,
+html[data-theme='dark'] .profile-clearance small,
+html[data-theme='dark'] .profile-clearance span,
+html[data-theme='dark'] .password-card-heading p {
+  color: var(--app-muted);
+}
+
+html[data-theme='dark'] .profile-clearance {
+  border-color: var(--app-border);
+}
+
+html[data-theme='dark'] .profile-shell .field-control,
+html[data-theme='dark'] .profile-shell .profile-input,
+html[data-theme='dark'] .profile-shell .password-form .profile-input,
+html[data-theme='dark'] .profile-shell .profile-field > input,
+html[data-theme='dark'] .profile-shell .profile-field select {
+  color: var(--app-text);
+  background: var(--app-surface-soft);
+  border-color: #3a506d;
+}
+
+html[data-theme='dark'] .profile-shell .field-control input,
+html[data-theme='dark'] .profile-shell .profile-input input,
+html[data-theme='dark'] .profile-shell .password-form .profile-input input {
+  color: var(--app-text);
+  background: transparent;
+}
+
+html[data-theme='dark'] .profile-shell .field-control input::placeholder,
+html[data-theme='dark'] .profile-shell .profile-input input::placeholder,
+html[data-theme='dark'] .profile-shell .password-form .profile-input input::placeholder {
+  color: #8fa1b8;
+}
+
+html[data-theme='dark'] .profile-utility-title h1 {
+  color: var(--app-text);
+}
+
+html[data-theme='dark'] .profile-utility-title small {
+  color: var(--app-muted);
+}
+
+.voucher-edit-readonly-fields {
+  min-width: 0;
+  margin: 0;
+  border: 0;
+  padding: 0;
+}
+
+.voucher-edit-readonly-fields:disabled {
+  opacity: 0.62;
+}
+
+.voucher-readonly-notice {
+  margin-bottom: 16px;
+  border: 1px solid #f6c777;
+  border-radius: 8px;
+  padding: 11px 13px;
+  color: #9a5b00;
+  background: #fff8e8;
+  font-size: 13px;
+}
+
+html[data-theme='dark'] .voucher-readonly-notice {
+  color: #ffd08a;
+  background: #352b1d;
+  border-color: #7a5a2c;
+}
+
+html[data-theme='dark'] .figma-pagination .figma-page-size,
+html[data-theme='dark'] .figma-page-size select,
+html[data-theme='dark'] .figma-page-size option {
+  color: var(--app-text);
+  background: var(--app-surface-soft);
+  border-color: var(--app-border);
+}

@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import { Outlet } from 'react-router-dom'
-import { AdminSidebar } from '../../components/AdminSidebar.jsx'
-import { useAuth } from '../../context/AuthContext.jsx'
+import { AdminSidebar } from './AdminSidebar.jsx'
+import { useAuth } from '../context/AuthContext.jsx'
+import { useUiPreferences } from '../context/UiPreferencesContext.jsx'
 
 export function AdminLayout() {
   const { user, logout } = useAuth()
+  const { t } = useUiPreferences()
   const [showLogout, setShowLogout] = useState(false)
 
   return (
@@ -25,14 +27,14 @@ export function AdminLayout() {
             aria-labelledby="catalog-logout-title"
             onMouseDown={(event) => event.stopPropagation()}
           >
-            <h2 id="catalog-logout-title">Bạn có chắc muốn đăng xuất?</h2>
-            <p>Phiên đăng nhập quản trị hiện tại sẽ kết thúc.</p>
+            <h2 id="catalog-logout-title">{t('logoutTitle')}</h2>
+            <p>{t('logoutCopy')}</p>
             <div className="confirm-dialog-actions">
               <button type="button" onClick={() => setShowLogout(false)}>
-                Hủy
+                {t('cancel')}
               </button>
               <button className="danger" type="button" onClick={logout}>
-                Đăng xuất
+                {t('logout')}
               </button>
             </div>
           </div>

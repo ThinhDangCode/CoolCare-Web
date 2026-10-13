@@ -67,6 +67,34 @@ export class CatalogRepository {
     })
   }
 
+  async find(kind, id, mobile = false) {
+    const { table } = resources[kind]
+    const join =
+      kind === 'services'
+        ? ' JOIN service_categories c ON c.id = r.category_id'
+        : kind === 'models'
+          ? ' JOIN ac_brands b ON b.id = r.brand_id'
+          : ''
+    const columns =
+      kind === 'models'
+        ? 'r.*, b.name AS brand_name'
+        : kind === 'services'
+          ? 'r.*, c.name AS category_name'
+          : 'r.*'
+    const activeOnly = mobile
+      ? ` AND r.is_active=true${kind === 'services' ? ' AND c.is_active=true' : kind === 'models' ? ' AND b.is_active=true' : ''}`
+      : ''
+
+    return this.transaction(async (client) => {
+      const result = await client.query(
+        `SELECT ${columns} FROM ${table} r${join} WHERE r.id=$1${activeOnly} LIMIT 1`,
+        [id]
+      )
+      if (!result.rowCount) throw new AppError(404, 'NOT_FOUND', 'Không tìm thấy dữ liệu.')
+      return result.rows[0]
+    })
+  }
+
   async mutate(kind, id, data, action) {
     const { table } = resources[kind]
     try {

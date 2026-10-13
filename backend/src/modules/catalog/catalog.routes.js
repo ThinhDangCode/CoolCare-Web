@@ -6,13 +6,20 @@ import { resources, validateId, validateInput, validateQuery } from './catalog.v
 
 export function createCatalogRouter(repository = new CatalogRepository(), admin = true) {
   const router = Router()
-  router.use(authenticate)
-  if (admin) router.use(requireRole('ADMIN'))
+  // The mobile catalog is public and read-only. Admin mutations remain
+  // protected by authentication and the ADMIN role.
+  if (admin) router.use(authenticate, requireRole('ADMIN'))
   for (const kind of Object.keys(resources)) {
     router.get(
       `/${kind}`,
       asyncHandler(async (req, res) =>
         res.json({ data: await repository.list(kind, validateQuery(req.query, kind), !admin) })
+      )
+    )
+    router.get(
+      `/${kind}/:id`,
+      asyncHandler(async (req, res) =>
+        res.json({ data: await repository.find(kind, validateId(req.params.id), !admin) })
       )
     )
     if (!admin) continue
