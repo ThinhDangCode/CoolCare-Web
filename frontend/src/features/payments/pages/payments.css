@@ -179,6 +179,21 @@
 .payments-refresh:disabled {
   opacity: 0.6;
 }
+.payments-page .payments-export {
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--orange);
+  border-radius: 8px;
+  color: #fff;
+  background: var(--orange);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.payments-page .payments-export:hover {
+  border-color: var(--orange-dark);
+  background: var(--orange-dark);
+}
 .payments-refresh img {
   flex-shrink: 0;
 }
