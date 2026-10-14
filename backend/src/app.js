@@ -12,6 +12,9 @@ import { createAuthRouter } from './modules/auth/auth.routes.js'
 import { AuthService } from './modules/auth/auth.service.js'
 import { GoogleTokenVerifier } from './modules/auth/google-token-verifier.js'
 import { createCatalogRouter } from './modules/catalog/catalog.routes.js'
+import { createManagementRouter } from './modules/management/management.routes.js'
+import { createTechnicianRouter } from './modules/technicians/technician.routes.js'
+import { createBookingRouter } from './modules/bookings/booking.routes.js'
 import { BlogController } from './modules/blogs/blog.controller.js'
 import { BlogRepository } from './modules/blogs/blog.repository.js'
 import { createAdminBlogRouter, createBlogRouter } from './modules/blogs/blog.routes.js'
@@ -108,6 +111,9 @@ app.use('/api/admin/users', createUserRouter(userController))
 app.use('/api/admin/blogs', createAdminBlogRouter(blogController))
 app.use('/api/admin/complaints', createComplaintRouter(complaintController))
 app.use('/api/admin', createAdminVoucherRouter(voucherController))
+app.use('/api/admin', createManagementRouter())
+app.use('/api/admin/technicians', createTechnicianRouter())
+app.use('/api/admin/bookings', createBookingRouter())
 app.use('/api/catalog', createCatalogRouter(undefined, false))
 app.use('/api/customer/blogs', createBlogRouter(blogController))
 app.use('/api/customer', createReviewRouter(reviewController))

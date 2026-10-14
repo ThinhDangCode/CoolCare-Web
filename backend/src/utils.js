@@ -69,3 +69,12 @@ export function requireValidBody(details) {
     throw new AppError(422, 'VALIDATION_ERROR', 'Dữ liệu gửi lên chưa hợp lệ.', errors)
   }
 }
+
+const uuidPattern = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i
+
+export function validateUuid(value) {
+  if (!uuidPattern.test(value ?? '')) {
+    throw new AppError(422, 'INVALID_ID', 'ID không hợp lệ.')
+  }
+  return value
+}

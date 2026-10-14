@@ -6,6 +6,14 @@ import { ProfilePage } from './features/profile/pages/ProfilePage.jsx'
 import { CatalogPage, CreateCatalogPage } from './features/catalog/pages/CatalogPage.jsx'
 import { AcModelsPage, CreateAcModelPage } from './features/catalog/pages/AcModelsPage.jsx'
 import { AdminLayout } from './shared/components/AdminLayout.jsx'
+import { TechniciansPage } from './features/technicians/pages/TechniciansPage.jsx'
+import { TechnicianDetailPage } from './features/technicians/pages/TechnicianDetailPage.jsx'
+import { CertificationsPage } from './features/technicians/pages/CertificationsPage.jsx'
+import { VerificationPage } from './features/technicians/pages/VerificationPage.jsx'
+import { PenaltiesPage } from './features/technicians/pages/PenaltiesPage.jsx'
+import { BookingsPage } from './features/bookings/pages/BookingsPage.jsx'
+import { BookingDetailPage } from './features/bookings/pages/BookingDetailPage.jsx'
+import './features/technicians/pages/technicianTypography.css'
 import { BlogsPage } from './features/blogs/pages/BlogsPage.jsx'
 import { BlogEditorPage } from './features/blogs/pages/BlogEditorPage.jsx'
 import { ComplaintsPage } from './features/complaints/pages/ComplaintsPage.jsx'
@@ -27,6 +35,16 @@ function App() {
         <Route path="/profile" element={<ProfilePage />} />
 
         <Route element={<AdminLayout />}>
+          <Route path="/admin/bookings" element={<BookingsPage />} />
+          <Route path="/admin/bookings/:id" element={<BookingDetailPage key={location.pathname} />} />
+          <Route path="/admin/technicians" element={<TechniciansPage />} />
+          <Route path="/admin/technicians/certifications" element={<CertificationsPage />} />
+          <Route path="/admin/technicians/verification" element={<VerificationPage />} />
+          <Route path="/admin/technicians/penalties" element={<PenaltiesPage />} />
+          <Route
+            path="/admin/technicians/:id"
+            element={<TechnicianDetailPage key={location.pathname} />}
+          />
           <Route path="/catalog/models" element={<AcModelsPage />} />
           <Route path="/catalog/models/new" element={<CreateAcModelPage />} />
           <Route path="/catalog/:kind" element={<CatalogPage key={location.pathname} />} />

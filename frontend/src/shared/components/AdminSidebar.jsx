@@ -111,7 +111,9 @@ export function AdminSidebar({
   const location = useLocation()
   const sidebarRef = useRef(null)
   const [technicianOpen, setTechnicianOpen] = useState(
-    () => sessionStorage.getItem('admin-sidebar-technician') === 'true'
+    () =>
+      location.pathname.startsWith('/admin/technicians') ||
+      sessionStorage.getItem('admin-sidebar-technician') === 'true'
   )
   const [serviceOpen, setServiceOpen] = useState(
     () => sessionStorage.getItem('admin-sidebar-service') === 'true'
@@ -171,6 +173,12 @@ export function AdminSidebar({
               <DashboardIcon name={icon} />
               <span>{t(label)}</span>
             </NavLink>
+          ) : label === 'Booking' ? (
+            <NavLink key={label} to="/admin/bookings">
+              <DashboardIcon name={icon} />
+              <span>{t(label)}</span>
+              {badge && <em>{badge}</em>}
+            </NavLink>
           ) : label === 'Technician' ? (
             <div key={label} className="sidebar-accordion">
               <button
@@ -184,11 +192,26 @@ export function AdminSidebar({
                 <b className={`nav-chevron ${technicianOpen ? 'open' : ''}`}>⌄</b>
               </button>
               {technicianOpen && (
-                <div className="dashboard-subnav">
+                <div className="dashboard-subnav dashboard-technician-subnav">
                   {technicianNavigation.map((item) => (
-                    <button className="dashboard-subnav-action" type="button" key={item}>
+                    <NavLink
+                      key={item}
+                      end={item === 'Technician List'}
+                      to={
+                        item === 'Technician List'
+                          ? '/admin/technicians'
+                          : `/admin/technicians/${
+                              item === 'Certification'
+                                ? 'certifications'
+                                : item === 'Penalty'
+                                  ? 'penalties'
+                                  : 'verification'
+                            }`
+                      }
+                      onClick={rememberScroll}
+                    >
                       {t(item)}
-                    </button>
+                    </NavLink>
                   ))}
                 </div>
               )}
