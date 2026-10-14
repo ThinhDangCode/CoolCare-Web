@@ -1,13 +1,15 @@
 import { Router } from 'express'
 import { authenticate, requireRole } from '../../middleware/authenticate.js'
-import { AppError, asyncHandler } from '../../utils.js'
+import { asyncHandler } from '../../utils.js'
 import { TechnicianPortalRepository } from './technician-portal.repository.js'
 import {
   validateCertificationIdentity,
   validateCertificationSubmission,
   validateTechnicianSkillId,
   validateTechnicianSkillSubmission,
+  validateSetAvailabilityStatus,
 } from './technician-portal.validation.js'
+import { validateTechnicianAreas } from '../technicians/technician.validation.js'
 
 export function createTechnicianPortalRouter(repository = new TechnicianPortalRepository()) {
   const router = Router()
@@ -17,11 +19,33 @@ export function createTechnicianPortalRouter(repository = new TechnicianPortalRe
     response.set('Cache-Control', 'no-store').json({ data: await repository.dashboard(request.auth.userId) })
   }))
 
+  router.get('/availability', asyncHandler(async (request, response) => {
+    response.set('Cache-Control', 'no-store').json({
+      data: await repository.availability(request.auth.userId),
+    })
+  }))
+
   router.patch('/availability', asyncHandler(async (request, response) => {
-    if (!request.body || !['ONLINE', 'OFFLINE'].includes(request.body.status) || Object.keys(request.body).some(key => key !== 'status')) {
-      throw new AppError(422, 'VALIDATION_ERROR', 'Availability must be ONLINE or OFFLINE.')
-    }
-    response.json({ data: await repository.setAvailability(request.auth.userId, request.body.status) })
+    const input = validateSetAvailabilityStatus(request.body)
+    response.json({
+      data: await repository.setAvailability(request.auth.userId, input.status),
+    })
+  }))
+
+  router.get('/areas/options', (_request, response) => {
+    response.json({ data: repository.areaOptions() })
+  })
+
+  router.get('/areas', asyncHandler(async (request, response) => {
+    response.set('Cache-Control', 'no-store').json({ data: await repository.areas(request.auth.userId) })
+  }))
+
+  router.put('/areas', asyncHandler(async (request, response) => {
+    const data = await repository.replaceAreas(
+      request.auth.userId,
+      validateTechnicianAreas(request.body),
+    )
+    response.json({ data })
   }))
 
   router.get('/skills', asyncHandler(async (request, response) => {

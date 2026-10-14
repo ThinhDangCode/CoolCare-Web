@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { pool, withTransaction } from '../../config/database.js'
 import { AppError } from '../../utils.js'
 import { validateCertificationId } from './technician-portal.validation.js'
+import { serviceCity, serviceWards } from '../technicians/technician.areas.js'
 
 const forbidden = () => new AppError(403, 'TECHNICIAN_NOT_VERIFIED', 'Your technician profile has not been verified.')
 
@@ -28,7 +29,7 @@ export class TechnicianPortalRepository {
   async dashboard(userId) {
     const technician = await this.profile(userId)
     const [nextJob, stats, pending] = await Promise.all([
-      pool.query(
+      this.queryable.query(
         `SELECT b.id, b.booking_code, b.scheduled_at, b.service_address, b.ward, b.city,
                 b.status, bt.status AS assignment_status,
                 COALESCE((SELECT string_agg(DISTINCT s.name, ', ' ORDER BY s.name)
@@ -45,7 +46,7 @@ export class TechnicianPortalRepository {
          LIMIT 1`,
         [technician.id],
       ),
-      pool.query(
+      this.queryable.query(
         `SELECT
            (SELECT count(*)::int FROM booking_technicians bt JOIN bookings b ON b.id=bt.booking_id
             WHERE bt.technician_id=$1 AND b.scheduled_at::date=CURRENT_DATE
@@ -55,12 +56,12 @@ export class TechnicianPortalRepository {
               AND p.paid_at::date=CURRENT_DATE) AS earnings_today`,
         [technician.id],
       ),
-      pool.query(
+      this.queryable.query(
         `SELECT count(DISTINCT b.id)::int AS count
          FROM bookings b
          JOIN technician_areas ta ON ta.technician_id=$1 AND ta.city=b.city AND ta.ward=b.ward
-         WHERE b.status='PENDING'`,
-        [technician.id],
+         WHERE b.status='PENDING' AND $2='ONLINE'`,
+        [technician.id, technician.availability_status],
       ),
     ])
     return {
@@ -70,15 +71,89 @@ export class TechnicianPortalRepository {
     }
   }
 
+  async availability(userId) {
+    const technician = await this.profile(userId)
+    return {
+      availability_status: technician.availability_status,
+      can_receive_jobs: technician.availability_status === 'ONLINE',
+    }
+  }
+
   async setAvailability(userId, status) {
+    return this.transaction(async (client) => {
+      const result = await client.query(
+        `SELECT tp.id, tp.availability_status, tp.is_active,
+                u.status AS account_status
+         FROM technician_profiles tp
+         JOIN users u ON u.id=tp.user_id
+         WHERE tp.user_id=$1 AND tp.verification_status='VERIFIED'
+         FOR UPDATE OF tp, u`,
+        [userId],
+      )
+      if (!result.rows.length) throw forbidden()
+      const technician = result.rows[0]
+      if (!technician.is_active || technician.account_status !== 'ACTIVE') {
+        throw new AppError(409, 'TECHNICIAN_INACTIVE', 'Hồ sơ kỹ thuật viên hiện không hoạt động.')
+      }
+      const updated = await client.query(
+        `UPDATE technician_profiles
+         SET availability_status=$2, updated_at=CURRENT_TIMESTAMP
+         WHERE id=$1
+         RETURNING availability_status, updated_at`,
+        [technician.id, status],
+      )
+      return {
+        ...updated.rows[0],
+        can_receive_jobs: status === 'ONLINE',
+      }
+    })
+  }
+
+  areaOptions() {
+    return {
+      city: serviceCity,
+      // Vietnam has used a two-tier local-government model since 2025-07-01,
+      // so service wards belong directly to the province-level city.
+      districts: [],
+      wards: serviceWards,
+    }
+  }
+
+  async areas(userId) {
     const technician = await this.profile(userId)
     const result = await this.queryable.query(
-      `UPDATE technician_profiles
-       SET availability_status=$2, updated_at=CURRENT_TIMESTAMP
-       WHERE id=$1 RETURNING availability_status`,
-      [technician.id, status],
+      `SELECT id, city, ward
+       FROM technician_areas
+       WHERE technician_id=$1
+       ORDER BY city, ward, id`,
+      [technician.id],
     )
-    return result.rows[0]
+    return result.rows
+  }
+
+  async replaceAreas(userId, input) {
+    return this.transaction(async (client) => {
+      const technician = await this._lockVerifiedTechnician(client, userId)
+      await client.query('DELETE FROM technician_areas WHERE technician_id=$1', [technician.id])
+      for (const area of input.areas) {
+        await client.query(
+          'INSERT INTO technician_areas(id,technician_id,city,ward) VALUES($1,$2,$3,$4)',
+          [randomUUID(), technician.id, area.city, area.ward],
+        )
+      }
+      await client.query(
+        'UPDATE technician_profiles SET updated_at=CURRENT_TIMESTAMP WHERE id=$1',
+        [technician.id],
+      )
+      const result = await client.query(
+        `SELECT id, city, ward
+         FROM technician_areas
+         WHERE technician_id=$1
+         ORDER BY city, ward, id`,
+        [technician.id],
+      )
+      return result.rows
+    })
   }
 
   async skills(userId) {

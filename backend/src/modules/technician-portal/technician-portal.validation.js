@@ -21,6 +21,27 @@ const validHttpsUrl = (value) => {
   try { return new URL(value).protocol === 'https:' } catch { return false }
 }
 
+export function validateSetAvailabilityStatus(body) {
+  const allowed = ['status']
+  if (
+    !body ||
+    typeof body !== 'object' ||
+    Array.isArray(body) ||
+    Object.keys(body).some((key) => !allowed.includes(key))
+  ) {
+    throw new AppError(422, 'VALIDATION_ERROR', 'Dữ liệu trạng thái chưa hợp lệ.')
+  }
+  if (!['ONLINE', 'OFFLINE'].includes(body.status)) {
+    throw new AppError(
+      422,
+      'INVALID_AVAILABILITY_STATUS',
+      'Trạng thái nhận việc chỉ có thể là ONLINE hoặc OFFLINE.',
+      { status: 'Vui lòng chọn ONLINE hoặc OFFLINE.' },
+    )
+  }
+  return { status: body.status }
+}
+
 export function validateCertificationId(value) {
   if (!uuidPattern.test(String(value ?? ''))) {
     throw new AppError(400, 'INVALID_CERTIFICATION_ID', 'Certification ID is invalid.')
