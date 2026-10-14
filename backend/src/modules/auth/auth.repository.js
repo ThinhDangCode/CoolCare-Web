@@ -19,7 +19,12 @@ const userSelect = `
            SELECT 1
            FROM technician_profiles tp
            WHERE tp.user_id = u.id
-         ) AS has_technician_profile
+         ) AS has_technician_profile,
+         EXISTS (
+           SELECT 1
+           FROM technician_profiles tp
+           WHERE tp.user_id = u.id AND tp.verification_status = 'VERIFIED'
+         ) AS is_technician_verified
   FROM users u
   JOIN roles r ON r.id = u.role_id
   LEFT JOIN customer_profiles cp ON cp.user_id = u.id

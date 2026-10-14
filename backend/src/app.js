@@ -15,6 +15,9 @@ import { createCatalogRouter } from './modules/catalog/catalog.routes.js'
 import { createManagementRouter } from './modules/management/management.routes.js'
 import { createTechnicianRouter } from './modules/technicians/technician.routes.js'
 import { createBookingRouter } from './modules/bookings/booking.routes.js'
+import { createTechnicianApplicationRouter } from './modules/technician-applications/technician-application.routes.js'
+import { createTechnicianPortalRouter } from './modules/technician-portal/technician-portal.routes.js'
+import { createServiceCategoryRouter } from './modules/services/service-category.routes.js'
 
 import { AddressRepository } from './modules/address/address.repository.js'
 import { AddressService } from './modules/address/address.service.js'
@@ -78,11 +81,15 @@ app.use('/api/admin', createManagementRouter())
 app.use('/api/admin/technicians', createTechnicianRouter())
 app.use('/api/admin/bookings', createBookingRouter())
 app.use('/api/catalog', createCatalogRouter(undefined, false))
+app.use('/api/technician-applications', createTechnicianApplicationRouter())
+app.use('/api/technician-portal', createTechnicianPortalRouter())
 
 // ADDRESS
 app.use('/api/addresses', createAddressRouter(addressController))
 
 // SERVICES
+app.use('/api/service-categories', createServiceCategoryRouter())
+
 app.get(
   '/api/services',
   asyncHandler(async (_request, response) => {
