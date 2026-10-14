@@ -2,6 +2,7 @@ import { useLayoutEffect, useRef, useState } from 'react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
 import { Brand } from './Brand.jsx'
 import { useUiPreferences } from '../context/UiPreferencesContext.jsx'
+import './AdminSidebar.css'
 
 const mainNavigation = [
   ['booking', 'Booking', '12'],
@@ -120,6 +121,13 @@ export function AdminSidebar({
   )
   const [marketingOpen, setMarketingOpen] = useState(
     () => sessionStorage.getItem('admin-sidebar-marketing') === 'true'
+  )
+  const financeActive = location.pathname.startsWith('/admin/payments')
+  const [financeOpen, setFinanceOpen] = useState(
+    () => financeActive || sessionStorage.getItem('admin-sidebar-finance') === 'true'
+  )
+  const [walletOpen, setWalletOpen] = useState(
+    () => sessionStorage.getItem('admin-sidebar-wallet') === 'true'
   )
   const [settingsOpen, setSettingsOpen] = useState(activePage === 'profile')
   const [failedAvatarUrl, setFailedAvatarUrl] = useState('')
@@ -247,6 +255,56 @@ export function AdminSidebar({
                   <NavLink to="/catalog/services">{t('Services')}</NavLink>
                   <NavLink to="/catalog/brands">{t('AC Brands')}</NavLink>
                   <NavLink to="/catalog/models">{t('AC Models')}</NavLink>
+                </div>
+              )}
+            </div>
+          ) : icon === 'finance' ? (
+            <div key={label} className="sidebar-accordion">
+              <button
+                className={`sidebar-trigger ${financeActive ? 'section-active' : ''}`}
+                type="button"
+                aria-expanded={financeOpen}
+                aria-controls="admin-finance-navigation"
+                onClick={() => toggleGroup('finance', setFinanceOpen)}
+              >
+                <DashboardIcon name={icon} />
+                <span>{t(label)}</span>
+                <b className={`nav-chevron ${financeOpen ? 'open' : ''}`}>⌄</b>
+              </button>
+              {financeOpen && (
+                <div
+                  id="admin-finance-navigation"
+                  className="dashboard-subnav dashboard-catalog-subnav finance-subnav"
+                >
+                  <NavLink to="/admin/payments" onClick={rememberScroll}>
+                    {t('Payments')}
+                  </NavLink>
+                  <button className="dashboard-subnav-action" type="button" disabled>
+                    {t('Revenue')}
+                  </button>
+                  <button
+                    className="dashboard-subnav-action finance-wallet-trigger"
+                    type="button"
+                    aria-expanded={walletOpen}
+                    aria-controls="admin-wallet-navigation"
+                    onClick={() => toggleGroup('wallet', setWalletOpen)}
+                  >
+                    {t('Wallet')}
+                    <b className={`nav-chevron ${walletOpen ? 'open' : ''}`}>⌄</b>
+                  </button>
+                  {walletOpen && (
+                    <div id="admin-wallet-navigation" className="finance-wallet-subnav">
+                      <button className="dashboard-subnav-action" type="button" disabled>
+                        {t('Withdrawal')}
+                      </button>
+                      <button className="dashboard-subnav-action" type="button" disabled>
+                        {t('Top-up')}
+                      </button>
+                    </div>
+                  )}
+                  <button className="dashboard-subnav-action" type="button" disabled>
+                    {t('Invoice')}
+                  </button>
                 </div>
               )}
             </div>

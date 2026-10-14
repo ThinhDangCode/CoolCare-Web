@@ -35,6 +35,7 @@ import { ComplaintController } from './modules/complaints/complaint.controller.j
 import { ComplaintRepository } from './modules/complaints/complaint.repository.js'
 import { createComplaintRouter } from './modules/complaints/complaint.routes.js'
 import { ComplaintService } from './modules/complaints/complaint.service.js'
+import { createPaymentsRouter } from './modules/payments/payments.routes.js'
 
 import { AddressRepository } from './modules/address/address.repository.js'
 import { AddressService } from './modules/address/address.service.js'
@@ -111,6 +112,7 @@ app.use('/api/admin/users', createUserRouter(userController))
 app.use('/api/admin/blogs', createAdminBlogRouter(blogController))
 app.use('/api/admin/complaints', createComplaintRouter(complaintController))
 app.use('/api/admin', createAdminVoucherRouter(voucherController))
+app.use('/api/admin/payments', createPaymentsRouter())
 app.use('/api/admin', createManagementRouter())
 app.use('/api/admin/technicians', createTechnicianRouter())
 app.use('/api/admin/bookings', createBookingRouter())
