@@ -43,7 +43,13 @@ import { AddressRepository } from './modules/address/address.repository.js'
 import { AddressService } from './modules/address/address.service.js'
 import { AddressController } from './modules/address/address.controller.js'
 import { createAddressRouter } from './modules/address/address.routes.js'
-
+// CUSTOMER BOOKING
+import { CustomerBookingRepository } from './modules/customer-bookings/customer-booking.repository.js'
+import { CustomerBookingService } from './modules/customer-bookings/customer-booking.service.js'
+import { CustomerBookingController } from './modules/customer-bookings/customer-booking.controller.js'
+import { createCustomerBookingRouter } from './modules/customer-bookings/customer-booking.routes.js'
+import { TechnicianMatchingRepository } from './modules/customer-bookings/technician-matching.repository.js'
+import { TechnicianMatchingService } from './modules/customer-bookings/technician-matching.service.js'
 //  AUTH
 
 const authRepository = new AuthRepository()
@@ -72,6 +78,14 @@ const voucherController = new VoucherController(new VoucherService(new VoucherRe
 // USER MANAGEMENT
 const userController = new UserController(new UserService(new UserRepository()))
 const complaintController = new ComplaintController(new ComplaintService(new ComplaintRepository()))
+// Customer Booking - #34
+const customerBookingRepository = new CustomerBookingRepository()
+const customerBookingService = new CustomerBookingService(customerBookingRepository)
+// Technician Recommendation and Selection
+const technicianMatchingRepository = new TechnicianMatchingRepository()
+const technicianMatchingService = new TechnicianMatchingService(technicianMatchingRepository)
+// Shared Customer Booking Controller
+const customerBookingController = new CustomerBookingController(customerBookingService, technicianMatchingService)
 
 // APP
 export const app = express()
@@ -126,7 +140,8 @@ app.use('/api/technician-portal', createTechnicianPortalRouter())
 
 // ADDRESS
 app.use('/api/addresses', createAddressRouter(addressController))
-
+// CUSTOMER BOOKING
+app.use('/api/bookings', createCustomerBookingRouter(customerBookingController))
 // SERVICES
 app.use('/api/service-categories', createServiceCategoryRouter())
 
