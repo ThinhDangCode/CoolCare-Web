@@ -1,0 +1,129 @@
+.technician-action-dialog {
+  width: min(640px, calc(100vw - 40px));
+  max-height: 85vh;
+  padding: 24px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  color: #334155;
+  font:
+    14px/1.5 Inter,
+    system-ui,
+    sans-serif;
+}
+.technician-action-dialog::backdrop {
+  background: #0f172a66;
+}
+.technician-action-dialog h2 {
+  margin: 0 0 18px;
+  font-size: 22px;
+}
+.technician-action-dialog label {
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+}
+.technician-action-dialog input,
+.technician-action-dialog select,
+.technician-action-dialog textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #fff;
+  color: #334155;
+  font: inherit;
+}
+.technician-action-dialog textarea {
+  min-height: 90px;
+  resize: vertical;
+}
+.technician-edit-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.technician-skill-edit {
+  display: grid;
+  grid-template-columns: 2fr 1.5fr 1fr auto;
+  gap: 8px;
+  align-items: end;
+  margin-bottom: 14px;
+}
+.technician-area-edit {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 10px;
+  align-items: end;
+  margin-bottom: 14px;
+}
+.technician-action-dialog button,
+.technician-profile-actions button {
+  padding: 9px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background: #fff;
+  color: #475569;
+  font: inherit;
+  cursor: pointer;
+}
+.technician-action-dialog button:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+.technician-action-dialog .figma-toast > button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  color: inherit;
+}
+.technician-action-dialog .primary,
+.technician-profile-actions .primary {
+  background: #f97316;
+  color: #fff;
+  border-color: #f97316;
+}
+.technician-action-dialog .danger,
+.technician-profile-actions .danger {
+  background: #fff1f2;
+  color: #e11d48;
+  border-color: #fecdd3;
+}
+.technician-action-dialog footer {
+  display: flex;
+  justify-content: end;
+  gap: 10px;
+  margin-top: 24px;
+}
+.technician-action-error {
+  color: #dc2626;
+}
+.technician-profile-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 18px 0;
+  font-size: 12px;
+}
+.technician-action-success {
+  padding: 12px;
+  color: #059669;
+  background: #ecfdf5;
+  border-radius: 7px;
+  margin: 12px 0;
+  font-size: 13px;
+}
+@media (max-width: 600px) {
+  .technician-edit-fields,
+  .technician-skill-edit,
+  .technician-area-edit {
+    grid-template-columns: 1fr;
+  }
+}
