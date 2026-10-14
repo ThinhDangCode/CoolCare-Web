@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../../shared/context/AuthContext.jsx'
+import { useUiPreferences } from '../../../shared/context/UiPreferencesContext.jsx'
 import { adminRequest } from '../../../shared/api/adminApi.js'
 import {
   PageHeader,
@@ -16,6 +17,7 @@ import './bookings.css'
 
 export function BookingsPage() {
   const { token, logout } = useAuth()
+  const { t, locale } = useUiPreferences()
   const [search, setSearch] = useState(''),
     [keyword, setKeyword] = useState('')
   const [status, setStatus] = useState('ALL'),
@@ -84,37 +86,38 @@ export function BookingsPage() {
       />
       <section className="booking-content">
         <div className="booking-total">
-          <strong>{data.total.toLocaleString('en-US')}</strong> Total Bookings
+          <strong>{data.total.toLocaleString(locale === 'vi' ? 'vi-VN' : 'en-US')}</strong>{' '}
+          {t('Total Bookings')}
         </div>
         <div className="booking-toolbar">
           <label className="booking-search">
             <SearchIcon />
             <input
-              aria-label="Search bookings"
-              placeholder="Search booking ID, customer, phone, service..."
+              aria-label={t('Search bookings')}
+              placeholder={t('Search booking ID, customer, phone, service...')}
               maxLength={150}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           </label>
           <select
-            aria-label="Booking status"
+            aria-label={t('Booking status')}
             value={status}
             onChange={(e) => change(setStatus, e.target.value)}
           >
-            <option value="ALL">All Statuses</option>
+            <option value="ALL">{t('All Statuses')}</option>
             {Object.entries(bookingStatusLabels).map(([value, text]) => (
               <option key={value} value={value}>
-                {text}
+                {t(text)}
               </option>
             ))}
           </select>
           <select
-            aria-label="Service"
+            aria-label={t('Service')}
             value={service}
             onChange={(e) => change(setService, e.target.value)}
           >
-            <option value="">All Services</option>
+            <option value="">{t('All Services')}</option>
             {services.map((item) => (
               <option key={item.id} value={item.id}>
                 {item.name}
@@ -123,7 +126,7 @@ export function BookingsPage() {
           </select>
           <input
             type="month"
-            aria-label="Scheduled month"
+            aria-label={t('Scheduled month')}
             value={month}
             onChange={(e) => change(setMonth, e.target.value)}
           />
@@ -139,7 +142,7 @@ export function BookingsPage() {
                 retry()
               }}
             >
-              Reset
+              {t('Reset')}
             </button>
           )}
         </div>
@@ -148,14 +151,14 @@ export function BookingsPage() {
             <table>
               <thead>
                 <tr>
-                  <th>BOOKING ID</th>
-                  <th>CUSTOMER</th>
-                  <th>SERVICE & AC UNITS</th>
-                  <th>TECHNICIAN</th>
-                  <th>SCHEDULE</th>
-                  <th>AMOUNT / PAID</th>
-                  <th>STATUS</th>
-                  <th>ACTIONS</th>
+                  <th>{t('BOOKING ID')}</th>
+                  <th>{t('CUSTOMER')}</th>
+                  <th>{t('SERVICE & AC UNITS')}</th>
+                  <th>{t('TECHNICIAN')}</th>
+                  <th>{t('SCHEDULE')}</th>
+                  <th>{t('AMOUNT / PAID')}</th>
+                  <th>{t('STATUS')}</th>
+                  <th>{t('ACTIONS')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -181,27 +184,32 @@ export function BookingsPage() {
                       <td>
                         <strong>{row.customer_name}</strong>
                         {row.recipient_name !== row.customer_name && (
-                          <small>Recipient: {row.recipient_name}</small>
+                          <small>
+                            {t('Recipient')}: {row.recipient_name}
+                          </small>
                         )}
                       </td>
                       <td>
                         {[...new Set(row.services.map((item) => item.name))].join(', ') ||
-                          'No services'}
+                          t('No services')}
                         <small>
-                          {new Set(row.services.map((item) => item.unit_number)).size} AC units
+                          {new Set(row.services.map((item) => item.unit_number)).size}{' '}
+                          {t('AC units')}
                         </small>
                       </td>
                       <td>
                         {row.technicians.length ? (
                           row.technicians.map((item) => item.full_name).join(', ')
                         ) : (
-                          <span className="booking-no-technician">No technician</span>
+                          <span className="booking-no-technician">{t('No technician')}</span>
                         )}
                       </td>
                       <td>{date(row.scheduled_at)}</td>
                       <td>
                         <strong>{money(row.total_amount)}</strong>
-                        <small>Paid: {money(row.paid_amount)}</small>
+                        <small>
+                          {t('Paid')}: {money(row.paid_amount)}
+                        </small>
                       </td>
                       <td>
                         <BookingStatus status={row.status} />
@@ -210,7 +218,7 @@ export function BookingsPage() {
                         <Link
                           className="booking-eye"
                           to={`/admin/bookings/${row.id}`}
-                          title="View booking details"
+                          title={t('View booking details')}
                           aria-label={`View booking ${row.booking_code}`}
                         >
                           <EyeIcon />
@@ -223,13 +231,16 @@ export function BookingsPage() {
           </div>
           <footer className="booking-table-footer">
             <span>
-              Showing {data.total ? (page - 1) * limit + 1 : 0}–{Math.min(page * limit, data.total)}{' '}
-              of <strong>{data.total} bookings</strong>
+              {t('Showing')} {data.total ? (page - 1) * limit + 1 : 0}–
+              {Math.min(page * limit, data.total)} {t('of')}{' '}
+              <strong>
+                {data.total} {t('bookings')}
+              </strong>
             </span>
             <label>
-              Rows:{' '}
+              {t('Rows')}:{' '}
               <select
-                aria-label="Rows per page"
+                aria-label={t('Rows per page')}
                 value={limit}
                 onChange={(e) => change(setLimit, Number(e.target.value))}
               >

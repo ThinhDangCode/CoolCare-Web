@@ -1,6 +1,7 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
 import { CalendarIcon } from '../../../shared/components/AdminUi.jsx'
 import { defaultRevenuePeriod } from '../revenueReport.js'
+import { useUiPreferences } from '../../../shared/context/UiPreferencesContext.jsx'
 import './monthYearPicker.css'
 
 const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -22,6 +23,7 @@ const monthNames = [
 const isValidYear = (value) => /^\d{4}$/.test(String(value)) && Number(value) >= 1900
 
 export default function MonthYearPicker({ year, month, onChange, triggerRef }) {
+  const { t } = useUiPreferences()
   const id = useId()
   const wrapperRef = useRef(null)
   const yearRef = useRef(null)
@@ -36,7 +38,9 @@ export default function MonthYearPicker({ year, month, onChange, triggerRef }) {
     /^\d{1,2}$/.test(String(month)) &&
     Number(month) >= 1 &&
     Number(month) <= 12
-  const value = validSelection ? `${String(month).padStart(2, '0')}/${year}` : 'Choose month / year'
+  const value = validSelection
+    ? `${String(month).padStart(2, '0')}/${year}`
+    : t('Choose month / year')
 
   useEffect(() => {
     if (!open) return
@@ -102,7 +106,7 @@ export default function MonthYearPicker({ year, month, onChange, triggerRef }) {
       }}
     >
       <span id={`${id}-label`} className="payment-month-picker-label">
-        Month / Year
+        {t('Month / Year')}
       </span>
       <button
         ref={triggerRef}
@@ -130,12 +134,12 @@ export default function MonthYearPicker({ year, month, onChange, triggerRef }) {
           id={`${id}-popup`}
           className="payment-month-picker-popup"
           role="group"
-          aria-label="Choose month and year"
+          aria-label={t('Choose month and year')}
         >
           <div className="payment-month-picker-year">
             <button
               type="button"
-              aria-label="Previous year"
+              aria-label={t('Previous year')}
               disabled={!validBrowseYear || Number(browseYear) <= 1900}
               onClick={() => setBrowseYear(String(Number(browseYear) - 1))}
             >
@@ -149,7 +153,7 @@ export default function MonthYearPicker({ year, month, onChange, triggerRef }) {
               inputMode="numeric"
               autoComplete="off"
               maxLength={4}
-              aria-label="Choose report year"
+              aria-label={t('Choose report year')}
               aria-invalid={!validBrowseYear}
               aria-describedby={!validBrowseYear ? `${id}-error` : undefined}
               value={browseYear}
@@ -162,7 +166,7 @@ export default function MonthYearPicker({ year, month, onChange, triggerRef }) {
             />
             <button
               type="button"
-              aria-label="Next year"
+              aria-label={t('Next year')}
               disabled={!validBrowseYear || Number(browseYear) >= 9999}
               onClick={() => setBrowseYear(String(Number(browseYear) + 1))}
             >
@@ -173,7 +177,7 @@ export default function MonthYearPicker({ year, month, onChange, triggerRef }) {
           </div>
           {!validBrowseYear && (
             <p id={`${id}-error`} className="payment-month-picker-error" role="status">
-              Enter a year from 1900 to 9999.
+              {t('Enter a year from 1900 to 9999.')}
             </p>
           )}
           <div className="payment-month-picker-months">
@@ -184,7 +188,7 @@ export default function MonthYearPicker({ year, month, onChange, triggerRef }) {
                 <button
                   key={monthValue}
                   type="button"
-                  aria-label={`${monthNames[index]} ${browseYear || 'year not selected'}`}
+                  aria-label={`${t(monthNames[index])} ${browseYear || t('year not selected')}`}
                   aria-pressed={selected}
                   disabled={!validBrowseYear}
                   onClick={() => {
@@ -192,7 +196,7 @@ export default function MonthYearPicker({ year, month, onChange, triggerRef }) {
                     closeAndFocus()
                   }}
                 >
-                  {label}
+                  {t(label)}
                 </button>
               )
             })}

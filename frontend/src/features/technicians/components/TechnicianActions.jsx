@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '../../../shared/context/AuthContext.jsx'
 import { adminRequest } from '../../../shared/api/adminApi.js'
 import './technicianActions.css'
-import { TechnicianNotification } from './TechnicianShared.jsx'
+import { TechnicianNotification, label } from './TechnicianShared.jsx'
+import { useUiPreferences } from '../../../shared/context/UiPreferencesContext.jsx'
 
 export function Dialog({ title, children, onClose, busy }) {
   const ref = useRef(null)
@@ -26,6 +27,7 @@ export function Dialog({ title, children, onClose, busy }) {
 }
 export function ReviewDialog({ target, onClose, onSuccess }) {
   const { token, logout } = useAuth()
+  const { t } = useUiPreferences()
   const [reason, setReason] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -53,7 +55,9 @@ export function ReviewDialog({ target, onClose, onSuccess }) {
   }
   return (
     <Dialog
-      title={`${approve ? 'Approve' : 'Reject'} ${target.kind || 'profile'}?`}
+      title={t(approve ? 'Approve {kind}?' : 'Reject {kind}?', {
+        kind: t(target.kind || 'profile'),
+      })}
       busy={busy}
       onClose={onClose}
     >
@@ -61,12 +65,12 @@ export function ReviewDialog({ target, onClose, onSuccess }) {
         <p>{target.name}</p>
         <p>
           {approve
-            ? 'Confirm that you have checked the submitted identity or certificate documents.'
-            : 'Provide a reason so the technician knows what needs to be corrected.'}
+            ? t('Confirm that you have checked the submitted identity or certificate documents.')
+            : t('Provide a reason so the technician knows what needs to be corrected.')}
         </p>
         {!approve && (
           <label>
-            Rejection reason
+            {t('Rejection reason')}
             <textarea
               required
               minLength={5}
@@ -80,10 +84,10 @@ export function ReviewDialog({ target, onClose, onSuccess }) {
         <TechnicianNotification message={error} onDismiss={setError} danger />
         <footer>
           <button type="button" disabled={busy} onClick={onClose}>
-            Cancel
+            {t('Cancel')}
           </button>
           <button className={approve ? 'primary' : 'danger'} disabled={busy}>
-            {busy ? 'Saving…' : approve ? 'Approve' : 'Reject'}
+            {busy ? t('Saving…') : t(approve ? 'Approve' : 'Reject')}
           </button>
         </footer>
       </form>
@@ -92,6 +96,7 @@ export function ReviewDialog({ target, onClose, onSuccess }) {
 }
 export function DeactivateDialog({ data, activate = false, onClose, onSuccess }) {
   const { token, logout } = useAuth()
+  const { t } = useUiPreferences()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   async function submit(event) {
@@ -111,24 +116,28 @@ export function DeactivateDialog({ data, activate = false, onClose, onSuccess })
   }
   return (
     <Dialog
-      title={activate ? 'Activate technician?' : 'Deactivate technician?'}
+      title={t(activate ? 'Activate technician?' : 'Deactivate technician?')}
       onClose={onClose}
       busy={busy}
     >
       <form onSubmit={submit}>
         <p>
-          {activate ? 'Activate' : 'Deactivate'} <strong>{data.full_name}</strong>?{' '}
+          {t(activate ? 'Activate' : 'Deactivate')} <strong>{data.full_name}</strong>?{' '}
           {activate
-            ? 'Restore account access. New jobs still require a verified profile, availability and wallet eligibility.'
-            : 'This disables sign-in and new job assignments. Existing job history will be preserved.'}
+            ? t(
+                'Restore account access. New jobs still require a verified profile, availability and wallet eligibility.'
+              )
+            : t(
+                'This disables sign-in and new job assignments. Existing job history will be preserved.'
+              )}
         </p>
         <TechnicianNotification message={error} onDismiss={setError} danger />
         <footer>
           <button type="button" disabled={busy} onClick={onClose}>
-            Cancel
+            {t('Cancel')}
           </button>
           <button className={activate ? 'primary' : 'danger'} disabled={busy}>
-            {busy ? 'Saving…' : activate ? 'Activate' : 'Deactivate'}
+            {busy ? t('Saving…') : t(activate ? 'Activate' : 'Deactivate')}
           </button>
         </footer>
       </form>
@@ -137,6 +146,7 @@ export function DeactivateDialog({ data, activate = false, onClose, onSuccess })
 }
 export function EditTechnicianDialog({ data, skillsOnly = false, onClose, onSuccess }) {
   const { token, logout } = useAuth()
+  const { t } = useUiPreferences()
   const [form, setForm] = useState({
     full_name: data.full_name,
     phone: data.phone || '',
@@ -172,7 +182,7 @@ export function EditTechnicianDialog({ data, skillsOnly = false, onClose, onSucc
   async function submit(event) {
     event.preventDefault()
     if (skillRequired) {
-      setError('A verified technician must have at least one skill.')
+      setError(t('A verified technician must have at least one skill.'))
       return
     }
     setBusy(true)
@@ -194,7 +204,7 @@ export function EditTechnicianDialog({ data, skillsOnly = false, onClose, onSucc
   const levels = ['BEGINNER', 'INTERMEDIATE', 'ADVANCED', 'EXPERT']
   return (
     <Dialog
-      title={skillsOnly ? 'Update technician skills' : 'Update technician'}
+      title={t(skillsOnly ? 'Update technician skills' : 'Update technician')}
       onClose={onClose}
       busy={busy}
     >
@@ -203,7 +213,7 @@ export function EditTechnicianDialog({ data, skillsOnly = false, onClose, onSucc
           <>
             {!options ? (
               <p>
-                Loading skill options…{' '}
+                {t('Loading skill options…')}{' '}
                 <button
                   type="button"
                   onClick={() => {
@@ -211,7 +221,7 @@ export function EditTechnicianDialog({ data, skillsOnly = false, onClose, onSucc
                     setRefresh((n) => n + 1)
                   }}
                 >
-                  Retry
+                  {t('Retry')}
                 </button>
               </p>
             ) : (
@@ -219,7 +229,7 @@ export function EditTechnicianDialog({ data, skillsOnly = false, onClose, onSucc
                 {skills.map((skill, index) => (
                   <div className="technician-skill-edit" key={index}>
                     <label>
-                      Skill
+                      {t('Skill')}
                       <select
                         required
                         value={skill.skill_id}
@@ -231,7 +241,7 @@ export function EditTechnicianDialog({ data, skillsOnly = false, onClose, onSucc
                           )
                         }
                       >
-                        <option value="">Choose skill</option>
+                        <option value="">{t('Choose skill')}</option>
                         {options.skills.map((s) => (
                           <option key={s.id} value={s.id}>
                             {s.name}
@@ -240,7 +250,7 @@ export function EditTechnicianDialog({ data, skillsOnly = false, onClose, onSucc
                       </select>
                     </label>
                     <label>
-                      AC brand
+                      {t('AC brand')}
                       <select
                         value={skill.ac_brand_id || ''}
                         onChange={(e) =>
@@ -251,7 +261,7 @@ export function EditTechnicianDialog({ data, skillsOnly = false, onClose, onSucc
                           )
                         }
                       >
-                        <option value="">All brands</option>
+                        <option value="">{t('All brands')}</option>
                         {options.brands.map((b) => (
                           <option key={b.id} value={b.id}>
                             {b.name}
@@ -260,7 +270,7 @@ export function EditTechnicianDialog({ data, skillsOnly = false, onClose, onSucc
                       </select>
                     </label>
                     <label>
-                      Level
+                      {t('Level')}
                       <select
                         value={skill.skill_level}
                         onChange={(e) =>
@@ -272,7 +282,7 @@ export function EditTechnicianDialog({ data, skillsOnly = false, onClose, onSucc
                         }
                       >
                         {levels.map((level) => (
-                          <option key={level}>{level}</option>
+                          <option key={level}>{t(label(level))}</option>
                         ))}
                       </select>
                     </label>
@@ -281,19 +291,25 @@ export function EditTechnicianDialog({ data, skillsOnly = false, onClose, onSucc
                       disabled={busy}
                       onClick={() => {
                         if (data.verification_status === 'VERIFIED' && skills.length === 1) {
-                          setError('A verified technician must have at least one skill.')
+                          setError(t('A verified technician must have at least one skill.'))
                           return
                         }
                         setError('')
                         setSkills((old) => old.filter((_, i) => i !== index))
                       }}
                     >
-                      Remove
+                      {t('Remove')}
                     </button>
                   </div>
                 ))}
                 {!skills.length && (
-                  <p role="status">{data.verification_status === 'VERIFIED' ? 'A verified technician must have at least one skill. Add a skill before saving.' : 'No skills selected.'}</p>
+                  <p role="status">
+                    {t(
+                      data.verification_status === 'VERIFIED'
+                        ? 'A verified technician must have at least one skill. Add a skill before saving.'
+                        : 'No skills selected.'
+                    )}
+                  </p>
                 )}
                 <button
                   type="button"
@@ -305,7 +321,7 @@ export function EditTechnicianDialog({ data, skillsOnly = false, onClose, onSucc
                     ])
                   }
                 >
-                  + Add skill
+                  + {t('Add skill')}
                 </button>
               </>
             )}
@@ -313,7 +329,7 @@ export function EditTechnicianDialog({ data, skillsOnly = false, onClose, onSucc
         ) : (
           <div className="technician-edit-fields">
             <label>
-              Full name
+              {t('Full name')}
               <input
                 required
                 maxLength={100}
@@ -322,7 +338,7 @@ export function EditTechnicianDialog({ data, skillsOnly = false, onClose, onSucc
               />
             </label>
             <label>
-              Phone
+              {t('Phone')}
               <input
                 required
                 value={form.phone}
@@ -330,18 +346,18 @@ export function EditTechnicianDialog({ data, skillsOnly = false, onClose, onSucc
               />
             </label>
             <label>
-              Qualification
+              {t('Qualification')}
               <select
                 value={form.qualification_level}
                 onChange={(e) => update('qualification_level', e.target.value)}
               >
                 {levels.map((level) => (
-                  <option key={level}>{level}</option>
+                  <option key={level}>{t(label(level))}</option>
                 ))}
               </select>
             </label>
             <label>
-              Years of experience
+              {t('Years of experience')}
               <input
                 type="number"
                 required
@@ -352,7 +368,7 @@ export function EditTechnicianDialog({ data, skillsOnly = false, onClose, onSucc
               />
             </label>
             <label>
-              Biography
+              {t('Biography')}
               <textarea
                 maxLength={2000}
                 value={form.bio}
@@ -364,10 +380,10 @@ export function EditTechnicianDialog({ data, skillsOnly = false, onClose, onSucc
         <TechnicianNotification message={error} onDismiss={setError} danger />
         <footer>
           <button type="button" disabled={busy} onClick={onClose}>
-            Cancel
+            {t('Cancel')}
           </button>
           <button className="primary" disabled={busy || (skillsOnly && !options) || skillRequired}>
-            {busy ? 'Saving…' : 'Save changes'}
+            {busy ? t('Saving…') : t('Save changes')}
           </button>
         </footer>
       </form>

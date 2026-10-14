@@ -1,5 +1,7 @@
 import { bookingStatusLabels } from './bookingFormat.js'
+import { useUiPreferences } from '../../../shared/context/UiPreferencesContext.jsx'
 export function BookingStatus({ status }) {
+  const { t } = useUiPreferences()
   const tone =
     status === 'CANCELLED'
       ? 'cancelled'
@@ -11,7 +13,7 @@ export function BookingStatus({ status }) {
   return (
     <span className={`booking-status ${tone}`}>
       <i />
-      {bookingStatusLabels[status] || status}
+      {t(bookingStatusLabels[status] || status)}
     </span>
   )
 }

@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useAuth } from '../../../shared/context/AuthContext.jsx'
+import { useUiPreferences } from '../../../shared/context/UiPreferencesContext.jsx'
 import { adminRequest } from '../../../shared/api/adminApi.js'
 import { BellIcon } from '../../../shared/components/AdminUi.jsx'
+import { PreferenceControls } from '../../../shared/components/PreferenceControls.jsx'
 import { TechnicianAvatar } from '../../technicians/components/TechnicianShared.jsx'
 import { BookingStatus } from './BookingShared.jsx'
 import { bookingStatusLabels, date, time, money } from './bookingFormat.js'
@@ -10,16 +12,18 @@ import '../../../shared/styles/admin.css'
 import './bookings.css'
 
 function DetailField({ title, children }) {
+  const { t } = useUiPreferences()
   return (
     <div className="booking-detail-field">
-      <dt>{title}</dt>
-      <dd>{children || 'Not provided'}</dd>
+      <dt>{t(title)}</dt>
+      <dd>{typeof children === 'string' ? t(children) : children || t('Not provided')}</dd>
     </div>
   )
 }
 export function BookingDetailPage() {
   const { id } = useParams(),
     { token, user, logout } = useAuth()
+  const { t } = useUiPreferences()
   const [data, setData] = useState(null),
     [loading, setLoading] = useState(true),
     [error, setError] = useState('')
@@ -60,21 +64,22 @@ export function BookingDetailPage() {
     <main className="figma-admin-main booking-page booking-detail-page">
       <header className="booking-detail-topbar">
         <div>
-          <Link to="/admin/bookings" aria-label="Back to bookings">
+          <Link to="/admin/bookings" aria-label={t('Back to bookings')}>
             ←
           </Link>
-          <span>BOOKING</span>
-          <strong>{data?.booking_code || 'Details'}</strong>
+          <span>{t('BOOKING')}</span>
+          <strong>{data?.booking_code || t('Details')}</strong>
           {data && <BookingStatus status={data.status} />}
         </div>
         <div>
-          <button onClick={retry} disabled={loading} aria-label="Refresh booking">
+          <PreferenceControls compact />
+          <button onClick={retry} disabled={loading} aria-label={t('Refresh booking')}>
             ↻
           </button>
           <BellIcon />
           <span className="booking-admin">
             <strong>{user?.fullName || 'Admin'}</strong>
-            <small>Admin</small>
+            <small>{t('Admin')}</small>
           </span>
           <TechnicianAvatar name={user?.fullName} url={user?.avatarUrl} />
         </div>
@@ -82,12 +87,12 @@ export function BookingDetailPage() {
       <section className="booking-content">
         {loading ? (
           <div className="booking-state" role="status">
-            <i className="figma-spinner" /> Loading booking details…
+            <i className="figma-spinner" /> {t('Loading booking details…')}
           </div>
         ) : error ? (
           <div className="booking-state" role="alert">
             <p>{error}</p>
-            <button onClick={retry}>Try again</button>
+            <button onClick={retry}>{t('Try again')}</button>
           </div>
         ) : (
           data && (
@@ -95,28 +100,32 @@ export function BookingDetailPage() {
               <div className="booking-summary-grid">
                 <article>
                   <div>
-                    <small>TOTAL AMOUNT</small>
+                    <small>{t('TOTAL AMOUNT')}</small>
                     <strong>{money(data.total_amount)}</strong>
-                    <span>Paid: {money(data.paid_amount)}</span>
+                    <span>
+                      {t('Paid')}: {money(data.paid_amount)}
+                    </span>
                   </div>
                   <b className="orange">▣</b>
                 </article>
                 <article>
                   <div>
-                    <small>SCHEDULED DATE</small>
+                    <small>{t('SCHEDULED DATE')}</small>
                     <strong>{date(data.scheduled_at)}</strong>
                   </div>
                   <b className="blue">▦</b>
                 </article>
                 <article>
                   <div>
-                    <small>APPOINTMENT WINDOW</small>
+                    <small>{t('APPOINTMENT WINDOW')}</small>
                     <strong>
                       {time(data.scheduled_at)}
                       {end && ` – ${time(end)}`}
                     </strong>
                     <span>
-                      {duration ? `Estimated: ${duration} mins` : 'Duration not provided'}
+                      {duration
+                        ? `${t('Estimated')}: ${duration} ${t('mins')}`
+                        : t('Duration not provided')}
                     </span>
                   </div>
                   <b className="amber">◷</b>
@@ -128,19 +137,25 @@ export function BookingDetailPage() {
                     <header>
                       <span className="booking-card-icon orange">▦</span>
                       <div>
-                        <h2>Service Details</h2>
-                        <p>Assigned AC units & services</p>
+                        <h2>{t('Service Details')}</h2>
+                        <p>{t('Assigned AC units & services')}</p>
                       </div>
-                      {duration > 0 && <span className="booking-duration">◷ {duration} mins</span>}
+                      {duration > 0 && (
+                        <span className="booking-duration">
+                          ◷ {duration} {t('mins')}
+                        </span>
+                      )}
                     </header>
                     {data.units.length ? (
                       data.units.map((unit) => (
                         <article className="booking-service-package" key={unit.id}>
                           <div>
-                            <small>AC UNIT {unit.unit_number}</small>
+                            <small>
+                              {t('AC UNIT')} {unit.unit_number}
+                            </small>
                             <span>
                               {[unit.brand, unit.model_name].filter(Boolean).join(' · ') ||
-                                'Model not specified'}
+                                t('Model not specified')}
                             </span>
                           </div>
                           {unit.services.map((s, index) => (
@@ -153,64 +168,72 @@ export function BookingDetailPage() {
                           {unit.description && <p>{unit.description}</p>}
                           {unit.diagnosis && (
                             <p>
-                              <strong>Diagnosis:</strong> {unit.diagnosis}
+                              <strong>{t('Diagnosis')}:</strong> {unit.diagnosis}
                             </p>
                           )}
                           {unit.service_notes && (
                             <p>
-                              <strong>Service notes:</strong> {unit.service_notes}
+                              <strong>{t('Service notes')}:</strong> {unit.service_notes}
                             </p>
                           )}
                         </article>
                       ))
                     ) : (
-                      <p className="booking-muted">No AC units or services recorded.</p>
+                      <p className="booking-muted">{t('No AC units or services recorded.')}</p>
                     )}
                   </section>
                   <section className="booking-card">
                     <header>
                       <span className="booking-card-icon orange">♙</span>
-                      <h2>Assigned Technician</h2>
+                      <h2>{t('Assigned Technician')}</h2>
                     </header>
                     {data.technicians.length ? (
-                      data.technicians.map((t) => (
+                      data.technicians.map((technician) => (
                         <Link
                           className="booking-assigned-person"
-                          to={`/admin/technicians/${t.id}`}
-                          key={t.id}
+                          to={`/admin/technicians/${technician.id}`}
+                          key={technician.id}
                         >
-                          <TechnicianAvatar name={t.full_name} url={t.avatar_url} />
+                          <TechnicianAvatar
+                            name={technician.full_name}
+                            url={technician.avatar_url}
+                          />
                           <div>
-                            <strong>{t.full_name}</strong>
+                            <strong>{technician.full_name}</strong>
                             <small>
-                              {t.total_reviews
-                                ? `★ ${Number(t.rating_average).toFixed(2)} (${t.total_reviews} reviews)`
-                                : 'No reviews yet'}
+                              {technician.total_reviews
+                                ? t('ratingWithReviews', {
+                                    rating: Number(technician.rating_average).toFixed(2),
+                                    count: technician.total_reviews,
+                                  })
+                                : t('No reviews yet')}
                             </small>
                           </div>
                           <span className="booking-assignment-status">
-                            {t.status === 'SELECTED'
-                              ? 'Selected'
-                              : t.status === 'ACCEPTED'
-                                ? 'Assigned'
-                                : 'Completed'}
+                            {t(
+                              technician.status === 'SELECTED'
+                                ? 'Selected'
+                                : technician.status === 'ACCEPTED'
+                                  ? 'Assigned'
+                                  : 'Completed'
+                            )}
                           </span>
                         </Link>
                       ))
                     ) : (
-                      <p className="booking-muted">No technician assigned.</p>
+                      <p className="booking-muted">{t('No technician assigned.')}</p>
                     )}
                   </section>
                   <section className="booking-card">
                     <header>
                       <span className="booking-card-icon blue">◷</span>
-                      <h2>Booking History</h2>
+                      <h2>{t('Booking History')}</h2>
                     </header>
                     {data.history.length ? (
                       <ol className="booking-history">
                         {data.history.map((h) => (
                           <li key={h.id}>
-                            <strong>{bookingStatusLabels[h.status] || h.status}</strong>
+                            <strong>{t(bookingStatusLabels[h.status] || h.status)}</strong>
                             <small>
                               {date(h.created_at)} · {time(h.created_at)}
                               {h.changed_by && ` · ${h.changed_by}`}
@@ -220,7 +243,7 @@ export function BookingDetailPage() {
                         ))}
                       </ol>
                     ) : (
-                      <p className="booking-muted">No status history recorded.</p>
+                      <p className="booking-muted">{t('No status history recorded.')}</p>
                     )}
                   </section>
                 </div>
@@ -228,7 +251,7 @@ export function BookingDetailPage() {
                   <section className="booking-card">
                     <header>
                       <span className="booking-card-icon purple">♙</span>
-                      <h2>Customer Information</h2>
+                      <h2>{t('Customer Information')}</h2>
                     </header>
                     <dl className="booking-customer-fields">
                       <DetailField title="FULL NAME">{data.customer_name}</DetailField>
@@ -242,7 +265,7 @@ export function BookingDetailPage() {
                   </section>
                   <section className="booking-card">
                     <header>
-                      <h2>Booking Summary</h2>
+                      <h2>{t('Booking Summary')}</h2>
                     </header>
                     <dl className="booking-price-breakdown">
                       <DetailField title="SUBTOTAL">{money(data.subtotal)}</DetailField>
@@ -254,12 +277,12 @@ export function BookingDetailPage() {
                   {data.status === 'CANCELLED' && (
                     <section className="booking-card">
                       <header>
-                        <h2>Cancellation Details</h2>
+                        <h2>{t('Cancellation Details')}</h2>
                       </header>
                       <>
                         <p className="booking-description">{data.cancellation_reason}</p>
                         <small className="booking-muted">
-                          Cancelled: {date(data.cancelled_at)} · {time(data.cancelled_at)}
+                          {t('Cancelled')}: {date(data.cancelled_at)} · {time(data.cancelled_at)}
                           {data.cancelled_by && ` · ${data.cancelled_by}`}
                         </small>
                       </>

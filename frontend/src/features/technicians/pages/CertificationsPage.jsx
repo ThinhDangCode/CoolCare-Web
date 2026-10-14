@@ -1,6 +1,7 @@
 ﻿import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../../shared/context/AuthContext.jsx'
+import { useUiPreferences } from '../../../shared/context/UiPreferencesContext.jsx'
 import { adminRequest } from '../../../shared/api/adminApi.js'
 import {
   PageHeader,
@@ -11,7 +12,12 @@ import {
   CloseIcon,
   TableState,
 } from '../../../shared/components/AdminUi.jsx'
-import { DocumentLink, TechnicianNotification, formatDate, safeDocumentUrl } from '../components/TechnicianShared.jsx'
+import {
+  DocumentLink,
+  TechnicianNotification,
+  formatDate,
+  safeDocumentUrl,
+} from '../components/TechnicianShared.jsx'
 import '../../../shared/styles/admin.css'
 import './technicians.css'
 import './certifications.css'
@@ -25,14 +31,16 @@ const statusLabels = {
   EXPIRED: 'Expired',
 }
 function CertificateStatus({ value }) {
+  const { t } = useUiPreferences()
   return (
     <span className={`certification-status ${value.toLowerCase()}`}>
       <i />
-      {statusLabels[value] || value}
+      {t(statusLabels[value] || value)}
     </span>
   )
 }
 function CertificateDialog({ certificate, onClose }) {
+  const { t } = useUiPreferences()
   const ref = useRef(null)
   useEffect(() => {
     ref.current.showModal()
@@ -49,21 +57,21 @@ function CertificateDialog({ certificate, onClose }) {
     >
       <header>
         <div>
-          <small>CERTIFICATION DETAILS</small>
+          <small>{t('CERTIFICATION DETAILS')}</small>
           <h2 id="certificate-title">{certificate.certificate_name}</h2>
         </div>
-        <button autoFocus aria-label="Close details" onClick={onClose}>
+        <button autoFocus aria-label={t('Close details')} onClick={onClose}>
           <CloseIcon />
         </button>
       </header>
       <CertificateStatus value={certificate.status} />
       <dl>
         <div>
-          <dt>Certificate ID / number</dt>
+          <dt>{t('Certificate ID / number')}</dt>
           <dd>{certificate.certificate_number || certificate.id}</dd>
         </div>
         <div>
-          <dt>Technician</dt>
+          <dt>{t('Technician')}</dt>
           <dd>
             <Link to={`/admin/technicians/${certificate.technician_id}?tab=certifications`}>
               {certificate.full_name}
@@ -71,19 +79,19 @@ function CertificateDialog({ certificate, onClose }) {
           </dd>
         </div>
         <div>
-          <dt>Issuer</dt>
+          <dt>{t('Issuer')}</dt>
           <dd>{certificate.issued_by || '—'}</dd>
         </div>
         <div>
-          <dt>Issued date</dt>
+          <dt>{t('Issued date')}</dt>
           <dd>{formatDate(certificate.issued_date)}</dd>
         </div>
         <div>
-          <dt>Expiry date</dt>
+          <dt>{t('Expiry date')}</dt>
           <dd>{formatDate(certificate.expiry_date)}</dd>
         </div>
         <div>
-          <dt>Reviewed at</dt>
+          <dt>{t('Reviewed at')}</dt>
           <dd>{formatDate(certificate.reviewed_at)}</dd>
         </div>
       </dl>
@@ -92,13 +100,14 @@ function CertificateDialog({ certificate, onClose }) {
       )}
       <footer>
         <DocumentLink url={certificate.document_url} />
-        <button onClick={onClose}>Close</button>
+        <button onClick={onClose}>{t('Close')}</button>
       </footer>
     </dialog>
   )
 }
 export function CertificationsPage() {
   const { token, logout } = useAuth()
+  const { t } = useUiPreferences()
   const [search, setSearch] = useState('')
   const [keyword, setKeyword] = useState('')
   const [status, setStatus] = useState('ALL')
@@ -158,23 +167,21 @@ export function CertificationsPage() {
     >
       <PageHeader
         title="Technician Certifications"
-        subtitle={`${data.total} professional certifications`}
+        subtitle={t('{count} professional certifications', { count: data.total })}
         onRefresh={retry}
         refreshing={loading}
       />
       <section className="certification-content">
         <TechnicianNotification message={notice} onDismiss={setNotice} />
-        <div className="certification-section-label">
-          TECHNICIAN OPERATIONS <span aria-hidden="true">⌄</span>
-        </div>
+        <div className="certification-section-label">{t('TECHNICIAN OPERATIONS')}</div>
         <div className="certification-card">
           <div className="certification-toolbar">
             <label className="certification-search">
               <SearchIcon />
               <input
                 maxLength={150}
-                aria-label="Search certifications"
-                placeholder="Search certificate name, code, technician name"
+                aria-label={t('Search certifications')}
+                placeholder={t('Search certificate name, code, technician name')}
                 value={search}
                 onChange={(e) => {
                   setLoading(true)
@@ -183,34 +190,34 @@ export function CertificationsPage() {
               />
             </label>
             <select
-              aria-label="Document type"
-              title="Filter by certificate document format"
+              aria-label={t('Document type')}
+              title={t('Filter by certificate document format')}
               value={type}
               onChange={(e) => filter(setType, e.target.value)}
             >
-              <option value="ALL">All Document Types</option>
+              <option value="ALL">{t('All Document Types')}</option>
               <option value="PDF">PDF</option>
-              <option value="IMAGE">Image</option>
-              <option value="OTHER">Other / No document</option>
+              <option value="IMAGE">{t('Image')}</option>
+              <option value="OTHER">{t('Other / No document')}</option>
             </select>
             <select
-              aria-label="Certification status"
+              aria-label={t('Certification status')}
               value={status}
               onChange={(e) => filter(setStatus, e.target.value)}
             >
-              <option value="ALL">All Status</option>
+              <option value="ALL">{t('All Status')}</option>
               {Object.entries(statusLabels).map(([value, text]) => (
                 <option key={value} value={value}>
-                  {text}
+                  {t(text)}
                 </option>
               ))}
             </select>
             <select
-              aria-label="Issuer"
+              aria-label={t('Issuer')}
               value={issuer}
               onChange={(e) => filter(setIssuer, e.target.value)}
             >
-              <option value="">Issuer</option>
+              <option value="">{t('Issuer')}</option>
               {(data.issuers || []).map((value) => (
                 <option key={value}>{value}</option>
               ))}
@@ -218,16 +225,16 @@ export function CertificationsPage() {
             <button
               className="certification-tool"
               disabled={loading}
-              aria-label="Refresh certifications"
-              title="Refresh certifications"
+              aria-label={t('Refresh certifications')}
+              title={t('Refresh certifications')}
               onClick={retry}
             >
               ↻
             </button>
             <button
               className={`certification-tool ${compact ? 'active' : ''}`}
-              aria-label="Compact table"
-              title="Toggle compact rows"
+              aria-label={t('Compact table')}
+              title={t('Toggle compact rows')}
               aria-pressed={compact}
               onClick={() => setCompact((value) => !value)}
             >
@@ -241,11 +248,11 @@ export function CertificationsPage() {
             <table className="certification-table">
               <thead>
                 <tr>
-                  <th>CERT ID</th>
-                  <th>CERTIFICATE NAME</th>
-                  <th>TECHNICIAN</th>
-                  <th>STATUS</th>
-                  <th>ACTIONS</th>
+                  <th>{t('CERT ID')}</th>
+                  <th>{t('CERTIFICATE NAME')}</th>
+                  <th>{t('TECHNICIAN')}</th>
+                  <th>{t('STATUS')}</th>
+                  <th>{t('ACTIONS')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -285,8 +292,8 @@ export function CertificationsPage() {
                         <div className="certification-actions">
                           <button
                             className="certification-action view"
-                            aria-label={`View ${c.certificate_name} — ${c.full_name}`}
-                            title="View certificate details"
+                            aria-label={`${t('View')} ${c.certificate_name} — ${c.full_name}`}
+                            title={t('View certificate details')}
                             onClick={() => setSelected(c)}
                           >
                             <EyeIcon />
@@ -295,8 +302,8 @@ export function CertificationsPage() {
                             <>
                               <button
                                 className="certification-action document"
-                                aria-label={`Approve ${c.certificate_name}`}
-                                title="Approve certification"
+                                aria-label={`${t('Approve')} ${c.certificate_name}`}
+                                title={t('Approve certification')}
                                 onClick={() =>
                                   setReview({
                                     path: `/technicians/certifications/${c.id}/review`,
@@ -311,8 +318,8 @@ export function CertificationsPage() {
                               </button>
                               <button
                                 className="certification-action reject"
-                                aria-label={`Reject ${c.certificate_name}`}
-                                title="Reject certification"
+                                aria-label={`${t('Reject')} ${c.certificate_name}`}
+                                title={t('Reject certification')}
                                 onClick={() =>
                                   setReview({
                                     path: `/technicians/certifications/${c.id}/review`,
@@ -333,8 +340,8 @@ export function CertificationsPage() {
                               href={safeDocumentUrl(c.document_url)}
                               target="_blank"
                               rel="noopener noreferrer"
-                              aria-label={`Open document — ${c.full_name}`}
-                              title="Open certificate document"
+                              aria-label={`${t('Open document')} — ${c.full_name}`}
+                              title={t('Open certificate document')}
                             >
                               <svg viewBox="0 0 24 24" aria-hidden="true">
                                 <path d="M14 3h7v7m0-7L10 14M10 4H4v16h16v-6" />
@@ -344,8 +351,8 @@ export function CertificationsPage() {
                             <button
                               className="certification-action document"
                               disabled
-                              title="No document available"
-                              aria-label="No document available"
+                              title={t('No document available')}
+                              aria-label={t('No document available')}
                             >
                               <svg viewBox="0 0 24 24" aria-hidden="true">
                                 <path d="M6 3h8l4 4v14H6V3Zm8 0v5h4" />
@@ -361,17 +368,21 @@ export function CertificationsPage() {
           </div>
           <div className="certification-footer">
             <div>
-              Showing {first}–{last} of {data.total} certifications{' '}
+              {t('Showing {first}–{last} of {total} certifications', {
+                first,
+                last,
+                total: data.total,
+              })}{' '}
               <label>
-                Rows:{' '}
+                {t('Rows')}:{' '}
                 <select
-                  aria-label="Rows per page"
+                  aria-label={t('Rows per page')}
                   value={limit}
                   onChange={(e) => filter(setLimit, Number(e.target.value))}
                 >
                   {[10, 20, 50].map((n) => (
                     <option key={n} value={n}>
-                      {n} / page
+                      {n} / {t('page')}
                     </option>
                   ))}
                 </select>
@@ -393,7 +404,7 @@ export function CertificationsPage() {
           target={review}
           onClose={() => setReview(null)}
           onSuccess={() => {
-            setNotice('Certification review saved.')
+            setNotice(t('Certification review saved.'))
             setReview(null)
             retry()
           }}

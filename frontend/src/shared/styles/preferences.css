@@ -7,6 +7,32 @@
   --app-muted: #718087;
   --app-border: #e1e8ea;
 }
+
+html[data-theme='dark'] .technician-action-dialog :is(input, select, textarea),
+html[data-theme='dark'] .technician-skill-edit,
+html[data-theme='dark'] .technician-area-edit,
+html[data-theme='dark'] .technician-action-dialog footer button:not(.primary):not(.danger) {
+  color: var(--app-text);
+  background: var(--app-surface-soft);
+  border-color: var(--app-border);
+}
+
+html[data-theme='dark'] .technician-action-dialog :is(p, label) {
+  color: var(--app-muted);
+}
+
+html[data-theme='dark'] .technician-action-dialog h2 {
+  color: var(--app-text);
+}
+
+html[data-theme='dark'] .export-revenue-dialog :is(fieldset, form > footer),
+html[data-theme='dark'] .export-revenue-basis,
+html[data-theme='dark'] .export-revenue-modes button:not(.active),
+html[data-theme='dark'] .export-revenue-dialog form > footer button:not(.export-revenue-submit) {
+  color: var(--app-text);
+  background: var(--app-surface-soft);
+  border-color: var(--app-border);
+}
 html[data-theme='dark'] {
   color-scheme: dark;
   --app-bg: #071426;
@@ -75,7 +101,7 @@ html[data-theme='dark'] {
   font-weight: 600;
   white-space: nowrap;
 }
-.language-trigger > svg {
+.language-trigger > svg:last-child {
   width: 17px !important;
   height: 17px !important;
   fill: none;
@@ -109,6 +135,7 @@ html[data-theme='dark'] {
   color: var(--app-text);
   background: var(--app-surface);
   box-shadow: 0 16px 38px rgba(15, 23, 42, 0.2);
+  z-index: 1000;
 }
 .language-menu button {
   display: grid !important;
@@ -901,4 +928,409 @@ html[data-theme='dark'] .figma-page-size option {
   color: var(--app-text);
   background: var(--app-surface-soft);
   border-color: var(--app-border);
+}
+
+html[data-theme='dark'] .figma-pagination button {
+  color: #c8d5e7;
+  background: #132640;
+  border-color: #2a405d;
+}
+
+html[data-theme='dark'] .figma-pagination button:hover:not(:disabled):not(.active) {
+  color: #ffffff;
+  background: #1b3352;
+}
+
+html[data-theme='dark'] .figma-pagination button:disabled {
+  color: #7890ac;
+  background: #102238;
+  border-color: #243a57;
+  opacity: 0.62;
+}
+
+html[data-theme='dark'] .figma-pagination button.active,
+html[data-theme='dark'] .figma-pagination button.active:disabled {
+  color: #ffffff;
+  background: #f97316;
+  border-color: #f97316;
+  opacity: 1;
+}
+
+/* Post-merge modules: bookings, technicians and payments share the same theme
+   surfaces instead of retaining their feature-local light palette. */
+html[data-theme='dark']
+  :is(
+    .booking-page,
+    .technician-main,
+    .technician-detail-page,
+    .certification-page,
+    .verification-page,
+    .penalty-page,
+    .payments-page,
+    .payment-detail-page
+  ) {
+  color: var(--app-text);
+  background: var(--app-bg);
+}
+
+html[data-theme='dark']
+  :is(
+    .booking-toolbar,
+    .booking-table-card,
+    .booking-card,
+    .booking-detail-topbar,
+    .technician-list-card,
+    .technician-summary,
+    .technician-card,
+    .technician-detail-topbar,
+    .technician-extra-filters,
+    .technician-action-dialog,
+    .certification-card,
+    .certification-dialog,
+    .verification-topbar,
+    .verification-queue,
+    .penalty-summary > div,
+    .payments-header,
+    .payments-toolbar,
+    .payments-table-card,
+    .payments-calendar,
+    .payment-detail-topbar,
+    .payment-detail-card,
+    .export-revenue-dialog,
+    .payment-month-picker-popup
+  ) {
+  color: var(--app-text);
+  background: var(--app-surface);
+  border-color: var(--app-border);
+}
+
+html[data-theme='dark']
+  :is(
+    .booking-search,
+    .booking-toolbar select,
+    .booking-toolbar input,
+    .booking-toolbar button,
+    .technician-search,
+    .technician-filter select,
+    .technician-filter-toggle,
+    .technician-reset,
+    .certification-search,
+    .certification-toolbar select,
+    .verification-search,
+    .verification-toolbar select,
+    .penalty-toolbar input,
+    .penalty-toolbar select,
+    .payments-search,
+    .payments-select,
+    .payments-date-button,
+    .payments-calendar input,
+    .payment-month-picker-trigger,
+    .payment-month-picker-year input,
+    .payment-month-picker-months > button,
+    .export-revenue-dialog input,
+    .export-revenue-dialog select
+  ) {
+  color: var(--app-text);
+  background: var(--app-surface-soft);
+  border-color: var(--app-border);
+}
+
+html[data-theme='dark']
+  :is(
+    .booking-table-card,
+    .technician-table,
+    .certification-table,
+    .verification-table-scroll,
+    .penalty-table,
+    .payments-table-card
+  )
+  tbody
+  tr:hover {
+  background: #11243c;
+}
+
+html[data-theme='dark']
+  :is(
+    .booking-table-card,
+    .technician-table,
+    .certification-table,
+    .verification-table-scroll,
+    .penalty-table,
+    .payments-table-card
+  )
+  :is(th, td) {
+  border-color: var(--app-border);
+}
+
+html[data-theme='dark']
+  :is(
+    .booking-detail-heading,
+    .booking-card h2,
+    .technician-detail-heading h1,
+    .technician-summary h2,
+    .technician-card h3,
+    .technician-field dd,
+    .technician-list-name,
+    .verification-heading h1,
+    .payments-header h1,
+    .payments-code,
+    .payment-detail-heading h1,
+    .payment-detail-card h2,
+    .export-revenue-dialog h2
+  ) {
+  color: var(--app-text);
+}
+
+html[data-theme='dark']
+  :is(
+    .booking-muted,
+    .booking-card small,
+    .technician-detail-heading p,
+    .technician-field dt,
+    .technician-muted,
+    .certification-section-label,
+    .verification-heading p,
+    .payments-header p,
+    .payments-filter-summary,
+    .payment-detail-fact dt,
+    .export-revenue-dialog p,
+    .payment-month-picker-label
+  ) {
+  color: var(--app-muted);
+}
+
+/* Feature-owned links and nested copy need explicit dark colors because their
+   light-theme declarations otherwise override the table/card inheritance. */
+html[data-theme='dark'] .certification-table .certification-technician {
+  color: #dbe7f5;
+}
+
+html[data-theme='dark'] .certification-table .certification-technician:hover {
+  color: #fb923c;
+}
+
+html[data-theme='dark']
+  :is(
+    .payment-detail-booking-identity > div > span,
+    .payment-detail-booking-scope > span,
+    .payment-detail-booking-schedule div > span,
+    .payment-detail-action-note,
+    .payment-detail-unassigned
+  ) {
+  color: #91a4bd;
+}
+
+html[data-theme='dark'] .payment-detail-booking-identity strong {
+  color: #7dd3fc;
+}
+
+html[data-theme='dark'] .payment-detail-booking-scope p,
+html[data-theme='dark'] .payment-detail-booking-schedule strong {
+  color: #e4edf8;
+}
+
+html[data-theme='dark'] .payment-detail-small-icon {
+  color: #b9c9df;
+  background: #172d49;
+  border-color: #36506f;
+}
+
+html[data-theme='dark'] .payment-detail-confirmation {
+  color: #c3d2e5;
+  background: #132640;
+  border-color: #314965;
+}
+
+html[data-theme='dark'] .payment-detail-confirmation.confirmed {
+  color: #6ee7b7;
+  background: #0b3b35;
+  border-color: #176b5d;
+}
+
+html[data-theme='dark'] .payment-detail-wallet-evidence {
+  color: #c3d2e5;
+  background: #132640;
+  border-color: #314965;
+}
+
+html[data-theme='dark'] .payment-detail-wallet-evidence.recorded {
+  color: #6ee7b7;
+  background: #0b3b35;
+  border-color: #176b5d;
+}
+
+html[data-theme='dark'] .payment-detail-wallet-evidence.recorded.movement-debit {
+  color: #fcd18b;
+  background: #392914;
+  border-color: #805923;
+}
+
+html[data-theme='dark'] .payment-detail-wallet-evidence.recorded.movement-zero {
+  color: #c3d2e5;
+  background: #132640;
+  border-color: #314965;
+}
+
+html[data-theme='dark'] .payment-detail-page .payment-detail-profile-button {
+  color: #91a4bd;
+  background: #132640;
+  border-color: #314965;
+}
+
+html[data-theme='dark'] .payment-detail-page .payment-detail-footer :is(button, .payment-detail-pdf) {
+  color: #c3d2e5;
+  background: #172d49;
+  border-color: #36506f;
+}
+
+html[data-theme='dark'] .payment-detail-page .payment-detail-footer button:disabled,
+html[data-theme='dark']
+  .payment-detail-page
+  .payment-detail-footer
+  .payment-detail-booking-button:disabled {
+  color: #91a4bd;
+  background: #132640;
+  border-color: #314965;
+  opacity: 0.78;
+}
+
+html[data-theme='dark'] .payment-detail-footer .payment-detail-back {
+  color: #9fb2ca;
+}
+
+html[data-theme='dark']
+  :is(
+    .booking-eye,
+    .technician-row-action,
+    .certification-action,
+    .payments-eye,
+    .payment-detail-refresh,
+    .export-revenue-close
+  ) {
+  color: #b9c9df;
+  background: #152b47;
+  border-color: #38506f;
+}
+
+/* Keep the language chevron visible for longer labels such as “Tiếng Việt”. */
+.language-control,
+.language-trigger {
+  flex-shrink: 0;
+  overflow: visible;
+}
+
+.language-trigger > svg:last-child {
+  display: block;
+  flex: 0 0 17px;
+}
+
+.language-trigger .language-name {
+  min-width: 0;
+  overflow: visible;
+}
+
+.booking-total strong {
+  color: #9a3412;
+  font-size: 14px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+html[data-theme='dark'] .booking-total {
+  color: #fdba74;
+  background: #3a2418;
+  border-color: #744222;
+}
+
+html[data-theme='dark'] .booking-total strong {
+  color: #ffb47d;
+}
+
+html[data-theme='dark']
+  :is(
+    .booking-summary-grid article,
+    .booking-unit-service,
+    .booking-customer-fields > div,
+    .technician-metrics > div,
+    .technician-detail-emergency,
+    .technician-detail-joined,
+    .payment-detail-amount-banner,
+    .payment-detail-fact,
+    .payment-detail-person,
+    .payment-detail-person-facts > div,
+    .payment-detail-booking-scope,
+    .payment-detail-booking-schedule
+  ) {
+  color: var(--app-text);
+  background: var(--app-surface-soft);
+  border-color: var(--app-border);
+}
+
+html[data-theme='dark']
+  :is(
+    .booking-service-package,
+    .booking-detail-field,
+    .technician-note,
+    .technician-document-grid > div,
+    .technician-qualification,
+    .certification-table tbody tr,
+    .payment-detail-footer
+  ) {
+  color: var(--app-text);
+  background: var(--app-surface-soft);
+  border-color: var(--app-border);
+}
+
+html[data-theme='dark'] .certification-table tbody tr:nth-child(even),
+html[data-theme='dark'] .certification-table tbody tr:hover {
+  background: #11243c;
+}
+
+html[data-theme='dark']
+  :is(
+    .booking-service-package strong,
+    .booking-detail-field dd,
+    .technician-note strong,
+    .technician-document-grid h4,
+    .technician-qualification strong,
+    .certification-table td,
+    .payment-detail-footer
+  ) {
+  color: var(--app-text);
+}
+
+html[data-theme='dark']
+  :is(
+    .booking-summary-grid strong,
+    .booking-unit-service strong,
+    .booking-customer-fields strong,
+    .technician-metrics strong,
+    .technician-detail-emergency strong,
+    .technician-detail-joined strong,
+    .payment-detail-amount-banner strong,
+    .payment-detail-fact dd,
+    .payment-detail-person strong,
+    .payment-detail-person-facts strong,
+    .payment-detail-booking-scope strong,
+    .payment-detail-booking-schedule strong
+  ) {
+  color: var(--app-text);
+}
+
+html[data-theme='dark']
+  :is(
+    .booking-summary-grid small,
+    .booking-unit-service small,
+    .booking-customer-fields small,
+    .technician-metrics small,
+    .technician-detail-emergency small,
+    .technician-detail-joined small,
+    .payment-detail-amount-banner small,
+    .payment-detail-fact dt,
+    .payment-detail-person small,
+    .payment-detail-person-facts small,
+    .payment-detail-booking-scope small,
+    .payment-detail-booking-schedule small
+  ) {
+  color: var(--app-muted);
 }

@@ -426,3 +426,69 @@
     flex-basis: 100%;
   }
 }
+
+html[data-theme='dark'] .verification-queue > header,
+html[data-theme='dark'] .verification-footer {
+  color: var(--app-text);
+  background: var(--app-surface-soft);
+  border-color: var(--app-border);
+}
+
+html[data-theme='dark'] .verification-toolbar,
+html[data-theme='dark'] .verification-extra-filters {
+  color: var(--app-text);
+  background: var(--app-surface);
+  border-color: var(--app-border);
+}
+
+html[data-theme='dark'] .verification-filter-button {
+  color: #b7c6d9;
+  background: var(--app-surface-soft);
+  border-color: var(--app-border);
+}
+
+html[data-theme='dark'] .verification-queue > header h2,
+html[data-theme='dark'] .verification-queue > header > span,
+html[data-theme='dark'] .verification-footer {
+  color: var(--app-muted);
+}
+
+html[data-theme='dark'] .verification-queue th {
+  color: #c8d5e7;
+  background: #152b47;
+}
+
+html[data-theme='dark'] .verification-queue td,
+html[data-theme='dark'] .verification-person {
+  color: var(--app-text);
+  border-color: var(--app-border);
+}
+
+html[data-theme='dark'] .verification-footer select,
+html[data-theme='dark'] .verification-footer .figma-pagination button,
+html[data-theme='dark'] .verification-actions a,
+html[data-theme='dark'] .verification-actions button {
+  color: var(--app-text);
+  background: var(--app-surface-soft);
+  border-color: var(--app-border);
+}
+
+html[data-theme='dark'] .verification-footer .figma-pagination button.active,
+html[data-theme='dark'] .verification-footer .figma-pagination button.active:disabled {
+  color: #ffffff;
+  background: #f97316;
+  border-color: #f97316;
+  opacity: 1;
+}
+
+html[data-theme='dark'] .verification-actions .approve {
+  color: #6ee7b7;
+  background: #0b3b35;
+  border-color: #176b5d;
+}
+
+html[data-theme='dark'] .verification-actions .reject {
+  color: #fda4af;
+  background: #451a2b;
+  border-color: #7f2946;
+}

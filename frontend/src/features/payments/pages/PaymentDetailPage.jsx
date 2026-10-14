@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router-dom'
 import { useAuth } from '../../../shared/context/AuthContext.jsx'
+import { PreferenceControls } from '../../../shared/components/PreferenceControls.jsx'
+import { useUiPreferences } from '../../../shared/context/UiPreferencesContext.jsx'
 import { getPayment } from '../api/paymentsApi.js'
 import { readPaymentFilters, writePaymentFilters } from '../paymentListFilters.js'
 import {
@@ -17,13 +19,12 @@ import './payments.css'
 import './paymentDetail.css'
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-const text = (value) => value || 'Not available'
 const percent = new Intl.NumberFormat('en-US', { style: 'percent', maximumFractionDigits: 2 })
 const quantity = new Intl.NumberFormat('en-US', { maximumFractionDigits: 3 })
 const formatQuantity = (value) =>
   value !== null && value !== undefined && value !== '' && Number.isFinite(Number(value))
     ? quantity.format(Number(value))
-    : 'Not available'
+    : null
 
 function DetailIcon({ name }) {
   return <img src={`/payments/detail/${name}.svg`} alt="" aria-hidden="true" />
@@ -72,6 +73,9 @@ export default function PaymentDetailPage() {
   const { id } = useParams()
   const location = useLocation()
   const { token, clearSession } = useAuth()
+  const { t } = useUiPreferences()
+  const displayText = (value) => value || t('Not available')
+  const displayQuantity = (value) => formatQuantity(value) ?? t('Not available')
   const [refresh, setRefresh] = useState(0)
   const [response, setResponse] = useState({ key: '', data: null, error: '', status: null })
   const validId = uuid.test(id ?? '')
@@ -79,16 +83,16 @@ export default function PaymentDetailPage() {
   const loading = validId && response.key !== requestKey
   const payment = validId && response.key === requestKey && !response.error ? response.data : null
   const error = !validId
-    ? 'The payment ID is invalid.'
+      ? t('The payment ID is invalid.')
     : response.key === requestKey
       ? response.error
       : ''
   const errorTitle =
     !validId || [400, 422].includes(response.status)
-      ? 'Invalid payment ID'
+      ? t('Invalid payment ID')
       : response.status === 404
-        ? 'Payment not found'
-        : 'Unable to load payment'
+        ? t('Payment not found')
+        : t('Unable to load payment')
   const listQuery = writePaymentFilters(
     readPaymentFilters(new URLSearchParams(location.search))
   ).toString()
@@ -122,15 +126,15 @@ export default function PaymentDetailPage() {
   const serviceScope =
     booking?.items
       ?.filter((item) => item.itemType === 'SERVICE')
-      .map((item) => `${item.description} × ${formatQuantity(item.quantity)}`)
+      .map((item) => `${item.description} × ${displayQuantity(item.quantity)}`)
       .join(' · ') ||
     booking?.description ||
-    'Not available'
+    t('Not available')
   const zones =
     technician?.serviceZones
       ?.map((zone) => [zone.ward, zone.district, zone.city].filter(Boolean).join(', '))
       .filter(Boolean)
-      .join(' · ') || 'Not available'
+      .join(' · ') || t('Not available')
   const pricingMismatch = booking?.pricingMatchesPayment === false
   const breakdownMismatch =
     booking?.quotationTotalsMatchBooking === false ||
@@ -142,37 +146,40 @@ export default function PaymentDetailPage() {
   return (
     <main className="payments-page payment-detail-page">
       <header className="payment-detail-topbar">
-        <nav aria-label="Payment breadcrumb">
-          <span>Finance</span>
+        <nav aria-label={t('Payment breadcrumb')}>
+          <span>{t('Finance')}</span>
           <DetailIcon name="breadcrumb" />
-          <Link to={backUrl}>Payments</Link>
+          <Link to={backUrl}>{t('Payments')}</Link>
           <DetailIcon name="breadcrumb" />
-          <strong>Payment Detail</strong>
+          <strong>{t('Payment Detail')}</strong>
           {payment && <code>{payment.paymentCode}</code>}
         </nav>
-        <button
-          type="button"
-          className="payment-detail-refresh"
-          disabled={loading || !validId}
-          onClick={() => setRefresh((current) => current + 1)}
-        >
-          <img src="/payments/refresh.svg" width="14" height="14" alt="" aria-hidden="true" />{' '}
-          Refresh
-        </button>
+        <div className="preference-controls">
+          <PreferenceControls compact />
+          <button
+            type="button"
+            className="payment-detail-refresh"
+            disabled={loading || !validId}
+            onClick={() => setRefresh((current) => current + 1)}
+          >
+            <img src="/payments/refresh.svg" width="14" height="14" alt="" aria-hidden="true" />{' '}
+            {t('Refresh')}
+          </button>
+        </div>
       </header>
       <section className="payment-detail-content" aria-busy={loading}>
         <div className="payment-detail-heading">
           <Link className="payment-detail-back" to={backUrl}>
-            <DetailIcon name="back" /> Back to Payments List
+            <DetailIcon name="back" /> {t('Back to Payments List')}
           </Link>
           <div>
-            <h1>Payment Detail</h1>
+            <h1>{t('Payment Detail')}</h1>
             {payment && (
               <>
                 <code>{payment.paymentCode}</code>
                 <span className={`payments-status status-${payment.status.toLowerCase()}`}>
                   <i />
-                  {statusLabel}
+                  {t(statusLabel)}
                 </span>
               </>
             )}
@@ -181,7 +188,7 @@ export default function PaymentDetailPage() {
         {loading && (
           <div className="payment-detail-state" role="status">
             <i className="figma-spinner" />
-            Loading payment…
+            {t('Loading payment…')}
           </div>
         )}
         {!loading && error && (
@@ -190,7 +197,7 @@ export default function PaymentDetailPage() {
             <p>{error}</p>
             {validId && response.status !== 404 && ![400, 422].includes(response.status) && (
               <button type="button" onClick={() => setRefresh((current) => current + 1)}>
-                Try again
+                {t('Try again')}
               </button>
             )}
           </div>
@@ -200,80 +207,84 @@ export default function PaymentDetailPage() {
             <div className="payment-detail-main-column">
               <section className="payment-detail-card payment-detail-financial-card">
                 <CardHeader icon="payment-card" tone="orange">
-                  Payment Information
+                  {t('Payment Information')}
                 </CardHeader>
                 <div className="payment-detail-amount-banner">
                   <span>
                     {payment.status === 'SUCCESS' && payment.paidAt
-                      ? 'TOTAL PAID AMOUNT'
-                      : 'PAYMENT AMOUNT'}
+                      ? t('TOTAL PAID AMOUNT')
+                      : t('PAYMENT AMOUNT')}
                   </span>
                   <strong>{formatPaymentAmount(payment.amount)}</strong>
                 </div>
                 <div className="payment-detail-specifications">
-                  <h3>TRANSACTION SPECIFICATIONS</h3>
+                  <h3>{t('TRANSACTION SPECIFICATIONS')}</h3>
                   <dl className="payment-detail-metadata">
                     <Fact
-                      label="Payment method"
-                      value={paymentMethods[payment.methodCode] ?? text(payment.methodName)}
+                      label={t('Payment method')}
+                      value={paymentMethods[payment.methodCode] ?? displayText(payment.methodName)}
                       icon="method"
                     />
-                    <Fact label="Wallet posting" value={evidence.label} icon="settlement">
+                    <Fact label={t('Wallet posting')} value={evidence.label} icon="settlement">
                       <small>{evidence.explanation}</small>
                     </Fact>
                     <Fact
-                      label="Created at (UTC+7)"
+                      label={t('Created at (UTC+7)')}
                       value={formatPaymentTime(payment.createdAt)}
                       icon="created"
                     />
                     <Fact
-                      label="Paid at (UTC+7)"
+                      label={t('Paid at (UTC+7)')}
                       value={formatPaymentTime(payment.paidAt)}
                       icon="paid"
                     >
-                      <small>Settled at: {formatPaymentTime(payment.settledAt)}</small>
+                      <small>
+                        {t('Settled at')}: {formatPaymentTime(payment.settledAt)}
+                      </small>
                     </Fact>
                   </dl>
                   <dl className="payment-detail-reference">
                     <div>
-                      <dt>Transaction reference</dt>
-                      <dd>{text(payment.transactionReference)}</dd>
+                      <dt>{t('Transaction reference')}</dt>
+                      <dd>{displayText(payment.transactionReference)}</dd>
                     </div>
                     {payment.kind === 'CASH' && (
                       <div>
-                        <dt>Cash received at (UTC+7)</dt>
+                        <dt>{t('Cash received at (UTC+7)')}</dt>
                         <dd>{formatPaymentTime(payment.cashReceivedAt)}</dd>
                       </div>
                     )}
                     {payment.closureReference && (
                       <div>
-                        <dt>Closure reference</dt>
+                        <dt>{t('Closure reference')}</dt>
                         <dd>{payment.closureReference}</dd>
                       </div>
                     )}
                     {payment.closureVerifiedAt && (
                       <div>
-                        <dt>Closure verified at (UTC+7)</dt>
+                        <dt>{t('Closure verified at (UTC+7)')}</dt>
                         <dd>{formatPaymentTime(payment.closureVerifiedAt)}</dd>
                       </div>
                     )}
                   </dl>
                 </div>
                 <div className="payment-detail-breakdown">
-                  <h3>BOOKING PRICE BREAKDOWN</h3>
+                  <h3>{t('BOOKING PRICE BREAKDOWN')}</h3>
                   <p className="payment-detail-source-note">
-                    Current accepted quotations and booking totals.
+                    {t('Current accepted quotations and booking totals.')}
                   </p>
                   {pricingMismatch && (
                     <p className="payment-detail-data-note">
-                      Booking pricing differs from this payment attempt. The payment amount above
-                      remains {formatPaymentAmount(payment.amount)}.
+                      {t('Booking pricing differs from this payment attempt. The payment amount above remains {amount}.', {
+                        amount: formatPaymentAmount(payment.amount),
+                      })}
                     </p>
                   )}
                   {breakdownMismatch && (
                     <p className="payment-detail-data-note">
-                      The accepted item breakdown and booking totals do not fully match. Amounts
-                      below are shown as recorded.
+                      {t(
+                        'The accepted item breakdown and booking totals do not fully match. Amounts below are shown as recorded.'
+                      )}
                     </p>
                   )}
                   <dl className="payment-detail-line-items">
@@ -281,9 +292,9 @@ export default function PaymentDetailPage() {
                       booking.items.map((item) => (
                         <div key={item.id}>
                           <dt>
-                            <span>{text(item.description)}</span>
+                            <span>{displayText(item.description)}</span>
                             <small>
-                              {formatQuantity(item.quantity)} {item.unit || ''} ×{' '}
+                              {displayQuantity(item.quantity)} {item.unit || ''} ×{' '}
                               {formatPaymentAmount(item.unitPrice)}
                             </small>
                           </dt>
@@ -292,24 +303,24 @@ export default function PaymentDetailPage() {
                       ))
                     ) : (
                       <div>
-                        <dt>Service and labor items</dt>
-                        <dd>Not available</dd>
+                        <dt>{t('Service and labor items')}</dt>
+                        <dd>{t('Not available')}</dd>
                       </div>
                     )}
                     <div>
-                      <dt>Parts</dt>
+                      <dt>{t('Parts')}</dt>
                       <dd>{formatPaymentAmount(booking?.totals?.partsAmount)}</dd>
                     </div>
                     <div className="payment-detail-subtotal">
-                      <dt>Booking subtotal</dt>
+                      <dt>{t('Booking subtotal')}</dt>
                       <dd>{formatPaymentAmount(booking?.totals?.subtotal)}</dd>
                     </div>
                     <div>
-                      <dt>Discount</dt>
+                      <dt>{t('Discount')}</dt>
                       <dd>{formatPaymentAmount(booking?.totals?.discountAmount)}</dd>
                     </div>
                     <div className="payment-detail-total">
-                      <dt>Booking total</dt>
+                      <dt>{t('Booking total')}</dt>
                       <dd>{formatPaymentAmount(booking?.totals?.totalAmount)}</dd>
                     </div>
                   </dl>
@@ -317,21 +328,21 @@ export default function PaymentDetailPage() {
               </section>
               <section className="payment-detail-card">
                 <CardHeader icon="booking-card" tone="blue">
-                  Linked Booking
+                  {t('Linked Booking')}
                 </CardHeader>
                 <div className="payment-detail-booking-identity">
                   <div>
-                    <span>BOOKING CODE</span>
-                    <strong>{text(booking?.bookingCode)}</strong>
+                    <span>{t('BOOKING CODE')}</span>
+                    <strong>{displayText(booking?.bookingCode)}</strong>
                   </div>
                   <span
                     className={`payment-detail-booking-status booking-${booking?.status?.toLowerCase()}`}
                   >
-                    {humanizeStatus(booking?.status)}
+                    {t(humanizeStatus(booking?.status))}
                   </span>
                 </div>
                 <div className="payment-detail-booking-scope">
-                  <span>SERVICE SCOPE</span>
+                  <span>{t('SERVICE SCOPE')}</span>
                   <p>{serviceScope}</p>
                 </div>
                 <div className="payment-detail-booking-schedule">
@@ -339,7 +350,7 @@ export default function PaymentDetailPage() {
                     <DetailIcon name="schedule" />
                   </span>
                   <div>
-                    <span>SCHEDULED AT (UTC+7)</span>
+                    <span>{t('SCHEDULED AT (UTC+7)')}</span>
                     <strong>{formatPaymentTime(booking?.scheduledAt)}</strong>
                   </div>
                 </div>
@@ -350,74 +361,79 @@ export default function PaymentDetailPage() {
                   <div>
                     <strong>
                       {booking?.customerConfirmedCompletion
-                        ? 'Customer confirmed completion'
-                        : 'Customer completion not confirmed'}
+                        ? t('Customer confirmed completion')
+                        : t('Customer completion not confirmed')}
                     </strong>
                     <span>{formatPaymentTime(booking?.completionConfirmedAt)}</span>
                   </div>
                 </div>
               </section>
             </div>
-            <aside className="payment-detail-side-column" aria-label="Customer and technician">
+            <aside
+              className="payment-detail-side-column"
+              aria-label={t('Customer and technician')}
+            >
               <section className="payment-detail-card">
-                <CardHeader icon="customer-card">Customer Details</CardHeader>
+                <CardHeader icon="customer-card">{t('Customer Details')}</CardHeader>
                 <div className="payment-detail-person">
                   <PersonAvatar name={customer?.name} url={customer?.avatarUrl} />
-                  <strong>{text(customer?.name)}</strong>
+                  <strong>{displayText(customer?.name)}</strong>
                 </div>
                 <dl className="payment-detail-person-facts">
-                  <Fact label="PHONE NUMBER" value={text(customer?.phone)} />
-                  <Fact label="SERVICE ADDRESS" value={text(serviceAddress)} />
+                  <Fact label={t('PHONE NUMBER')} value={displayText(customer?.phone)} />
+                  <Fact label={t('SERVICE ADDRESS')} value={displayText(serviceAddress)} />
                   <Fact
-                    label="Completed bookings"
+                    label={t('Completed bookings')}
                     value={
                       customer?.completedBookingCount === null ||
                       customer?.completedBookingCount === undefined
-                        ? 'Not available'
-                        : `${customer.completedBookingCount} ${customer.completedBookingCount === 1 ? 'booking' : 'bookings'}`
+                        ? t('Not available')
+                        : `${customer.completedBookingCount} ${t(
+                            customer.completedBookingCount === 1 ? 'booking' : 'bookings'
+                          )}`
                     }
                   />
                 </dl>
               </section>
               <section className="payment-detail-card">
                 <CardHeader icon="technician-card" tone="orange">
-                  Payment Technician
+                  {t('Payment Technician')}
                 </CardHeader>
                 {technician ? (
                   <>
                     <div className="payment-detail-person">
                       <PersonAvatar name={technician.name} url={technician.avatarUrl} />
                       <div>
-                        <strong>{text(technician.name)}</strong>
+                        <strong>{displayText(technician.name)}</strong>
                         <span className="payment-detail-rating">
                           <DetailIcon name="rating" />
                           {technician.totalReviews === 0
-                            ? 'No ratings yet'
+                            ? t('No ratings yet')
                             : technician.ratingAverage === null
-                              ? 'Not available'
+                              ? t('Not available')
                               : Number(technician.ratingAverage).toFixed(2)}
                         </span>
                       </div>
                     </div>
                     <dl className="payment-detail-person-facts">
-                      <Fact label="SERVICE ZONES" value={zones} />
+                      <Fact label={t('SERVICE ZONES')} value={zones} />
                       <Fact
-                        label="TECHNICIAN EARNING"
+                        label={t('TECHNICIAN EARNING')}
                         value={formatPaymentAmount(payment.technicianEarning)}
                       >
                         <small>
                           {payment.status !== 'SUCCESS'
-                            ? 'Stored calculation; this payment has not succeeded.'
+                            ? t('Stored calculation; this payment has not succeeded.')
                             : payment.kind === 'CASH'
-                              ? 'Payment entitlement; cash is collected separately.'
-                              : 'Payment entitlement before any withdrawal.'}
+                              ? t('Payment entitlement; cash is collected separately.')
+                              : t('Payment entitlement before any withdrawal.')}
                         </small>
                       </Fact>
                       <Fact
-                        label="COMMISSION RATE"
+                        label={t('COMMISSION RATE')}
                         value={
                           payment.commissionRate === null || payment.commissionRate === undefined
-                            ? 'Not available'
+                            ? t('Not available')
                             : percent.format(Number(payment.commissionRate))
                         }
                       />
@@ -429,27 +445,27 @@ export default function PaymentDetailPage() {
                       <span>{evidence.explanation}</span>
                       {evidence.record && (
                         <small>
-                          Wallet movement: {formatPaymentAmount(evidence.record.amount)}
+                          {t('Wallet movement')}: {formatPaymentAmount(evidence.record.amount)}
                         </small>
                       )}
                     </div>
                   </>
                 ) : (
                   <p className="payment-detail-unassigned">
-                    Technician is not recorded for this payment.
+                    {t('Technician is not recorded for this payment.')}
                   </p>
                 )}
                 <button
                   type="button"
                   className="payment-detail-profile-button"
                   disabled
-                  title="Technician profile is not available"
+                  title={t('Technician profile is not available')}
                 >
-                  <span>View Technician Profile</span>
+                  <span>{t('View Technician Profile')}</span>
                   <DetailIcon name="profile-arrow" />
                 </button>
                 <small className="payment-detail-action-note">
-                  Technician profile is not available.
+                  {t('Technician profile is not available.')}
                 </small>
               </section>
             </aside>
@@ -458,7 +474,7 @@ export default function PaymentDetailPage() {
         <footer className="payment-detail-footer">
           <Link className="payment-detail-back" to={backUrl}>
             <DetailIcon name="back" />
-            Back to Payments List
+            {t('Back to Payments List')}
           </Link>
           <div>
             {pdfUrl ? (
@@ -469,31 +485,32 @@ export default function PaymentDetailPage() {
                 className="payment-detail-pdf"
               >
                 <DetailIcon name="pdf" />
-                Open Invoice PDF
+                {t('Open Invoice PDF')}
               </a>
             ) : (
               <button
                 type="button"
                 className="payment-detail-pdf"
                 disabled
-                title="Invoice PDF is not available"
+                title={t('Invoice PDF is not available')}
               >
                 <DetailIcon name="pdf" />
-                Invoice PDF
+                {t('Invoice PDF')}
               </button>
             )}
             <button
               type="button"
               className="payment-detail-booking-button"
               disabled
-              title="Booking detail is not available"
+              title={t('Booking detail is not available')}
             >
               <DetailIcon name="booking-view" />
-              View Booking Detail
+              {t('View Booking Detail')}
             </button>
           </div>
           <small className="payment-detail-action-note">
-            {!pdfUrl && 'Invoice PDF is not available. '}Booking detail is not available.
+            {!pdfUrl && `${t('Invoice PDF is not available.')} `}
+            {t('Booking detail is not available.')}
           </small>
         </footer>
       </section>

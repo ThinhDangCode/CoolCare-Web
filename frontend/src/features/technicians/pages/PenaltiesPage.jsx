@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../../shared/context/AuthContext.jsx'
+import { useUiPreferences } from '../../../shared/context/UiPreferencesContext.jsx'
 import { adminRequest } from '../../../shared/api/adminApi.js'
 import {
   PageHeader,
@@ -27,6 +28,7 @@ const statuses = {
 }
 export function PenaltiesPage() {
   const { token, logout } = useAuth()
+  const { t } = useUiPreferences()
   const [search, setSearch] = useState('')
   const [keyword, setKeyword] = useState('')
   const [status, setStatus] = useState('ACTIVE')
@@ -81,21 +83,21 @@ export function PenaltiesPage() {
     <main className="figma-admin-main technician-main penalty-page">
       <PageHeader
         title="Technician Penalties"
-        subtitle="Track technician penalties and penalty points"
+        subtitle={t('Track technician penalties and penalty points')}
         onRefresh={retry}
         refreshing={loading}
       />
       <section className="technician-content">
-        <div className="penalty-summary" aria-label="System-wide penalty statistics">
+        <div className="penalty-summary" aria-label={t('System-wide penalty statistics')}>
           {[
             ['penalized_technicians', 'Penalized technicians'],
             ['active_penalties', 'Active penalties'],
             ['active_points', 'Active penalty points'],
           ].map(([key, title]) => (
             <div key={key}>
-              <span>{title}</span>
+              <span>{t(title)}</span>
               <strong>{loading || error ? '—' : data.summary[key]}</strong>
-              <small>System-wide</small>
+              <small>{t('System-wide')}</small>
             </div>
           ))}
         </div>
@@ -104,8 +106,8 @@ export function PenaltiesPage() {
             <SearchIcon />
             <input
               maxLength={150}
-              aria-label="Search penalties"
-              placeholder="Search name, phone, booking code or reason..."
+              aria-label={t('Search penalties')}
+              placeholder={t('Search name, phone, booking code or reason...')}
               value={search}
               onChange={(e) => {
                 setLoading(true)
@@ -114,22 +116,22 @@ export function PenaltiesPage() {
             />
           </label>
           <label className="technician-filter">
-            <span>Status</span>
+            <span>{t('Status')}</span>
             <select value={status} onChange={(e) => filter(setStatus, e.target.value)}>
               {Object.entries(statuses).map(([value, title]) => (
                 <option key={value} value={value}>
-                  {title}
+                  {t(title)}
                 </option>
               ))}
             </select>
           </label>
           <label className="technician-filter">
-            <span>Violation type</span>
+            <span>{t('Violation type')}</span>
             <select value={type} onChange={(e) => filter(setType, e.target.value)}>
-              <option value="ALL">All violations</option>
+              <option value="ALL">{t('All violations')}</option>
               {Object.entries(types).map(([value, title]) => (
                 <option key={value} value={value}>
-                  {title}
+                  {t(title)}
                 </option>
               ))}
             </select>
@@ -139,14 +141,14 @@ export function PenaltiesPage() {
           <table>
             <thead>
               <tr>
-                <th>TECHNICIAN</th>
-                <th>VIOLATION / BOOKING</th>
-                <th>PENALTY POINTS</th>
-                <th>REASON</th>
-                <th>APPLIED DATE</th>
-                <th>EXPIRES</th>
-                <th>STATUS</th>
-                <th>PROFILE</th>
+                <th>{t('TECHNICIAN')}</th>
+                <th>{t('VIOLATION / BOOKING')}</th>
+                <th>{t('PENALTY POINTS')}</th>
+                <th>{t('REASON')}</th>
+                <th>{t('APPLIED DATE')}</th>
+                <th>{t('EXPIRES')}</th>
+                <th>{t('STATUS')}</th>
+                <th>{t('PROFILE')}</th>
               </tr>
             </thead>
             <tbody>
@@ -174,21 +176,21 @@ export function PenaltiesPage() {
                       </Link>
                     </td>
                     <td>
-                      {types[row.penalty_type]}
+                      {t(types[row.penalty_type])}
                       <small className="technician-muted">
-                        {row.booking_code || 'No linked booking'}
+                        {row.booking_code || t('No linked booking')}
                       </small>
                     </td>
                     <td>
                       <span className="penalty-points">+{row.penalty_points}</span>
                     </td>
-                    <td className="penalty-reason">{row.reason || 'No reason provided'}</td>
+                    <td className="penalty-reason">{row.reason || t('No reason provided')}</td>
                     <td>{formatDate(row.applied_at)}</td>
-                    <td>{row.expires_at ? formatDate(row.expires_at) : 'No expiry'}</td>
+                    <td>{row.expires_at ? formatDate(row.expires_at) : t('No expiry')}</td>
                     <td>
                       <span className={`penalty-status ${row.status.toLowerCase()}`}>
                         <i />
-                        {statuses[row.status]}
+                        {t(statuses[row.status])}
                       </span>
                     </td>
                     <td>
@@ -196,7 +198,7 @@ export function PenaltiesPage() {
                         className="technician-view"
                         to={`/admin/technicians/${row.technician_id}`}
                       >
-                        View profile →
+                        {t('View profile')} →
                       </Link>
                     </td>
                   </tr>
@@ -206,15 +208,15 @@ export function PenaltiesPage() {
           {!loading && !error && !data.items.length && (
             <p className="penalty-empty-note">
               {status === 'ACTIVE'
-                ? 'No active penalties match your filters.'
-                : 'No penalties match your filters.'}
+                ? t('No active penalties match your filters.')
+                : t('No penalties match your filters.')}
             </p>
           )}
           <div className="penalty-footer">
             <label>
-              {data.total} penalties · Rows per page{' '}
+              {data.total} {t('penalties')} · {t('Rows per page')}{' '}
               <select
-                aria-label="Rows per page"
+                aria-label={t('Rows per page')}
                 value={limit}
                 onChange={(e) => filter(setLimit, Number(e.target.value))}
               >

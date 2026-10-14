@@ -1,7 +1,4 @@
-const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000/api').replace(
-  /\/$/,
-  ''
-)
+const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL ?? '/api').replace(/\/$/, '')
 
 export class ApiError extends Error {
   constructor({ status, code, message, details }) {
@@ -14,6 +11,28 @@ export class ApiError extends Error {
 }
 
 const wait = (milliseconds) => new Promise((resolve) => window.setTimeout(resolve, milliseconds))
+
+async function waitForApiReady(maxAttempts = 7) {
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    try {
+      const response = await fetch(`${apiBaseUrl}/health`, {
+        headers: { Accept: 'application/json' },
+        cache: 'no-store',
+      })
+      if (response.ok) return
+    } catch {
+      // The API may still be starting and establishing its first database connection.
+    }
+
+    if (attempt < maxAttempts - 1) await wait(Math.min(250 * 2 ** attempt, 1_500))
+  }
+
+  throw new ApiError({
+    status: 0,
+    code: 'NETWORK_ERROR',
+    message: 'Unable to connect to CoolCare right now. Please try again in a moment.',
+  })
+}
 
 async function request(path, { method = 'GET', body, token, networkRetries = 0 } = {}) {
   let response
@@ -54,8 +73,9 @@ async function request(path, { method = 'GET', body, token, networkRetries = 0 }
 }
 
 export const authApi = {
-  login(credentials) {
-    return request('/auth/login', { method: 'POST', body: credentials, networkRetries: 1 })
+  async login(credentials) {
+    await waitForApiReady()
+    return request('/auth/login', { method: 'POST', body: credentials, networkRetries: 2 })
   },
   logout(token) {
     return request('/auth/logout', { method: 'POST', token })

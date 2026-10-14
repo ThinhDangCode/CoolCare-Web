@@ -2,15 +2,29 @@
 import { useState } from 'react'
 import { useAutoDismiss } from '../../../shared/hooks/useAutoDismiss.js'
 import { CheckIcon, CloseIcon } from '../../../shared/components/AdminUi.jsx'
+import { useUiPreferences } from '../../../shared/context/UiPreferencesContext.jsx'
 
 export function TechnicianNotification({ message, onDismiss, danger = false }) {
+  const { t } = useUiPreferences()
   const hover = useAutoDismiss(danger ? '' : message, onDismiss)
   if (!message) return null
   return (
-    <div className={`figma-toast${danger ? ' danger' : ''}`} role={danger ? 'alert' : 'status'} {...hover}>
-      {danger ? <span className="toast-symbol" aria-hidden="true">!</span> : <CheckIcon />}
+    <div
+      className={`figma-toast${danger ? ' danger' : ''}`}
+      role={danger ? 'alert' : 'status'}
+      {...hover}
+    >
+      {danger ? (
+        <span className="toast-symbol" aria-hidden="true">
+          !
+        </span>
+      ) : (
+        <CheckIcon />
+      )}
       <span>{message}</span>
-      <button type="button" aria-label="Dismiss notification" onClick={() => onDismiss('')}><CloseIcon /></button>
+      <button type="button" aria-label={t('Dismiss notification')} onClick={() => onDismiss('')}>
+        <CloseIcon />
+      </button>
     </div>
   )
 }
@@ -43,6 +57,7 @@ export function safeDocumentUrl(value) {
   }
 }
 export function TechnicianBadge({ value }) {
+  const { t } = useUiPreferences()
   const tone = ['ACTIVE', 'VERIFIED', 'ONLINE'].includes(value)
     ? 'active'
     : ['REJECTED', 'EXPIRED', 'LOCKED'].includes(value)
@@ -53,7 +68,7 @@ export function TechnicianBadge({ value }) {
   return (
     <span className={`figma-status ${tone}`}>
       <i />
-      {label(value)}
+      {t(label(value))}
     </span>
   )
 }
@@ -75,35 +90,37 @@ export function TechnicianAvatar({ name, url }) {
   )
 }
 export function DocumentLink({ url, children = 'View document' }) {
+  const { t } = useUiPreferences()
   const safeUrl = safeDocumentUrl(url)
   return safeUrl ? (
     <a className="technician-view" href={safeUrl} target="_blank" rel="noopener noreferrer">
-      {children} ↗
+      {t(children)} ↗
     </a>
   ) : (
-    <span className="technician-muted">No document</span>
+    <span className="technician-muted">{t('No document')}</span>
   )
 }
 export function CertificateTable({ items }) {
+  const { t } = useUiPreferences()
   return (
     <div className="figma-users-table technician-table">
       <table>
         <thead>
           <tr>
-            <th>CERTIFICATE</th>
-            <th>NUMBER</th>
-            <th>ISSUED BY</th>
-            <th>ISSUED</th>
-            <th>EXPIRES</th>
-            <th>STATUS</th>
-            <th>DOCUMENT</th>
+            <th>{t('CERTIFICATE')}</th>
+            <th>{t('NUMBER')}</th>
+            <th>{t('ISSUED BY')}</th>
+            <th>{t('ISSUED')}</th>
+            <th>{t('EXPIRES')}</th>
+            <th>{t('STATUS')}</th>
+            <th>{t('DOCUMENT')}</th>
           </tr>
         </thead>
         <tbody>
           {!items.length && (
             <tr>
               <td colSpan={7}>
-                <div className="figma-table-state">No certifications submitted.</div>
+                <div className="figma-table-state">{t('No certifications submitted.')}</div>
               </td>
             </tr>
           )}

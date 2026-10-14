@@ -158,7 +158,14 @@ export function LockIcon({ open = false }) {
   )
 }
 
-export function PageHeader({ title, subtitle, children, onRefresh, refreshing = false }) {
+export function PageHeader({
+  title,
+  subtitle,
+  headingAddon,
+  children,
+  onRefresh,
+  refreshing = false,
+}) {
   const { user } = useAuth()
   const { t } = useUiPreferences()
   const initials = (user?.fullName || 'Admin User')
@@ -171,22 +178,25 @@ export function PageHeader({ title, subtitle, children, onRefresh, refreshing = 
   return (
     <header className="figma-utility-header figma-title-header">
       <div className="figma-header-title">
-        <h1>{t(title)}</h1>
+        <div className="figma-header-title-line">
+          <h1>{t(title)}</h1>
+          {headingAddon}
+        </div>
         <p>{t(subtitle)}</p>
       </div>
       <div className="figma-header-actions">
         <LanguageControl />
         <button
           className="figma-refresh"
-          aria-label="Refresh data"
-          title="Refresh data"
+          aria-label={t('Refresh data')}
+          title={t('Refresh data')}
           type="button"
           disabled={refreshing}
           onClick={onRefresh ?? (() => window.location.reload())}
         >
           ↻ <span>{refreshing ? t('Refreshing') : t('Refresh')}</span>
         </button>
-        <button className="figma-notification" aria-label="Notifications">
+        <button className="figma-notification" aria-label={t('Notifications')}>
           <BellIcon />
           <i />
         </button>
