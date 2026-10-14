@@ -35,6 +35,9 @@ import { ComplaintRepository } from './modules/complaints/complaint.repository.j
 import { createComplaintRouter } from './modules/complaints/complaint.routes.js'
 import { ComplaintService } from './modules/complaints/complaint.service.js'
 import { createPaymentsRouter } from './modules/payments/payments.routes.js'
+import { createTechnicianApplicationRouter } from './modules/technician-applications/technician-application.routes.js'
+import { createTechnicianPortalRouter } from './modules/technician-portal/technician-portal.routes.js'
+import { createServiceCategoryRouter } from './modules/services/service-category.routes.js'
 
 import { AddressRepository } from './modules/address/address.repository.js'
 import { AddressService } from './modules/address/address.service.js'
@@ -118,11 +121,15 @@ app.use('/api/catalog', createCatalogRouter(undefined, false))
 app.use('/api/customer/blogs', createBlogRouter(blogController))
 app.use('/api/customer', createReviewRouter(reviewController))
 app.use('/api/customer', createVoucherRouter(voucherController))
+app.use('/api/technician-applications', createTechnicianApplicationRouter())
+app.use('/api/technician-portal', createTechnicianPortalRouter())
 
 // ADDRESS
 app.use('/api/addresses', createAddressRouter(addressController))
 
 // SERVICES
+app.use('/api/service-categories', createServiceCategoryRouter())
+
 app.get(
   '/api/services',
   asyncHandler(async (_request, response) => {

@@ -36,6 +36,19 @@ export class TechnicianMutations {
       const before=(await client.query('SELECT *,expiry_date < CURRENT_DATE AS expired FROM technician_certifications WHERE id=$1 FOR UPDATE',[id])).rows[0]
       if(before.verification_status!=='PENDING' || new Date(before.updated_at).getTime()!==new Date(input.expected_updated_at).getTime()) throw new AppError(409,'STALE_CERTIFICATION','This certification has changed or has already been reviewed. Refresh the page.')
       if(input.status==='VERIFIED' && (!before.document_url || before.expired)) throw new AppError(422,'INVALID_CERTIFICATION','A valid document and a non-expired certificate are required for approval.')
+      if(input.status==='VERIFIED') {
+        await client.query(
+          'SELECT pg_advisory_xact_lock(hashtext(lower(btrim($1)) || chr(31) || lower(btrim($2)) || chr(31) || lower(btrim($3))))',
+          [before.certificate_name,before.issued_by,before.certificate_number]
+        )
+        const duplicate=await client.query(`SELECT id FROM technician_certifications
+          WHERE id<>$1
+            AND lower(btrim(certificate_name))=lower(btrim($2))
+            AND lower(btrim(issued_by))=lower(btrim($3))
+            AND lower(btrim(certificate_number))=lower(btrim($4))
+          LIMIT 1`,[id,before.certificate_name,before.issued_by,before.certificate_number])
+        if(duplicate.rows.length) throw new AppError(409,'CERTIFICATE_NUMBER_ALREADY_VERIFIED','This certificate number already belongs to another certification.')
+      }
       const row=(await client.query(`UPDATE technician_certifications SET verification_status=$2,reviewed_by_id=$3,
         reviewed_at=CURRENT_TIMESTAMP,rejection_reason=$4,updated_at=CURRENT_TIMESTAMP
         WHERE id=$1 RETURNING id,verification_status,reviewed_by_id,reviewed_at`,[id,input.status,actorId,input.reason])).rows[0]
