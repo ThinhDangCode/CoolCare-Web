@@ -1,11 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router-dom'
-import { useAuth } from '../../../context/AuthContext.jsx'
-import {
-  ArrowLeftIcon,
-  CalendarIcon,
-  UserIcon,
-} from '../../management/components/ManagementShared.jsx'
+import { useAuth } from '../../../shared/context/AuthContext.jsx'
+import { ArrowLeftIcon, CalendarIcon, UserIcon } from '../../../shared/components/AdminUi.jsx'
 import { getTopup } from '../api/topupsApi.js'
 import { readTopupFilters, writeTopupFilters } from '../topupFilters.js'
 import {

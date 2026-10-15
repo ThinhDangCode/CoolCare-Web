@@ -1,17 +1,16 @@
-import { useState } from 'react'
-import { Link, NavLink } from 'react-router-dom'
-import { useAuth } from '../../context/AuthContext.jsx'
-import { Brand } from '../../components/Brand.jsx'
+import { useLayoutEffect, useRef, useState } from 'react'
+import { Link, NavLink, useLocation } from 'react-router-dom'
+import { Brand } from './Brand.jsx'
+import { useUiPreferences } from '../context/UiPreferencesContext.jsx'
+import './AdminSidebar.css'
 
 const mainNavigation = [
-  ['dashboard', 'Dashboard'],
   ['booking', 'Booking', '12'],
   ['user', 'User'],
   ['technician', 'Technician'],
 ]
 
 const technicianNavigation = ['Technician List', 'Certification', 'Verification', 'Penalty']
-
 const secondaryNavigation = [
   ['services', 'Service'],
   ['finance', 'Finance & Wallet'],
@@ -76,8 +75,13 @@ export function DashboardIcon({ name }) {
         <path d="M4 20V10m5 10V4m6 16v-7m5 7V7" />
       </>
     ),
+    settings: (
+      <>
+        <circle cx="12" cy="12" r="3" />
+        <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-4V21a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9A1.7 1.7 0 0 0 3 14H2.8v-4H3a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1a1.7 1.7 0 0 0 1.9.3A1.7 1.7 0 0 0 10 3V2.8h4V3a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v4H21a1.7 1.7 0 0 0-1.6 1Z" />
+      </>
+    ),
   }
-
   return (
     <svg className="dashboard-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       {paths[name] ?? paths.dashboard}
@@ -85,100 +89,318 @@ export function DashboardIcon({ name }) {
   )
 }
 
-export function AdminSidebar() {
-  const { user, logout } = useAuth()
-  const [showLogout, setShowLogout] = useState(false)
+function initials(name = '') {
+  const parts = name.trim().split(/\s+/).filter(Boolean)
   return (
-    <>
-      <aside className="dashboard-sidebar">
-        <Brand />
+    parts.length
+      ? parts
+          .slice(-2)
+          .map((part) => part[0])
+          .join('')
+      : 'AD'
+  ).toUpperCase()
+}
 
-        <div className="dashboard-admin-card">
-          <span className="dashboard-avatar">
-            {user?.fullName?.split(' ').at(-1)?.slice(0, 2).toUpperCase() ?? 'MV'}
-          </span>
-          <span>
-            <strong>{user?.fullName ?? 'Marcus Vance'}</strong>
-            <small>Fleet Director</small>
-          </span>
-          <i aria-label="Đang hoạt động" />
-        </div>
+export function AdminSidebar({
+  user,
+  activePage = 'dashboard',
+  profileMode = 'view',
+  onProfileMode,
+  onLogout,
+}) {
+  const { t } = useUiPreferences()
+  const location = useLocation()
+  const sidebarRef = useRef(null)
+  const [technicianOpen, setTechnicianOpen] = useState(
+    () =>
+      location.pathname.startsWith('/admin/technicians') ||
+      sessionStorage.getItem('admin-sidebar-technician') === 'true'
+  )
+  const [serviceOpen, setServiceOpen] = useState(
+    () => sessionStorage.getItem('admin-sidebar-service') === 'true'
+  )
+  const [marketingOpen, setMarketingOpen] = useState(
+    () => sessionStorage.getItem('admin-sidebar-marketing') === 'true'
+  )
+  const walletActive =
+    location.pathname.startsWith('/admin/withdrawals') ||
+    location.pathname.startsWith('/admin/topups')
+  const financeActive =
+    location.pathname.startsWith('/admin/payments') ||
+    location.pathname.startsWith('/admin/revenue') ||
+    walletActive
+  const [financeOpen, setFinanceOpen] = useState(
+    () => financeActive || sessionStorage.getItem('admin-sidebar-finance') === 'true'
+  )
+  const [walletOpen, setWalletOpen] = useState(
+    () => walletActive || sessionStorage.getItem('admin-sidebar-wallet') === 'true'
+  )
+  const [settingsOpen, setSettingsOpen] = useState(activePage === 'profile')
+  const [failedAvatarUrl, setFailedAvatarUrl] = useState('')
 
-        <span className="dashboard-nav-label">MAIN NAVIGATION</span>
-        <nav aria-label="Điều hướng quản trị">
-          {mainNavigation.map(([icon, label, badge]) =>
-            label === 'Dashboard' ? (
-              <NavLink key={label} to="/" end>
-                <DashboardIcon name={icon} />
-                <span>{label}</span>
-              </NavLink>
-            ) : (
-              <a key={label} href={`#${icon}`}>
-                <DashboardIcon name={icon} />
-                <span>{label}</span>
-                {badge && <em>{badge}</em>}
-              </a>
-            )
+  useLayoutEffect(() => {
+    const sidebar = sidebarRef.current
+    if (sidebar) sidebar.scrollTop = Number(sessionStorage.getItem('admin-sidebar-scroll') || 0)
+  }, [])
+
+  const rememberScroll = () =>
+    sessionStorage.setItem('admin-sidebar-scroll', String(sidebarRef.current?.scrollTop || 0))
+  const toggleGroup = (key, setter) =>
+    setter((open) => {
+      sessionStorage.setItem(`admin-sidebar-${key}`, String(!open))
+      return !open
+    })
+  const selectProfileMode = (mode) => {
+    const scrollTop = sidebarRef.current?.scrollTop || 0
+    onProfileMode?.(mode)
+    requestAnimationFrame(() => {
+      if (sidebarRef.current) sidebarRef.current.scrollTop = scrollTop
+    })
+  }
+
+  return (
+    <aside ref={sidebarRef} className="dashboard-sidebar" onScroll={rememberScroll}>
+      <Brand />
+      <Link className="dashboard-admin-card" to="/profile" aria-label="Mở hồ sơ cá nhân">
+        <span className="dashboard-avatar">
+          {user?.avatarUrl && failedAvatarUrl !== user.avatarUrl ? (
+            <img src={user.avatarUrl} alt="" onError={() => setFailedAvatarUrl(user.avatarUrl)} />
+          ) : (
+            initials(user?.fullName)
           )}
-          <div className="dashboard-subnav">
-            {technicianNavigation.map((label) => (
-              <span key={label}>{label}</span>
-            ))}
-          </div>
-          {secondaryNavigation.map(([icon, label]) =>
-            icon === 'services' ? (
-              <div key={label}>
-                <Link to="/catalog/services">
-                  <DashboardIcon name={icon} />
-                  <span>{label}</span>
-                </Link>
-                <div className="dashboard-subnav dashboard-catalog-subnav">
-                  <NavLink to="/catalog/categories">Category</NavLink>
-                  <NavLink to="/catalog/services">Services</NavLink>
-                  <NavLink to="/catalog/brands">AC Brands</NavLink>
-                  <NavLink to="/catalog/models">AC Models</NavLink>
+        </span>
+        <span>
+          <strong>{user?.fullName ?? 'Marcus Vance'}</strong>
+          <small>{t('Fleet Director')}</small>
+        </span>
+        <i aria-label="Đang hoạt động" />
+      </Link>
+      <span className="dashboard-nav-label">{t('MAIN NAVIGATION')}</span>
+      <nav aria-label="Điều hướng quản trị">
+        <Link className={activePage === 'dashboard' ? 'active' : ''} to="/">
+          <DashboardIcon name="dashboard" />
+          <span>{t('Dashboard')}</span>
+        </Link>
+        {mainNavigation.map(([icon, label, badge]) =>
+          label === 'User' ? (
+            <NavLink key={label} to="/admin/users">
+              <DashboardIcon name={icon} />
+              <span>{t(label)}</span>
+            </NavLink>
+          ) : label === 'Booking' ? (
+            <NavLink key={label} to="/admin/bookings">
+              <DashboardIcon name={icon} />
+              <span>{t(label)}</span>
+              {badge && <em>{badge}</em>}
+            </NavLink>
+          ) : label === 'Technician' ? (
+            <div key={label} className="sidebar-accordion">
+              <button
+                className="sidebar-trigger"
+                type="button"
+                aria-expanded={technicianOpen}
+                onClick={() => toggleGroup('technician', setTechnicianOpen)}
+              >
+                <DashboardIcon name={icon} />
+                <span>{t(label)}</span>
+                <b className={`nav-chevron ${technicianOpen ? 'open' : ''}`}>⌄</b>
+              </button>
+              {technicianOpen && (
+                <div className="dashboard-subnav dashboard-technician-subnav">
+                  {technicianNavigation.map((item) => (
+                    <NavLink
+                      key={item}
+                      end={item === 'Technician List'}
+                      to={
+                        item === 'Technician List'
+                          ? '/admin/technicians'
+                          : `/admin/technicians/${
+                              item === 'Certification'
+                                ? 'certifications'
+                                : item === 'Penalty'
+                                  ? 'penalties'
+                                  : 'verification'
+                            }`
+                      }
+                      onClick={rememberScroll}
+                    >
+                      {t(item)}
+                    </NavLink>
+                  ))}
                 </div>
-              </div>
-            ) : (
-              <a key={label} href={`#${icon}`}>
-                <DashboardIcon name={icon} />
-                <span>{label}</span>
-              </a>
-            )
-          )}
-        </nav>
-
-        <button className="dashboard-logout" type="button" onClick={() => setShowLogout(true)}>
-          Đăng xuất
-        </button>
-      </aside>
-
-      {showLogout && (
-        <div
-          className="dialog-backdrop"
-          role="presentation"
-          onMouseDown={() => setShowLogout(false)}
-        >
-          <div
-            className="confirm-dialog"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="logout-title"
-            onMouseDown={(event) => event.stopPropagation()}
-          >
-            <h2 id="logout-title">Đăng xuất?</h2>
-            <p>Bạn có chắc muốn kết thúc phiên quản trị hiện tại?</p>
-            <div className="confirm-dialog-actions">
-              <button type="button" onClick={() => setShowLogout(false)}>
-                Hủy
-              </button>
-              <button className="danger" type="button" onClick={logout}>
-                Đăng xuất
-              </button>
+              )}
             </div>
+          ) : (
+            <a key={label} href={`/#${icon}`}>
+              <DashboardIcon name={icon} />
+              <span>{t(label)}</span>
+              {badge && <em>{badge}</em>}
+            </a>
+          )
+        )}
+        {secondaryNavigation.map(([icon, label]) =>
+          icon === 'services' ? (
+            <div key={label} className="sidebar-accordion">
+              <button
+                className={
+                  location.pathname.startsWith('/catalog/')
+                    ? 'sidebar-trigger section-active'
+                    : 'sidebar-trigger'
+                }
+                type="button"
+                aria-expanded={serviceOpen}
+                onClick={() => toggleGroup('service', setServiceOpen)}
+              >
+                <DashboardIcon name={icon} />
+                <span>{t(label)}</span>
+                <b className={`nav-chevron ${serviceOpen ? 'open' : ''}`}>⌄</b>
+              </button>
+              {serviceOpen && (
+                <div className="dashboard-subnav dashboard-catalog-subnav">
+                  <NavLink to="/catalog/categories">{t('Category')}</NavLink>
+                  <NavLink to="/catalog/services">{t('Services')}</NavLink>
+                  <NavLink to="/catalog/brands">{t('AC Brands')}</NavLink>
+                  <NavLink to="/catalog/models">{t('AC Models')}</NavLink>
+                </div>
+              )}
+            </div>
+          ) : icon === 'finance' ? (
+            <div key={label} className="sidebar-accordion">
+              <button
+                className={`sidebar-trigger ${financeActive ? 'section-active' : ''}`}
+                type="button"
+                aria-expanded={financeOpen}
+                aria-controls="admin-finance-navigation"
+                onClick={() => toggleGroup('finance', setFinanceOpen)}
+              >
+                <DashboardIcon name={icon} />
+                <span>{t(label)}</span>
+                <b className={`nav-chevron ${financeOpen ? 'open' : ''}`}>⌄</b>
+              </button>
+              {financeOpen && (
+                <div
+                  id="admin-finance-navigation"
+                  className="dashboard-subnav dashboard-catalog-subnav finance-subnav"
+                >
+                  <NavLink to="/admin/payments" onClick={rememberScroll}>
+                    {t('Payments')}
+                  </NavLink>
+                  <NavLink to="/admin/revenue" onClick={rememberScroll}>
+                    {t('Revenue')}
+                  </NavLink>
+                  <button
+                    className="dashboard-subnav-action finance-wallet-trigger"
+                    type="button"
+                    aria-expanded={walletOpen}
+                    aria-controls="admin-wallet-navigation"
+                    onClick={() => toggleGroup('wallet', setWalletOpen)}
+                  >
+                    {t('Wallet')}
+                    <b className={`nav-chevron ${walletOpen ? 'open' : ''}`}>⌄</b>
+                  </button>
+                  {walletOpen && (
+                    <div id="admin-wallet-navigation" className="finance-wallet-subnav">
+                      <NavLink to="/admin/withdrawals" onClick={rememberScroll}>
+                        {t('Withdrawal')}
+                      </NavLink>
+                      <NavLink to="/admin/topups" onClick={rememberScroll}>
+                        {t('Top-up')}
+                      </NavLink>
+                    </div>
+                  )}
+                  <button className="dashboard-subnav-action" type="button" disabled>
+                    {t('Invoice')}
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : icon === 'marketing' ? (
+            <div key={label} className="sidebar-accordion">
+              <button
+                className={
+                  location.pathname.startsWith('/admin/voucher') ||
+                  location.pathname.startsWith('/admin/blog')
+                    ? 'sidebar-trigger section-active'
+                    : 'sidebar-trigger'
+                }
+                type="button"
+                aria-expanded={marketingOpen}
+                onClick={() => toggleGroup('marketing', setMarketingOpen)}
+              >
+                <DashboardIcon name={icon} />
+                <span>{t(label)}</span>
+                <b className={`nav-chevron ${marketingOpen ? 'open' : ''}`}>⌄</b>
+              </button>
+              {marketingOpen && (
+                <div className="dashboard-subnav dashboard-catalog-subnav">
+                  <NavLink to="/admin/blogs" onClick={rememberScroll}>
+                    {t('Blog')}
+                  </NavLink>
+                  <NavLink to="/admin/vouchers" onClick={rememberScroll}>
+                    {t('Voucher')}
+                  </NavLink>
+                  <NavLink to="/admin/voucher-usages" onClick={rememberScroll}>
+                    {t('Usage History')}
+                  </NavLink>
+                </div>
+              )}
+            </div>
+          ) : icon === 'complaint' ? (
+            <NavLink key={label} to="/admin/complaints" onClick={rememberScroll}>
+              <DashboardIcon name={icon} />
+              <span>{t(label)}</span>
+            </NavLink>
+          ) : (
+            <a key={label} href={`/#${icon}`}>
+              <DashboardIcon name={icon} />
+              <span>{t(label)}</span>
+            </a>
+          )
+        )}
+        <button
+          className={`settings-trigger sidebar-trigger ${activePage === 'profile' ? 'settings-open section-active' : ''}`}
+          type="button"
+          aria-expanded={settingsOpen}
+          onClick={() => setSettingsOpen((open) => !open)}
+        >
+          <DashboardIcon name="settings" />
+          <span>{t('Settings')}</span>
+          <b className={`nav-chevron ${settingsOpen ? 'open' : ''}`}>⌄</b>
+        </button>
+        {settingsOpen && (
+          <div className="dashboard-subnav settings-subnav">
+            {activePage === 'profile' ? (
+              <button
+                className={profileMode !== 'password' ? 'active' : ''}
+                type="button"
+                onClick={() => selectProfileMode('edit')}
+              >
+                {t('Profile')}
+              </button>
+            ) : (
+              <Link to="/profile" onClick={rememberScroll}>
+                {t('Profile')}
+              </Link>
+            )}
+            {activePage === 'profile' ? (
+              <button
+                className={profileMode === 'password' ? 'active' : ''}
+                type="button"
+                onClick={() => selectProfileMode('password')}
+              >
+                {t('Change password')}
+              </button>
+            ) : (
+              <Link to="/profile" state={{ mode: 'password' }} onClick={rememberScroll}>
+                {t('Change password')}
+              </Link>
+            )}
           </div>
-        </div>
-      )}
-    </>
+        )}
+      </nav>
+      <button className="dashboard-logout" type="button" onClick={onLogout}>
+        {t('logout')}
+      </button>
+    </aside>
   )
 }

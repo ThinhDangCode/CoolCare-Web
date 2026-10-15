@@ -1,4 +1,4 @@
-import { adminRequest } from '../../management/api/managementApi.js'
+import { adminRequest } from '../../../shared/api/adminApi.js'
 
 export function listWithdrawals(query, token, signal) {
   return adminRequest(`/withdrawals?${query}`, token, { signal })

@@ -1,4 +1,4 @@
-import { writeManagementAudit } from '../management/management.audit.js'
+import { writeAdminAudit as writeManagementAudit } from '../audit/admin-audit.js'
 import { AppError } from '../../utils.js'
 import { validateRevenueExportQuery } from './payments.export.validation.js'
 import { buildRevenueWorkbook } from './payments.export.workbook.js'

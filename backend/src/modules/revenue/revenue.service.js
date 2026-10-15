@@ -1,4 +1,4 @@
-import { writeManagementAudit } from '../management/management.audit.js'
+import { writeAdminAudit as writeManagementAudit } from '../audit/admin-audit.js'
 import { validateRevenueQuery, calendarMonthDays } from './revenue.validation.js'
 import { revenueUnits, revenueDecimal, roundedDivide, revenuePercent } from './revenue.money.js'
 

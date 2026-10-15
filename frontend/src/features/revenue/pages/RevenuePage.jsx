@@ -1,11 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { useAuth } from '../../../context/AuthContext.jsx'
-import {
-  CalendarIcon,
-  ChevronDownIcon,
-  PageHeader,
-} from '../../management/components/ManagementShared.jsx'
+import { useAuth } from '../../../shared/context/AuthContext.jsx'
+import { CalendarIcon, ChevronDownIcon, PageHeader } from '../../../shared/components/AdminUi.jsx'
 import MonthYearPicker from '../../payments/components/MonthYearPicker.jsx'
 import layersIcon from '../assets/layers.svg'
 import areaIcon from '../assets/map-pin.svg'

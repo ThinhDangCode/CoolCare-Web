@@ -54,8 +54,20 @@ export class CatalogRepository {
         values
       )
       const pagination = [...values, filters.limit, (filters.page - 1) * filters.limit]
+      const nameColumn = kind === 'models' ? 'model_name' : 'name'
+      const orders = {
+        NEWEST: 'r.created_at DESC, r.id',
+        OLDEST: 'r.created_at ASC, r.id',
+        NAME_ASC: `LOWER(r.${nameColumn}) ASC, r.id`,
+        NAME_DESC: `LOWER(r.${nameColumn}) DESC, r.id DESC`,
+        PRICE_ASC: 'r.base_price ASC, r.id',
+        PRICE_DESC: 'r.base_price DESC, r.id DESC',
+        CAPACITY_ASC: 'r.capacity_btu ASC NULLS LAST, r.id',
+        CAPACITY_DESC: 'r.capacity_btu DESC NULLS LAST, r.id DESC',
+      }
+      const order = orders[filters.sort] ?? orders.NEWEST
       const rows = await client.query(
-        `SELECT ${columns} FROM ${table} r${join}${where} ORDER BY r.created_at DESC, r.id LIMIT $${values.length + 1} OFFSET $${values.length + 2}`,
+        `SELECT ${columns} FROM ${table} r${join}${where} ORDER BY ${order} LIMIT $${values.length + 1} OFFSET $${values.length + 2}`,
         pagination
       )
       return {
@@ -64,6 +76,34 @@ export class CatalogRepository {
         page: filters.page,
         limit: filters.limit,
       }
+    })
+  }
+
+  async find(kind, id, mobile = false) {
+    const { table } = resources[kind]
+    const join =
+      kind === 'services'
+        ? ' JOIN service_categories c ON c.id = r.category_id'
+        : kind === 'models'
+          ? ' JOIN ac_brands b ON b.id = r.brand_id'
+          : ''
+    const columns =
+      kind === 'models'
+        ? 'r.*, b.name AS brand_name'
+        : kind === 'services'
+          ? 'r.*, c.name AS category_name'
+          : 'r.*'
+    const activeOnly = mobile
+      ? ` AND r.is_active=true${kind === 'services' ? ' AND c.is_active=true' : kind === 'models' ? ' AND b.is_active=true' : ''}`
+      : ''
+
+    return this.transaction(async (client) => {
+      const result = await client.query(
+        `SELECT ${columns} FROM ${table} r${join} WHERE r.id=$1${activeOnly} LIMIT 1`,
+        [id]
+      )
+      if (!result.rowCount) throw new AppError(404, 'NOT_FOUND', 'Không tìm thấy dữ liệu.')
+      return result.rows[0]
     })
   }
 

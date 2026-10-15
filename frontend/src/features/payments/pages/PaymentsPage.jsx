@@ -1,15 +1,16 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Link, useLocation, useSearchParams } from 'react-router-dom'
-import { useAuth } from '../../../context/AuthContext.jsx'
+import { useAuth } from '../../../shared/context/AuthContext.jsx'
+import { useUiPreferences } from '../../../shared/context/UiPreferencesContext.jsx'
 import {
-  BellIcon,
   CalendarIcon,
   ChevronDownIcon,
   EyeIcon,
+  PageHeader,
   Pagination,
   SearchIcon,
   TableState,
-} from '../../management/components/ManagementShared.jsx'
+} from '../../../shared/components/AdminUi.jsx'
 import { listPayments } from '../api/paymentsApi.js'
 import ExportRevenueDialog from '../components/ExportRevenueDialog.jsx'
 import {
@@ -35,7 +36,8 @@ function validateRange(range) {
 }
 
 export default function PaymentsPage() {
-  const { token, user, clearSession } = useAuth()
+  const { token, clearSession } = useAuth()
+  const { t, locale } = useUiPreferences()
   const location = useLocation()
   const [params, setParams] = useSearchParams()
   const filters = readPaymentFilters(params)
@@ -85,7 +87,7 @@ export default function PaymentsPage() {
   const data = !loading && !response.error ? response.data : null
   const error = response.key === requestKey ? response.error : ''
   const total = data?.pagination.total ?? 0
-  const transactionLabel = total === 1 ? 'transaction' : 'transactions'
+  const transactionLabel = t(total === 1 ? 'transaction' : 'transactions')
   const items = data?.items ?? []
   const rangeError = validateRange(draftRange)
   const hasFilters = Boolean(
@@ -97,16 +99,8 @@ export default function PaymentsPage() {
   )
   const rangeLabel =
     filters.from || filters.to
-      ? `${filters.from ? formatDay(filters.from) : 'Any date'} – ${filters.to ? formatDay(filters.to) : 'Any date'}`
-      : 'All time'
-  const initials = (user?.fullName || 'Admin')
-    .trim()
-    .split(/\s+/)
-    .slice(-2)
-    .map((part) => part[0])
-    .join('')
-    .toUpperCase()
-
+      ? `${filters.from ? formatDay(filters.from) : t('Any date')} – ${filters.to ? formatDay(filters.to) : t('Any date')}`
+      : t('All time')
   useEffect(() => {
     if (search.trim() === filters.search) return undefined
     const timer = window.setTimeout(() => {
@@ -170,47 +164,27 @@ export default function PaymentsPage() {
 
   return (
     <main className="payments-page">
-      <header className="payments-header">
-        <div className="figma-header-title">
-          <h1>Payments</h1>
-          <p aria-live="polite">
-            {loading
-              ? 'Loading transactions…'
-              : error
-                ? 'Unable to load transactions'
-                : `${total.toLocaleString('en-US')} ${transactionLabel}`}
-          </p>
-        </div>
-        <div className="payments-header-actions">
-          <button
-            type="button"
-            aria-label="Focus transaction search"
-            onClick={() => searchRef.current?.focus()}
-          >
-            <SearchIcon />
-          </button>
-          <button type="button" aria-label="Notifications" disabled>
-            <BellIcon />
-          </button>
-          <Link
-            className="payments-avatar"
-            to="/profile"
-            aria-label="Open profile"
-            style={user?.avatarUrl ? { backgroundImage: `url(${user.avatarUrl})` } : undefined}
-          >
-            {!user?.avatarUrl && initials}
-          </Link>
-        </div>
-      </header>
-      <section className="payments-content" aria-label="Payment transactions">
+      <PageHeader
+        title="Payments"
+        subtitle={
+          loading
+            ? t('Loading transactions…')
+            : error
+              ? t('Unable to load transactions')
+              : `${total.toLocaleString(locale === 'vi' ? 'vi-VN' : 'en-US')} ${transactionLabel}`
+        }
+        onRefresh={reload}
+        refreshing={loading}
+      />
+      <section className="payments-content" aria-label={t('Payment transactions')}>
         <div className="payments-toolbar">
           <div className="payments-search-filters">
             <label className="payments-search">
               <SearchIcon />
               <input
                 ref={searchRef}
-                aria-label="Search payments"
-                placeholder="Search transaction ID, booking ID, customer…"
+                aria-label={t('Search payments')}
+                placeholder={t('Search transaction ID, booking ID, customer…')}
                 maxLength={150}
                 value={search}
                 onChange={(event) =>
@@ -220,14 +194,14 @@ export default function PaymentsPage() {
             </label>
             <span className="payments-select payments-status-select">
               <select
-                aria-label="Filter payment status"
+                aria-label={t('Filter payment status')}
                 value={filters.status}
                 onChange={(event) => updateFilters({ status: event.target.value })}
               >
-                <option value="ALL">All Status</option>
+                <option value="ALL">{t('All Status')}</option>
                 {Object.entries(paymentStatuses).map(([value, label]) => (
                   <option key={value} value={value}>
-                    {label}
+                    {t(label)}
                   </option>
                 ))}
               </select>
@@ -235,14 +209,14 @@ export default function PaymentsPage() {
             </span>
             <span className="payments-select payments-method-select">
               <select
-                aria-label="Filter payment method"
+                aria-label={t('Filter payment method')}
                 value={filters.method}
                 onChange={(event) => updateFilters({ method: event.target.value })}
               >
-                <option value="ALL">All Methods</option>
+                <option value="ALL">{t('All Methods')}</option>
                 {Object.entries(paymentMethods).map(([value, label]) => (
                   <option key={value} value={value}>
-                    {label}
+                    {t(label)}
                   </option>
                 ))}
               </select>
@@ -258,7 +232,7 @@ export default function PaymentsPage() {
                 aria-label={`Filter by created date: ${rangeLabel}`}
                 aria-expanded={calendarOpen}
                 aria-controls="payments-date-range"
-                title="Created date · Vietnam time"
+                title={t('Created date · Vietnam time')}
                 onClick={() => {
                   setDraftRange({ from: filters.from, to: filters.to })
                   setCalendarOpen((current) => !current)
@@ -276,8 +250,8 @@ export default function PaymentsPage() {
                     if (event.key === 'Escape') closeCalendar()
                   }}
                 >
-                  <h2 id="payments-date-title">Created date</h2>
-                  <p>Calendar dates in Vietnam time (UTC+7).</p>
+                  <h2 id="payments-date-title">{t('Created date')}</h2>
+                  <p>{t('Calendar dates in Vietnam time (UTC+7).')}</p>
                   <form
                     onSubmit={(event) => {
                       event.preventDefault()
@@ -287,7 +261,7 @@ export default function PaymentsPage() {
                     }}
                   >
                     <label>
-                      From date
+                      {t('From date')}
                       <input
                         ref={dateFromRef}
                         type="date"
@@ -300,7 +274,7 @@ export default function PaymentsPage() {
                       />
                     </label>
                     <label>
-                      To date
+                      {t('To date')}
                       <input
                         type="date"
                         min={draftRange.from || '0001-01-01'}
@@ -324,17 +298,17 @@ export default function PaymentsPage() {
                           closeCalendar()
                         }}
                       >
-                        All time
+                        {t('All time')}
                       </button>
                       <button type="button" onClick={closeCalendar}>
-                        Cancel
+                        {t('Cancel')}
                       </button>
                       <button
                         className="payments-apply"
                         type="submit"
                         disabled={Boolean(rangeError)}
                       >
-                        Apply
+                        {t('Apply')}
                       </button>
                     </footer>
                   </form>
@@ -343,7 +317,7 @@ export default function PaymentsPage() {
             </div>
             <button type="button" className="payments-refresh" onClick={reload} disabled={loading}>
               <img src="/payments/refresh.svg" width="14" height="14" alt="" aria-hidden="true" />
-              Refresh
+              {t('Refresh')}
             </button>
             <button
               ref={exportTriggerRef}
@@ -354,15 +328,18 @@ export default function PaymentsPage() {
                 setExportOpen(true)
               }}
             >
-              Export Revenue Report
+              {t('Export Revenue Report')}
             </button>
           </div>
         </div>
         {hasFilters && (
           <div className="payments-filter-summary">
-            <span>Filtered transactions{filters.from || filters.to ? ' · Created date' : ''}</span>
+            <span>
+              {t('Filtered transactions')}
+              {filters.from || filters.to ? ` · ${t('Created date')}` : ''}
+            </span>
             <button type="button" onClick={resetFilters}>
-              Reset filters
+              {t('Reset filters')}
             </button>
           </div>
         )}
@@ -371,12 +348,12 @@ export default function PaymentsPage() {
             <table>
               <thead>
                 <tr>
-                  <th>TRANSACTION ID</th>
-                  <th>CUSTOMER</th>
-                  <th>AMOUNT</th>
-                  <th>METHOD</th>
-                  <th>STATUS</th>
-                  <th>ACTIONS</th>
+                  <th>{t('TRANSACTION ID')}</th>
+                  <th>{t('CUSTOMER')}</th>
+                  <th>{t('AMOUNT')}</th>
+                  <th>{t('METHOD')}</th>
+                  <th>{t('STATUS')}</th>
+                  <th>{t('ACTIONS')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -401,12 +378,12 @@ export default function PaymentsPage() {
                       <td className="payments-amount">{formatPaymentAmount(row.amount)}</td>
                       <td>
                         <span className={`payments-method method-${row.methodCode.toLowerCase()}`}>
-                          {paymentMethods[row.methodCode] ?? row.methodName}
+                          {t(paymentMethods[row.methodCode] ?? row.methodName)}
                         </span>
                       </td>
                       <td>
                         <span className={`payments-status status-${row.status.toLowerCase()}`}>
-                          {paymentStatuses[row.status] ?? row.status}
+                          {t(paymentStatuses[row.status] ?? row.status)}
                         </span>
                       </td>
                       <td>
@@ -414,7 +391,7 @@ export default function PaymentsPage() {
                           to={`/admin/payments/${row.id}${listQuery ? `?${listQuery}` : ''}`}
                           className="payments-eye"
                           aria-label={`View payment ${row.paymentCode}`}
-                          title="View payment details"
+                          title={t('View payment details')}
                         >
                           <EyeIcon />
                         </Link>
@@ -428,14 +405,14 @@ export default function PaymentsPage() {
             <div className="payments-page-summary">
               <span aria-live="polite">
                 {loading
-                  ? 'Loading…'
+                  ? t('Loading…')
                   : error
-                    ? 'Unable to load transactions'
-                    : `Showing ${start}–${end} of ${total.toLocaleString('en-US')} ${transactionLabel}`}
+                    ? t('Unable to load transactions')
+                    : `${t('Showing')} ${start}–${end} ${t('of')} ${total.toLocaleString(locale === 'vi' ? 'vi-VN' : 'en-US')} ${transactionLabel}`}
               </span>
               <span className="payments-select payments-page-size">
                 <select
-                  aria-label="Rows per page"
+                  aria-label={t('Rows per page')}
                   value={filters.limit}
                   onChange={(event) => updateFilters({ limit: Number(event.target.value) })}
                 >

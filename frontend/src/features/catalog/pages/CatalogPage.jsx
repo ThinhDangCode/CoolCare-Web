@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { useAuth } from '../../../context/AuthContext.jsx'
-import { useAutoDismiss } from '../../../hooks/useAutoDismiss.js'
+import { useAuth } from '../../../shared/context/AuthContext.jsx'
+import { useUiPreferences } from '../../../shared/context/UiPreferencesContext.jsx'
+import { useAutoDismiss } from '../../../shared/hooks/useAutoDismiss.js'
 import { catalogRequest } from '../api/catalogApi.js'
 import { CatalogLayout } from '../components/CatalogLayout.jsx'
 import { Modal } from '../components/Modal.jsx'
-import './catalog.css'
+import '../styles/catalog.css'
 
 const catalogConfig = {
   categories: {
@@ -27,7 +28,8 @@ const catalogConfig = {
     icon: '❄',
   },
 }
-const date = (value) => new Date(value).toLocaleDateString('vi-VN')
+const date = (value, locale = 'vi') =>
+  new Date(value).toLocaleDateString(locale === 'vi' ? 'vi-VN' : 'en-US')
 const money = (value) =>
   new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value)
 
@@ -35,11 +37,14 @@ export function CatalogPage() {
   const { kind } = useParams()
   const config = catalogConfig[kind]
   const { token, logout } = useAuth()
+  const { locale, t } = useUiPreferences()
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [status, setStatus] = useState('all')
   const [category, setCategory] = useState('')
+  const [sort, setSort] = useState('NEWEST')
   const [page, setPage] = useState(1)
+  const [limit, setLimit] = useState(10)
   const [result, setResult] = useState({ items: [], total: 0 })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -65,12 +70,12 @@ export function CatalogPage() {
   useEffect(() => {
     if (!config) return
     const controller = new AbortController()
-    const query = new URLSearchParams({ search: debouncedSearch, status, page, limit: 10 })
+    const query = new URLSearchParams({ search: debouncedSearch, status, sort, page, limit })
     if (kind === 'services' && category) query.set('category_id', category)
     catalogRequest(`/${kind}?${query}`, token, { signal: controller.signal })
       .then((data) => {
-        if (data.total > 0 && page > Math.ceil(data.total / 10)) {
-          setPage(Math.ceil(data.total / 10))
+        if (data.total > 0 && page > Math.ceil(data.total / limit)) {
+          setPage(Math.ceil(data.total / limit))
           return
         }
         setResult(data)
@@ -84,7 +89,7 @@ export function CatalogPage() {
         if (error.status === 401) logout()
       })
     return () => controller.abort()
-  }, [kind, config, token, debouncedSearch, status, category, page, refresh, logout])
+  }, [kind, config, token, debouncedSearch, status, category, sort, page, limit, refresh, logout])
 
   useEffect(() => {
     if (kind !== 'services') return
@@ -112,7 +117,8 @@ export function CatalogPage() {
     return (
       <CatalogLayout>
         <p className="catalog-state">
-          Catalog page not found. <Link to="/catalog/categories">Go to categories</Link>
+          {t('Catalog page not found.')}{' '}
+          <Link to="/catalog/categories">{t('Go to categories')}</Link>
         </p>
       </CatalogLayout>
     )
@@ -133,17 +139,17 @@ export function CatalogPage() {
       setBusy(false)
     }
   }
-  const totalPages = Math.max(1, Math.ceil(result.total / 10))
+  const totalPages = Math.max(1, Math.ceil(result.total / limit))
   return (
     <CatalogLayout>
       <section className="catalog-content">
         <div className="catalog-breadcrumb">
-          Catalog <span>/</span> {config.title}
+          {t('Catalog')} <span>/</span> {t(config.title)}
         </div>
         <div className="catalog-page-heading">
           <div>
-            <h1>{config.title}</h1>
-            <p>{config.description}</p>
+            <h1>{t(config.title)}</h1>
+            <p>{t(config.description)}</p>
           </div>
         </div>
         {notice && (
@@ -173,7 +179,7 @@ export function CatalogPage() {
               <span>⌕</span>
               <input
                 aria-label="Search catalog"
-                placeholder={`Search ${config.title.toLowerCase()}…`}
+                placeholder={t(`Search ${config.title.toLowerCase()}…`)}
                 value={search}
                 onChange={(event) => {
                   setLoading(true)
@@ -190,9 +196,9 @@ export function CatalogPage() {
                 setLoading(true)
               }}
             >
-              <option value="all">All statuses</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
+              <option value="all">{t('All statuses')}</option>
+              <option value="active">{t('Active')}</option>
+              <option value="inactive">{t('Inactive')}</option>
             </select>
             {kind === 'services' && (
               <select
@@ -204,7 +210,7 @@ export function CatalogPage() {
                   setLoading(true)
                 }}
               >
-                <option value="">All categories</option>
+                <option value="">{t('All categories')}</option>
                 {categories.map((item) => (
                   <option key={item.id} value={item.id}>
                     {item.name}
@@ -212,9 +218,31 @@ export function CatalogPage() {
                 ))}
               </select>
             )}
-            <span className="catalog-count">{result.total} records</span>
+            <select
+              aria-label={t('Sort records')}
+              value={sort}
+              onChange={(event) => {
+                setSort(event.target.value)
+                setPage(1)
+                setLoading(true)
+              }}
+            >
+              <option value="NEWEST">{t('Newest')}</option>
+              <option value="OLDEST">{t('Oldest')}</option>
+              <option value="NAME_ASC">{t('Name A–Z')}</option>
+              <option value="NAME_DESC">{t('Name Z–A')}</option>
+              {kind === 'services' && (
+                <>
+                  <option value="PRICE_ASC">{t('Price low to high')}</option>
+                  <option value="PRICE_DESC">{t('Price high to low')}</option>
+                </>
+              )}
+            </select>
+            <span className="catalog-count">
+              {result.total} {t('records')}
+            </span>
             <Link className="catalog-button primary catalog-add-button" to={`/catalog/${kind}/new`}>
-              ＋ Add {config.singular}
+              ＋ {t('Add')} {t(config.singular)}
             </Link>
           </div>
           <div className="catalog-table-scroll">
@@ -222,23 +250,23 @@ export function CatalogPage() {
               <thead>
                 <tr>
                   <th>#</th>
-                  <th>{kind === 'brands' ? 'BRAND NAME' : 'NAME'}</th>
+                  <th>{t(kind === 'brands' ? 'BRAND NAME' : 'NAME')}</th>
                   {kind === 'services' ? (
                     <>
-                      <th>CATEGORY</th>
-                      <th>BASE PRICE</th>
-                      <th>DURATION</th>
-                      <th>MAINTENANCE</th>
+                      <th>{t('CATEGORY')}</th>
+                      <th>{t('BASE PRICE')}</th>
+                      <th>{t('DURATION')}</th>
+                      <th>{t('MAINTENANCE')}</th>
                     </>
                   ) : (
                     <>
-                      <th>DESCRIPTION</th>
-                      <th>{kind === 'brands' ? 'MODELS' : 'SERVICES'}</th>
+                      <th>{t('DESCRIPTION')}</th>
+                      <th>{t(kind === 'brands' ? 'MODELS' : 'SERVICES')}</th>
                     </>
                   )}
-                  <th>STATUS</th>
-                  <th>UPDATED</th>
-                  <th className="catalog-actions-title">ACTIONS</th>
+                  <th>{t('STATUS')}</th>
+                  <th>{t('UPDATED')}</th>
+                  <th className="catalog-actions-title">{t('ACTIONS')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -246,7 +274,7 @@ export function CatalogPage() {
                   <tr>
                     <td colSpan={kind === 'services' ? 10 : 8}>
                       <div className="catalog-state" role="status">
-                        <span className="catalog-spinner" /> Loading catalog…
+                        <span className="catalog-spinner" /> {t('Loading catalog…')}
                       </div>
                     </td>
                   </tr>
@@ -261,11 +289,11 @@ export function CatalogPage() {
                     <td colSpan={10}>
                       <div className="catalog-state">
                         <span className="catalog-empty-icon">{config.icon}</span>
-                        <strong>No {config.title.toLowerCase()} found</strong>
+                        <strong>{t('No catalog records found')}</strong>
                         <p>
                           {search || status !== 'all' || category
-                            ? 'Try changing your search or filters.'
-                            : `Add your first ${config.singular.toLowerCase()} to get started.`}
+                            ? t('Try changing your search or filters.')
+                            : t('Add the first record to get started.')}
                         </p>
                       </div>
                     </td>
@@ -274,7 +302,7 @@ export function CatalogPage() {
                   result.items.map((row, index) => (
                     <tr key={row.id}>
                       <td className="catalog-index">
-                        {String((page - 1) * 10 + index + 1).padStart(2, '0')}
+                        {String((page - 1) * limit + index + 1).padStart(2, '0')}
                       </td>
                       <td>
                         <div className="catalog-name">
@@ -310,10 +338,10 @@ export function CatalogPage() {
                       <td>
                         <span className={`catalog-status ${row.is_active ? 'active' : 'inactive'}`}>
                           <i />
-                          {row.is_active ? 'Active' : 'Inactive'}
+                          {t(row.is_active ? 'Active' : 'Inactive')}
                         </span>
                       </td>
-                      <td className="catalog-date">{date(row.updated_at)}</td>
+                      <td className="catalog-date">{date(row.updated_at, locale)}</td>
                       <td>
                         <div className="catalog-row-actions">
                           <button
@@ -327,7 +355,7 @@ export function CatalogPage() {
                             ✎
                           </button>
                           <button
-                            title="Record details"
+                            title={t('Record details')}
                             aria-label={`View details of ${row.name}`}
                             onClick={() => {
                               setError('')
@@ -339,7 +367,7 @@ export function CatalogPage() {
                           {kind === 'categories' && (
                             <button
                               className="danger-text"
-                              title="Delete category"
+                              title={t('Delete category')}
                               aria-label={`Delete ${row.name}`}
                               onClick={() => {
                                 setError('')
@@ -351,7 +379,7 @@ export function CatalogPage() {
                           )}
                           {kind === 'services' && (
                             <button
-                              title={row.is_active ? 'Deactivate' : 'Activate'}
+                              title={t(row.is_active ? 'Deactivate' : 'Activate')}
                               aria-label={`Change status of ${row.name}`}
                               onClick={() => {
                                 setError('')
@@ -370,11 +398,31 @@ export function CatalogPage() {
             </table>
           </div>
           <footer className="catalog-pagination">
-            <span>
-              {result.total
-                ? `${(page - 1) * 10 + 1}–${Math.min(page * 10, result.total)} of ${result.total}`
-                : '0 records'}
-            </span>
+            <div className="catalog-page-summary">
+              <span>
+                {result.total
+                  ? `${(page - 1) * limit + 1}–${Math.min(page * limit, result.total)} ${t('of')} ${result.total}`
+                  : `0 ${t('records')}`}
+              </span>
+              <label>
+                {t('Show')}
+                <select
+                  aria-label={t('Rows per page')}
+                  value={limit}
+                  disabled={loading}
+                  onChange={(event) => {
+                    setLimit(Number(event.target.value))
+                    setPage(1)
+                    setLoading(true)
+                  }}
+                >
+                  {[5, 10, 15, 20, 25].map((size) => (
+                    <option key={size} value={size}>{size}</option>
+                  ))}
+                </select>
+                {t('rows')}
+              </label>
+            </div>
             <div>
               <button
                 disabled={page === 1 || loading}
@@ -383,7 +431,7 @@ export function CatalogPage() {
                   setPage(page - 1)
                 }}
               >
-                ‹ Previous
+                ‹ {t('Previous')}
               </button>
               <span>
                 {page} / {totalPages}
@@ -395,14 +443,14 @@ export function CatalogPage() {
                   setPage(page + 1)
                 }}
               >
-                Next ›
+                {t('Next')} ›
               </button>
             </div>
           </footer>
         </div>
       </section>
       {dialog?.type === 'edit' && (
-        <Modal title={`Edit ${config.singular}`} onClose={close} busy={busy}>
+        <Modal title={t(`Edit ${config.singular}`)} onClose={close} busy={busy}>
           <CatalogForm
             kind={kind}
             row={dialog.row}
@@ -422,8 +470,8 @@ export function CatalogPage() {
         <Modal
           title={
             dialog.type === 'delete'
-              ? 'Do you want to delete?'
-              : `${dialog.row.is_active ? 'Deactivate' : 'Activate'} service?`
+              ? t('Do you want to delete?')
+              : t(`${dialog.row.is_active ? 'Deactivate' : 'Activate'} service?`)
           }
           onClose={close}
           busy={busy}
@@ -433,13 +481,13 @@ export function CatalogPage() {
             <p>
               {dialog.type === 'delete' ? (
                 <>
-                  Delete <strong>{dialog.row.name}</strong>? This action cannot be undone.
-                  Categories used by services cannot be deleted.
+                  {t('Delete')} <strong>{dialog.row.name}</strong>?{' '}
+                  {t('This action cannot be undone. Categories used by services cannot be deleted.')}
                 </>
               ) : (
                 <>
-                  Change the status of <strong>{dialog.row.name}</strong>? Inactive services will be
-                  hidden from the mobile catalog.
+                  {t('Change the status of')} <strong>{dialog.row.name}</strong>?{' '}
+                  {t('Inactive services will be hidden from the mobile catalog.')}
                 </>
               )}
             </p>
@@ -451,7 +499,7 @@ export function CatalogPage() {
           </div>
           <footer className="catalog-form-actions">
             <button className="catalog-button" disabled={busy} onClick={close}>
-              Cancel
+              {t('Cancel')}
             </button>
             <button
               className={`catalog-button ${dialog.type === 'delete' ? 'danger' : 'primary'}`}
@@ -466,20 +514,20 @@ export function CatalogPage() {
                 )
               }
             >
-              {busy ? 'Saving…' : 'Confirm'}
+              {busy ? t('Saving…') : t('Confirm')}
             </button>
           </footer>
         </Modal>
       )}
       {dialog?.type === 'details' && (
-        <Modal title={`Record details · ${dialog.row.name}`} onClose={close}>
+        <Modal title={`${t('Record details')} · ${dialog.row.name}`} onClose={close}>
           <dl className="catalog-record-details">
-            <dt>Created</dt>
+            <dt>{t('Created')}</dt>
             <dd>{new Date(dialog.row.created_at).toLocaleString('vi-VN')}</dd>
-            <dt>Last updated</dt>
+            <dt>{t('Last updated')}</dt>
             <dd>{new Date(dialog.row.updated_at).toLocaleString('vi-VN')}</dd>
-            <dt>Status</dt>
-            <dd>{dialog.row.is_active ? 'Active' : 'Inactive'}</dd>
+            <dt>{t('Status')}</dt>
+            <dd>{t(dialog.row.is_active ? 'Active' : 'Inactive')}</dd>
           </dl>
         </Modal>
       )}
@@ -506,6 +554,7 @@ export function CatalogForm({ kind, row, token, onCancel, onSaved, onBusyChange 
   const [categoryLoading, setCategoryLoading] = useState(kind === 'services')
   const [retry, setRetry] = useState(0)
   const { logout } = useAuth()
+  const { t } = useUiPreferences()
   useEffect(() => {
     if (kind !== 'services') return
     const controller = new AbortController()
@@ -543,7 +592,7 @@ export function CatalogForm({ kind, row, token, onCancel, onSaved, onBusyChange 
     return (
       <label className="catalog-field">
         <span>
-          {label}
+          {t(label)}
           {!optional && <em> *</em>}
         </span>
         <input
@@ -557,9 +606,9 @@ export function CatalogForm({ kind, row, token, onCancel, onSaved, onBusyChange 
           step={type === 'number' ? (key === 'base_price' ? '0.01' : '1') : undefined}
           placeholder={
             key === 'name'
-              ? `Enter ${config.singular.toLowerCase()} name`
+              ? t(`Enter ${config.singular.toLowerCase()} name`)
               : optional
-                ? 'Optional'
+                ? t('Optional')
                 : undefined
           }
           aria-invalid={Boolean(errors[key])}
@@ -611,8 +660,8 @@ export function CatalogForm({ kind, row, token, onCancel, onSaved, onBusyChange 
       <div className="catalog-form-body">
         <p className="catalog-form-intro">
           {row
-            ? 'Update the details below.'
-            : `Add a new ${config.singular.toLowerCase()} to your catalog.`}
+            ? t('Update the details below.')
+            : t(`Add a new ${config.singular.toLowerCase()} to your catalog.`)}
         </p>
         {error && (
           <div className="catalog-error" role="alert">
@@ -625,22 +674,22 @@ export function CatalogForm({ kind, row, token, onCancel, onSaved, onBusyChange 
                   setRetry(retry + 1)
                 }}
               >
-                Retry categories
+                {t('Retry categories')}
               </button>
             )}
           </div>
         )}
-        <div className="catalog-form-section-label">GENERAL INFORMATION</div>
+        <div className="catalog-form-section-label">{t('GENERAL INFORMATION')}</div>
         <div className="catalog-form-icon">{config.icon}</div>
         {field('name', `${config.singular} name`)}
         <label className="catalog-field">
-          <span>Description</span>
+          <span>{t('Description')}</span>
           <textarea
             value={values.description}
             maxLength={5000}
             rows={3}
             disabled={busy}
-            placeholder="Describe this catalog entry…"
+            placeholder={t('Describe this catalog entry…')}
             onChange={(event) => change('description', event.target.value)}
           />
           {errors.description && (
@@ -652,7 +701,7 @@ export function CatalogForm({ kind, row, token, onCancel, onSaved, onBusyChange 
           <>
             <label className="catalog-field">
               <span>
-                Category <em>*</em>
+                {t('Category')} <em>*</em>
               </span>
               <select
                 required
@@ -661,12 +710,12 @@ export function CatalogForm({ kind, row, token, onCancel, onSaved, onBusyChange 
                 onChange={(event) => change('category_id', event.target.value)}
               >
                 <option value="">
-                  {categoryLoading ? 'Loading categories…' : 'Select category'}
+                  {categoryLoading ? t('Loading categories…') : t('Select category')}
                 </option>
                 {categories.map((category) => (
                   <option key={category.id} value={category.id}>
                     {category.name}
-                    {category.is_active ? '' : ' (Inactive)'}
+                    {category.is_active ? '' : ` (${t('Inactive')})`}
                   </option>
                 ))}
               </select>
@@ -674,7 +723,7 @@ export function CatalogForm({ kind, row, token, onCancel, onSaved, onBusyChange 
                 <small className="catalog-field-error">{errors.category_id}</small>
               )}
               {!categoryLoading && !categories.length && (
-                <small>Create a category before adding a service.</small>
+                <small>{t('Create a category before adding a service.')}</small>
               )}
             </label>
             <div className="catalog-form-grid">
@@ -684,7 +733,7 @@ export function CatalogForm({ kind, row, token, onCancel, onSaved, onBusyChange 
             </div>
           </>
         )}
-        <div className="catalog-form-section-label">OPERATIONAL STATUS</div>
+        <div className="catalog-form-section-label">{t('OPERATIONAL STATUS')}</div>
         <div className="catalog-status-options">
           {[true, false].map((active) => (
             <label key={String(active)} className={values.is_active === active ? 'selected' : ''}>
@@ -696,8 +745,8 @@ export function CatalogForm({ kind, row, token, onCancel, onSaved, onBusyChange 
                 onChange={() => change('is_active', active)}
               />
               <span>
-                <strong>{active ? 'Active' : 'Inactive'}</strong>
-                <small>{active ? 'Available in catalog' : 'Hidden from mobile'}</small>
+                <strong>{t(active ? 'Active' : 'Inactive')}</strong>
+                <small>{t(active ? 'Available in catalog' : 'Hidden from mobile')}</small>
               </span>
               <i />
             </label>
@@ -706,13 +755,13 @@ export function CatalogForm({ kind, row, token, onCancel, onSaved, onBusyChange 
       </div>
       <footer className="catalog-form-actions">
         <button type="button" className="catalog-button" disabled={busy} onClick={onCancel}>
-          Cancel
+          {t('Cancel')}
         </button>
         <button
           className="catalog-button primary"
           disabled={busy || categoryLoading || (kind === 'services' && !categories.length)}
         >
-          {busy ? 'Saving…' : row ? 'Save changes' : `＋ Create ${config.singular}`}
+          {busy ? t('Saving…') : row ? t('Save changes') : `＋ ${t(`Create ${config.singular}`)}`}
         </button>
       </footer>
     </form>
@@ -723,11 +772,12 @@ export function CreateCatalogPage() {
   const { kind } = useParams()
   const { token } = useAuth()
   const navigate = useNavigate()
+  const { t } = useUiPreferences()
   const config = catalogConfig[kind]
   if (!config)
     return (
       <CatalogLayout>
-        <p className="catalog-state">Catalog page not found.</p>
+        <p className="catalog-state">{t('Catalog page not found.')}</p>
       </CatalogLayout>
     )
   return (
@@ -735,13 +785,13 @@ export function CreateCatalogPage() {
       <section className="catalog-content">
         <div className="catalog-page-heading">
           <div>
-            <h1>Create {config.singular}</h1>
-            <p>Add a new entry to your service & AC catalog.</p>
+            <h1>{t(`Create ${config.singular}`)}</h1>
+            <p>{t('Add a new entry to your service & AC catalog.')}</p>
           </div>
         </div>
         <div className="catalog-create-context">
           <Link className="catalog-button" to={`/catalog/${kind}`}>
-            ← Back to {config.title}
+            ← {t(`Back to ${config.title}`)}
           </Link>
         </div>
         <div className="catalog-create-panel">

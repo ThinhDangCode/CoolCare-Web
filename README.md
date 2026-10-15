@@ -1,5 +1,7 @@
 # CoolCare Web
 
+Technician administration uses the existing database schema without migrations. Reviews use `reviewed_by_id`, `reviewed_at`, and `rejection_reason`. The original one-active-job limit is preserved. Review actions write structured `ADMIN_AUDIT` events to the backend logger. Approval does not override wallet restrictions. Deactivation disables sign-in and new assignments while preserving existing job history.
+
 - `backend`: API dùng chung cho Flutter và Admin Web.
 - `frontend`: React/Vite Admin Web.
 

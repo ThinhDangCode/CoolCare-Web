@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { ChevronDownIcon, CloseIcon } from '../../management/components/ManagementShared.jsx'
+import { ChevronDownIcon, CloseIcon } from '../../../shared/components/AdminUi.jsx'
 import MonthYearPicker from './MonthYearPicker.jsx'
 import { exportRevenueReport } from '../api/paymentsApi.js'
 import {
@@ -10,6 +10,7 @@ import {
   reportMethods,
 } from '../revenueReport.js'
 import './exportRevenue.css'
+import { useUiPreferences } from '../../../shared/context/UiPreferencesContext.jsx'
 
 const displayDate = (value) => value.split('-').reverse().join('/')
 const modes = { month: 'Month', quarter: 'Quarter', year: 'Year', custom: 'Custom range' }
@@ -22,6 +23,7 @@ export default function ExportRevenueDialog({
   onUnauthorized,
   returnFocusRef,
 }) {
+  const { t } = useUiPreferences()
   const [period, setPeriod] = useState(defaultRevenuePeriod)
   const [method, setMethod] = useState(
     Object.hasOwn(reportMethods, initialMethod) ? initialMethod : 'ALL'
@@ -150,15 +152,15 @@ export default function ExportRevenueDialog({
       >
         <header>
           <div>
-            <h2 id="export-revenue-title">Export Revenue Report</h2>
+            <h2 id="export-revenue-title">{t('Export Revenue Report')}</h2>
             <p id="export-revenue-description">
-              Download an Excel workbook with Revenue Summary and Paid Payments sheets.
+              {t('Download an Excel workbook with Revenue Summary and Paid Payments sheets.')}
             </p>
           </div>
           <button
             type="button"
             className="export-revenue-close"
-            aria-label="Close revenue export"
+            aria-label={t('Close revenue export')}
             onClick={close}
           >
             <CloseIcon />
@@ -167,15 +169,21 @@ export default function ExportRevenueDialog({
         <form onSubmit={submit}>
           <div className="export-revenue-body">
             <div className="export-revenue-basis">
-              <strong>Successful payments only</strong>
-              <span>Gross customer payment total · Paid date · Vietnam time (UTC+7)</span>
+              <strong>{t('Successful payments only')}</strong>
+              <span>{t('Gross customer payment total · Paid date · Vietnam time (UTC+7)')}</span>
               <p>
-                The report period uses paid date. The payment list date filter uses created date.
+                {t(
+                  'The report period uses paid date. The payment list date filter uses created date.'
+                )}
               </p>
             </div>
             <fieldset disabled={busy}>
-              <legend>Report period</legend>
-              <div className="export-revenue-modes" role="group" aria-label="Choose report period">
+              <legend>{t('Report period')}</legend>
+              <div
+                className="export-revenue-modes"
+                role="group"
+                aria-label={t('Choose report period')}
+              >
                 {Object.entries(modes).map(([value, label]) => (
                   <button
                     key={value}
@@ -184,7 +192,7 @@ export default function ExportRevenueDialog({
                     aria-pressed={period.mode === value}
                     onClick={() => changePeriod({ mode: value })}
                   >
-                    {label}
+                    {t(label)}
                   </button>
                 ))}
               </div>
@@ -201,18 +209,18 @@ export default function ExportRevenueDialog({
                 )}
                 {period.mode === 'quarter' && (
                   <label>
-                    Quarter
+                    {t('Quarter')}
                     <span className="export-revenue-select">
                       <select
-                        aria-label="Report quarter"
+                        aria-label={t('Report quarter')}
                         value={period.quarter}
                         onChange={(event) => changePeriod({ quarter: event.currentTarget.value })}
                         required
                       >
-                        <option value="1">Q1 · January – March</option>
-                        <option value="2">Q2 · April – June</option>
-                        <option value="3">Q3 · July – September</option>
-                        <option value="4">Q4 · October – December</option>
+                        <option value="1">{t('Q1 · January – March')}</option>
+                        <option value="2">{t('Q2 · April – June')}</option>
+                        <option value="3">{t('Q3 · July – September')}</option>
+                        <option value="4">{t('Q4 · October – December')}</option>
                       </select>
                       <ChevronDownIcon />
                     </span>
@@ -220,7 +228,7 @@ export default function ExportRevenueDialog({
                 )}
                 {['quarter', 'year'].includes(period.mode) && (
                   <label>
-                    Year
+                    {t('Year')}
                     <input
                       type="number"
                       required
@@ -235,7 +243,7 @@ export default function ExportRevenueDialog({
                 {period.mode === 'custom' && (
                   <>
                     <label>
-                      From date
+                      {t('From date')}
                       <input
                         type="date"
                         required
@@ -246,7 +254,7 @@ export default function ExportRevenueDialog({
                       />
                     </label>
                     <label>
-                      To date
+                      {t('To date')}
                       <input
                         type="date"
                         required
@@ -265,12 +273,12 @@ export default function ExportRevenueDialog({
                 </p>
               ) : (
                 <p className="export-revenue-range">
-                  {displayDate(range.from)} – {displayDate(range.to)} · Inclusive paid dates
+                  {displayDate(range.from)} – {displayDate(range.to)} · {t('Inclusive paid dates')}
                 </p>
               )}
               <div className="export-revenue-filters">
                 <label>
-                  Payment method
+                  {t('Payment method')}
                   <span className="export-revenue-select">
                     <select
                       value={method}
@@ -281,7 +289,7 @@ export default function ExportRevenueDialog({
                     >
                       {Object.entries(reportMethods).map(([value, label]) => (
                         <option key={value} value={value}>
-                          {label}
+                          {t(label)}
                         </option>
                       ))}
                     </select>
@@ -289,12 +297,12 @@ export default function ExportRevenueDialog({
                   </span>
                 </label>
                 <label>
-                  Search
+                  {t('Search')}
                   <input
                     type="search"
                     maxLength={150}
                     value={search}
-                    placeholder="Payment, booking, customer…"
+                    placeholder={t('Payment, booking, customer…')}
                     onChange={(event) => {
                       setSearch(event.currentTarget.value)
                       clearOutcome()
@@ -303,17 +311,19 @@ export default function ExportRevenueDialog({
                 </label>
               </div>
               <p className="export-revenue-filter-help">
-                Method and search are copied from the list. Changes here apply to this export.
+                {t(
+                  'Method and search are copied from the list. Changes here apply to this export.'
+                )}
               </p>
             </fieldset>
             {busy && (
               <p className="export-revenue-progress" role="status">
-                Preparing your Excel report…
+                {t('Preparing your Excel report…')}
               </p>
             )}
             {error && (
               <div className="export-revenue-message error" role="alert">
-                <strong>Unable to export report</strong>
+                <strong>{t('Unable to export report')}</strong>
                 <span>{error}</span>
               </div>
             )}
@@ -325,14 +335,14 @@ export default function ExportRevenueDialog({
           </div>
           <footer>
             <button type="button" className="export-revenue-cancel" onClick={close}>
-              {busy ? 'Cancel export' : 'Cancel'}
+              {t(busy ? 'Cancel export' : 'Cancel')}
             </button>
             <button
               type="submit"
               className="export-revenue-submit"
               disabled={busy || Boolean(range.error)}
             >
-              {busy ? 'Exporting…' : error ? 'Retry export' : 'Export report'}
+              {t(busy ? 'Exporting…' : error ? 'Retry export' : 'Export report')}
             </button>
           </footer>
         </form>

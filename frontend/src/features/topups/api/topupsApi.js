@@ -1,4 +1,4 @@
-import { adminRequest } from '../../management/api/managementApi.js'
+import { adminRequest } from '../../../shared/api/adminApi.js'
 
 export function listTopups(query, token, signal) {
   return adminRequest(`/topups?${query}`, token, { signal })

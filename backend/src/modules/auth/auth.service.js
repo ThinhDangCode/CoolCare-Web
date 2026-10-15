@@ -15,6 +15,7 @@ function publicUser(user) {
     gender: user.gender,
     role: user.role,
     hasTechnicianProfile: Boolean(user.has_technician_profile),
+    isTechnicianVerified: Boolean(user.is_technician_verified),
   }
 }
 

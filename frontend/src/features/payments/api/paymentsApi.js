@@ -1,4 +1,4 @@
-import { adminRequest } from '../../management/api/managementApi.js'
+import { adminRequest } from '../../../shared/api/adminApi.js'
 import { revenueFilename, revenueRowCount } from '../revenueReport.js'
 
 const apiBase = (import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000/api').replace(

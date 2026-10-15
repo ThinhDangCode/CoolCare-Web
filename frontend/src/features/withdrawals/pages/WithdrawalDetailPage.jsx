@@ -1,11 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router-dom'
-import { useAuth } from '../../../context/AuthContext.jsx'
-import {
-  ArrowLeftIcon,
-  CalendarIcon,
-  UserIcon,
-} from '../../management/components/ManagementShared.jsx'
+import { useAuth } from '../../../shared/context/AuthContext.jsx'
+import { ArrowLeftIcon, CalendarIcon, UserIcon } from '../../../shared/components/AdminUi.jsx'
 import { getWithdrawal } from '../api/withdrawalsApi.js'
 import { readWithdrawalFilters, writeWithdrawalFilters } from '../withdrawalFilters.js'
 import {

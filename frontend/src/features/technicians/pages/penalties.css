@@ -1,0 +1,143 @@
+.penalty-page {
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.penalty-page .figma-header-title h1 {
+  font-size: 28px;
+}
+.penalty-page .figma-header-title p {
+  font-size: 13px;
+}
+.penalty-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.penalty-summary > div {
+  padding: 20px;
+  background: #fff;
+  border: 1px solid #e8edf7;
+  border-radius: 10px;
+}
+.penalty-summary span {
+  font-size: 13px;
+  color: #64748b;
+}
+.penalty-summary strong {
+  display: block;
+  margin: 8px 0;
+  color: #ea580c;
+  font-size: 28px;
+}
+.penalty-summary small {
+  font-size: 11px;
+  color: #94a3b8;
+}
+.penalty-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+.penalty-toolbar .technician-search {
+  flex: 1 1 300px;
+}
+.penalty-toolbar input,
+.penalty-toolbar select {
+  font-size: 14px;
+}
+.penalty-toolbar .technician-filter span {
+  font-size: 12px;
+}
+.penalty-table table {
+  min-width: 1050px;
+}
+.penalty-table th {
+  font-size: 12px;
+}
+.penalty-table td,
+.penalty-table td strong {
+  font-size: 14px;
+}
+.penalty-table .technician-person strong {
+  white-space: normal;
+}
+.penalty-reason {
+  min-width: 180px;
+  max-width: 300px;
+  overflow-wrap: anywhere;
+}
+.penalty-points {
+  display: inline-block;
+  padding: 5px 10px;
+  border-radius: 6px;
+  background: #fff7ed;
+  color: #c2410c;
+  font-weight: 700;
+}
+.penalty-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border-radius: 20px;
+  padding: 5px 9px;
+  white-space: nowrap;
+  font-size: 12px;
+}
+.penalty-status i {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.penalty-status.active {
+  color: #dc2626;
+  background: #fee2e2;
+}
+.penalty-status.expired {
+  color: #64748b;
+  background: #f1f5f9;
+}
+.penalty-status.revoked {
+  color: #059669;
+  background: #ecfdf5;
+}
+.penalty-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 18px;
+  border-top: 1px solid #e8edf7;
+  font-size: 12px;
+  color: #64748b;
+}
+.penalty-footer select {
+  margin-left: 6px;
+  padding: 5px;
+  border: 1px solid #e8edf7;
+  border-radius: 5px;
+  background: #fff;
+  color: #475569;
+}
+.penalty-footer .figma-pagination {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.penalty-empty-note {
+  text-align: center;
+  color: #94a3b8;
+  font-size: 13px;
+}
+@media (max-width: 700px) {
+  .penalty-summary {
+    grid-template-columns: 1fr;
+  }
+  .penalty-footer {
+    flex-wrap: wrap;
+  }
+}
