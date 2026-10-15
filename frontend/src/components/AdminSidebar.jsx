@@ -118,12 +118,18 @@ export function AdminSidebar({
   const [marketingOpen, setMarketingOpen] = useState(
     () => sessionStorage.getItem('admin-sidebar-marketing') === 'true'
   )
-  const financeActive = location.pathname.startsWith('/admin/payments')
+  const walletActive =
+    location.pathname.startsWith('/admin/withdrawals') ||
+    location.pathname.startsWith('/admin/topups')
+  const financeActive =
+    location.pathname.startsWith('/admin/payments') ||
+    location.pathname.startsWith('/admin/revenue') ||
+    walletActive
   const [financeOpen, setFinanceOpen] = useState(
     () => financeActive || sessionStorage.getItem('admin-sidebar-finance') === 'true'
   )
   const [walletOpen, setWalletOpen] = useState(
-    () => sessionStorage.getItem('admin-sidebar-wallet') === 'true'
+    () => walletActive || sessionStorage.getItem('admin-sidebar-wallet') === 'true'
   )
   const [settingsOpen, setSettingsOpen] = useState(activePage === 'profile')
   const [failedAvatarUrl, setFailedAvatarUrl] = useState('')
@@ -254,9 +260,9 @@ export function AdminSidebar({
                   <NavLink to="/admin/payments" onClick={rememberScroll}>
                     Payments
                   </NavLink>
-                  <button className="dashboard-subnav-action" type="button" disabled>
+                  <NavLink to="/admin/revenue" onClick={rememberScroll}>
                     Revenue
-                  </button>
+                  </NavLink>
                   <button
                     className="dashboard-subnav-action finance-wallet-trigger"
                     type="button"
@@ -269,12 +275,12 @@ export function AdminSidebar({
                   </button>
                   {walletOpen && (
                     <div id="admin-wallet-navigation" className="finance-wallet-subnav">
-                      <button className="dashboard-subnav-action" type="button" disabled>
+                      <NavLink to="/admin/withdrawals" onClick={rememberScroll}>
                         Withdrawal
-                      </button>
-                      <button className="dashboard-subnav-action" type="button" disabled>
+                      </NavLink>
+                      <NavLink to="/admin/topups" onClick={rememberScroll}>
                         Top-up
-                      </button>
+                      </NavLink>
                     </div>
                   )}
                   <button className="dashboard-subnav-action" type="button" disabled>
