@@ -39,7 +39,9 @@ export function validateAdminBlogQuery(query) {
     status: ['ALL', 'DRAFT', 'PUBLISHED', 'HIDDEN'].includes(status)
       ? null
       : 'Trạng thái không hợp lệ.',
-    sort: ['NEWEST', 'OLDEST'].includes(sort) ? null : 'Kiểu sắp xếp không hợp lệ.',
+    sort: ['NEWEST', 'OLDEST', 'TITLE_ASC', 'TITLE_DESC'].includes(sort)
+      ? null
+      : 'Kiểu sắp xếp không hợp lệ.',
   })
   return { page, limit, search, status, sort }
 }

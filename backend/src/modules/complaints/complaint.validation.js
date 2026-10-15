@@ -12,6 +12,8 @@ export function validateComplaintListQuery(query) {
   const limit = query.limit === undefined ? 10 : Number(query.limit)
   const status = query.status ?? 'ALL'
   const type = query.type ?? 'ALL'
+  const sortBy = query.sort_by ?? 'created_at'
+  const sortOrder = query.sort_order ?? 'desc'
   const errors = {}
   if (!Number.isInteger(page) || page < 1 || page > 1_000_000) errors.page = 'Trang không hợp lệ.'
   if (!Number.isInteger(limit) || limit < 1 || limit > 100)
@@ -22,8 +24,19 @@ export function validateComplaintListQuery(query) {
     errors.status = 'Trạng thái không hợp lệ.'
   if (!['ALL', 'SERVICE', 'TECHNICIAN', 'PAYMENT', 'OTHER'].includes(type))
     errors.type = 'Loại khiếu nại không hợp lệ.'
+  if (!['created_at', 'customer_name'].includes(sortBy))
+    errors.sort_by = 'Cột sắp xếp không hợp lệ.'
+  if (!['asc', 'desc'].includes(sortOrder)) errors.sort_order = 'Thứ tự sắp xếp không hợp lệ.'
   requireValidBody(errors)
-  return { page, limit, search: query.search?.trim() ?? '', status, type }
+  return {
+    page,
+    limit,
+    search: query.search?.trim() ?? '',
+    status,
+    type,
+    sortBy,
+    sortOrder,
+  }
 }
 
 export function validateComplaintResolution(body) {

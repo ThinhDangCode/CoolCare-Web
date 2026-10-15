@@ -21,7 +21,7 @@
   gap: 8px;
   align-items: center;
   padding: 12px;
-  border-bottom: 6px solid #f8f9ff;
+  border-bottom: 1px solid #e8edf7;
 }
 .certification-search {
   display: flex;

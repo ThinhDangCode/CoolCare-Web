@@ -276,24 +276,28 @@ export function Pagination({
   }
   return (
     <footer className="figma-pagination">
-      {showTotal && <span>{total} records</span>}
-      {pageSizeOptions?.length > 0 && onLimit && (
-        <label className="figma-page-size">
-          <span>{t('Show')}</span>
-          <select
-            aria-label={t('Rows per page')}
-            value={limit}
-            disabled={loading}
-            onChange={(event) => onLimit(Number(event.target.value))}
-          >
-            {pageSizeOptions.map((size) => (
-              <option key={size} value={size}>
-                {size}
-              </option>
-            ))}
-          </select>
-          <span>{t('rows')}</span>
-        </label>
+      {(showTotal || (pageSizeOptions?.length > 0 && onLimit)) && (
+        <div className="figma-pagination-summary">
+          {showTotal && <span>{total} {t('records')}</span>}
+          {pageSizeOptions?.length > 0 && onLimit && (
+            <label className="figma-page-size">
+              <span>{t('Show')}</span>
+              <select
+                aria-label={t('Rows per page')}
+                value={limit}
+                disabled={loading}
+                onChange={(event) => onLimit(Number(event.target.value))}
+              >
+                {pageSizeOptions.map((size) => (
+                  <option key={size} value={size}>
+                    {size}
+                  </option>
+                ))}
+              </select>
+              <span>{t('rows')}</span>
+            </label>
+          )}
+        </div>
       )}
       <nav>
         <button

@@ -23,7 +23,7 @@ export function UsersPage() {
   const [keyword, setKeyword] = useState('')
   const [role, setRole] = useState('ALL')
   const [status, setStatus] = useState('ALL')
-  const [sort, setSort] = useState({ by: 'user_number', order: 'asc' })
+  const [sort, setSort] = useState({ by: null, order: null })
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState(10)
   const [data, setData] = useState({ items: [], total: 0 })
@@ -49,9 +49,11 @@ export function UsersPage() {
       status,
       page,
       limit,
-      sort_by: sort.by,
-      sort_order: sort.order,
     })
+    if (sort.by) {
+      query.set('sort_by', sort.by)
+      query.set('sort_order', sort.order)
+    }
     adminRequest(`/users?${query}`, token, { signal: controller.signal })
       .then((result) => {
         setData(result)
@@ -76,10 +78,11 @@ export function UsersPage() {
   const toggleSort = (by) => {
     setLoading(true)
     setPage(1)
-    setSort((current) => ({
-      by,
-      order: current.by === by && current.order === 'asc' ? 'desc' : 'asc',
-    }))
+    setSort((current) => {
+      if (current.by !== by) return { by, order: 'asc' }
+      if (current.order === 'asc') return { by, order: 'desc' }
+      return { by: null, order: null }
+    })
   }
   async function toggleStatus() {
     setBusy(true)

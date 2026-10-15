@@ -135,6 +135,16 @@ export function validateQuery(query, kind) {
     errors.status = 'Trạng thái không hợp lệ.'
   if (query.category_id !== undefined && !uuid.test(query.category_id))
     errors.category_id = 'Danh mục không hợp lệ.'
+  const sortable = [
+    'NEWEST',
+    'OLDEST',
+    'NAME_ASC',
+    'NAME_DESC',
+    ...(kind === 'services' ? ['PRICE_ASC', 'PRICE_DESC'] : []),
+    ...(kind === 'models' ? ['CAPACITY_ASC', 'CAPACITY_DESC'] : []),
+  ]
+  const sort = query.sort ?? 'NEWEST'
+  if (!sortable.includes(sort)) errors.sort = 'Kiểu sắp xếp không hợp lệ.'
   const modelFilters = {}
   if (kind === 'models') {
     if (query.brand_id !== undefined) {
@@ -169,6 +179,7 @@ export function validateQuery(query, kind) {
     limit,
     search: query.search?.trim() ?? '',
     status: query.status ?? 'all',
+    sort,
     categoryId: query.category_id,
     ...modelFilters,
   }

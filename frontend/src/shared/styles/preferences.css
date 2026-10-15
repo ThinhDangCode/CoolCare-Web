@@ -450,6 +450,7 @@ html[data-theme='dark'] .catalog-search,
 html[data-theme='dark'] .catalog-toolbar select,
 html[data-theme='dark'] .catalog-button:not(.primary):not(.danger),
 html[data-theme='dark'] .catalog-pagination button,
+html[data-theme='dark'] .catalog-page-summary select,
 html[data-theme='dark'] .catalog-field input,
 html[data-theme='dark'] .catalog-field textarea,
 html[data-theme='dark'] .catalog-field select,
@@ -1107,6 +1108,51 @@ html[data-theme='dark'] .certification-table .certification-technician {
 
 html[data-theme='dark'] .certification-table .certification-technician:hover {
   color: #fb923c;
+}
+
+html[data-theme='dark'] .certification-toolbar {
+  border-bottom-color: var(--app-border);
+}
+
+/* Keep table dividers subtle in dark mode. Feature styles define pale borders
+   for the light theme and some of those rules are loaded after shared styles. */
+html[data-theme='dark']
+  .figma-admin-main
+  :is(
+    .figma-users-table,
+    .figma-voucher-table,
+    .figma-table-card,
+    .usage-table,
+    .booking-table-card,
+    .technician-list-card,
+    .certification-card,
+    .verification-queue,
+    .penalty-table,
+    .payments-table-card
+  ) {
+  border-color: var(--app-border);
+}
+
+html[data-theme='dark'] .figma-admin-main table :is(th, td) {
+  border-color: var(--app-border);
+}
+
+html[data-theme='dark']
+  .figma-admin-main
+  :is(
+    .figma-users-table > .figma-pagination,
+    .figma-voucher-table > .figma-pagination,
+    .figma-table-card > .figma-pagination,
+    .usage-table .figma-pagination,
+    .booking-table-footer,
+    .technician-list-footer,
+    .certification-footer,
+    .verification-footer,
+    .penalty-footer,
+    .payments-page .figma-pagination,
+    .complaints-table + .figma-pagination
+  ) {
+  border-color: var(--app-border);
 }
 
 html[data-theme='dark']

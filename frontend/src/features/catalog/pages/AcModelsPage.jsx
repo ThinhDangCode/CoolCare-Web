@@ -78,7 +78,9 @@ export function AcModelsPage() {
     inverter: '',
     status: 'all',
   })
+  const [sort, setSort] = useState('NEWEST')
   const [page, setPage] = useState(1)
+  const [limit, setLimit] = useState(10)
   const [data, setData] = useState({ items: [], total: 0 })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -101,14 +103,14 @@ export function AcModelsPage() {
   }, [search])
   useEffect(() => {
     const controller = new AbortController()
-    const query = new URLSearchParams({ page, limit: 10, search: querySearch })
+    const query = new URLSearchParams({ page, limit, search: querySearch, sort })
     Object.entries(filters).forEach(([key, value]) => {
       if (value !== '') query.set(key, value)
     })
     catalogRequest(`/models?${query}`, token, { signal: controller.signal })
       .then((result) => {
-        if (page > 1 && page > Math.max(1, Math.ceil(result.total / 10))) {
-          setPage(Math.max(1, Math.ceil(result.total / 10)))
+        if (page > 1 && page > Math.max(1, Math.ceil(result.total / limit))) {
+          setPage(Math.max(1, Math.ceil(result.total / limit)))
           return
         }
         setData(result)
@@ -122,7 +124,7 @@ export function AcModelsPage() {
         if (error.status === 401) logout()
       })
     return () => controller.abort()
-  }, [token, querySearch, filters, page, refresh, logout])
+  }, [token, querySearch, filters, sort, page, limit, refresh, logout])
   const filter = (key, value) => {
     setLoading(true)
     setPage(1)
@@ -158,7 +160,7 @@ export function AcModelsPage() {
       setBusy(false)
     }
   }
-  const totalPages = Math.max(1, Math.ceil(data.total / 10))
+  const totalPages = Math.max(1, Math.ceil(data.total / limit))
   return (
     <CatalogLayout>
       <section className="catalog-content">
@@ -261,6 +263,22 @@ export function AcModelsPage() {
               <option value="active">{t('Active')}</option>
               <option value="inactive">{t('Inactive')}</option>
             </select>
+            <select
+              aria-label={t('Sort records')}
+              value={sort}
+              onChange={(event) => {
+                setSort(event.target.value)
+                setPage(1)
+                setLoading(true)
+              }}
+            >
+              <option value="NEWEST">{t('Newest')}</option>
+              <option value="OLDEST">{t('Oldest')}</option>
+              <option value="NAME_ASC">{t('Name A–Z')}</option>
+              <option value="NAME_DESC">{t('Name Z–A')}</option>
+              <option value="CAPACITY_ASC">{t('BTU low to high')}</option>
+              <option value="CAPACITY_DESC">{t('BTU high to low')}</option>
+            </select>
             <button
               className="catalog-button"
               onClick={() => {
@@ -272,6 +290,7 @@ export function AcModelsPage() {
                   inverter: '',
                   status: 'all',
                 })
+                setSort('NEWEST')
                 setPage(1)
                 reload()
               }}
@@ -326,7 +345,7 @@ export function AcModelsPage() {
                   data.items.map((row, index) => (
                     <tr key={row.id}>
                       <td className="catalog-index">
-                        {String((page - 1) * 10 + index + 1).padStart(2, '0')}
+                        {String((page - 1) * limit + index + 1).padStart(2, '0')}
                       </td>
                       <td>
                         <div className="catalog-name">
@@ -382,11 +401,31 @@ export function AcModelsPage() {
             </table>
           </div>
           <footer className="catalog-pagination">
-            <span>
-              {data.total
-                ? `${(page - 1) * 10 + 1}–${Math.min(page * 10, data.total)} of ${data.total} models`
-                : '0 models'}
-            </span>
+            <div className="catalog-page-summary">
+              <span>
+                {data.total
+                  ? `${(page - 1) * limit + 1}–${Math.min(page * limit, data.total)} ${t('of')} ${data.total}`
+                  : `0 ${t('records')}`}
+              </span>
+              <label>
+                {t('Show')}
+                <select
+                  aria-label={t('Rows per page')}
+                  value={limit}
+                  disabled={loading}
+                  onChange={(event) => {
+                    setLimit(Number(event.target.value))
+                    setPage(1)
+                    setLoading(true)
+                  }}
+                >
+                  {[5, 10, 15, 20, 25].map((size) => (
+                    <option key={size} value={size}>{size}</option>
+                  ))}
+                </select>
+                {t('rows')}
+              </label>
+            </div>
             <div>
               <button
                 disabled={page <= 1 || loading}

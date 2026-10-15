@@ -64,7 +64,7 @@ export function VouchersPage() {
   const [status, setStatus] = useState('ALL')
   const [sort, setSort] = useState('NEWEST')
   const [page, setPage] = useState(1)
-  const [limit] = useState(10)
+  const [limit, setLimit] = useState(10)
   const [data, setData] = useState({ items: [], total: 0 })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -332,6 +332,12 @@ export function VouchersPage() {
             total={data.total}
             limit={limit}
             loading={loading}
+            pageSizeOptions={[5, 10, 15, 20, 25]}
+            onLimit={(value) => {
+              setLoading(true)
+              setPage(1)
+              setLimit(value)
+            }}
             onPage={(value) => {
               setLoading(true)
               setPage(value)
