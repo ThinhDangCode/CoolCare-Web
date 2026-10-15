@@ -5,6 +5,22 @@ Technician administration uses the existing database schema without migrations. 
 - `backend`: API dùng chung cho Flutter và Admin Web.
 - `frontend`: React/Vite Admin Web.
 
+STT118 (ThanhNT, Sprint 2): Admin xem doanh thu hoa hồng tại `/admin/revenue`.
+Thống kê dùng ngày đối soát `settled_at` theo UTC+7 và phân bổ hoa hồng theo
+tỷ trọng dịch vụ/công trong báo giá đã duyệt. Không cần migration hoặc chạy lại
+seed. Quy tắc và API được mô tả tại [Revenue](backend/src/modules/revenue/README.md).
+
+STT119 (ThanhNT, Sprint 2): Admin xem toàn bộ giao dịch rút tiền tại
+`/admin/withdrawals`, tìm kiếm/lọc theo ngày khởi tạo (UTC+7) và xem chi tiết
+phí, tiền thực nhận, ngân hàng, trạng thái cùng bút toán đối soát nếu có.
+Chức năng chỉ đọc dữ liệu, không duyệt hoặc chuyển tiền; không cần migration
+hay chạy lại seed. API được mô tả tại [Withdrawals](backend/src/modules/withdrawals/README.md).
+
+STT120 (ThanhNT, Sprint 2): Admin xem lịch sử nạp tiền của kỹ thuật viên tại
+`/admin/topups`, lọc theo trạng thái, phương thức thanh toán và ngày tạo (UTC+7).
+Chi tiết hiển thị thời gian thanh toán, đối soát và bút toán tăng số dư nếu có.
+Chức năng chỉ đọc dữ liệu; API được mô tả tại [Top-ups](backend/src/modules/topups/README.md).
+
 Chạy backend:
 
 ```text

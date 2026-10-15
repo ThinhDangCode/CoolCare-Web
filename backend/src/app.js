@@ -35,6 +35,9 @@ import { ComplaintRepository } from './modules/complaints/complaint.repository.j
 import { createComplaintRouter } from './modules/complaints/complaint.routes.js'
 import { ComplaintService } from './modules/complaints/complaint.service.js'
 import { createPaymentsRouter } from './modules/payments/payments.routes.js'
+import { createRevenueRouter } from './modules/revenue/revenue.routes.js'
+import { createWithdrawalsRouter } from './modules/withdrawals/withdrawals.routes.js'
+import { createTopupsRouter } from './modules/topups/topups.routes.js'
 import { createTechnicianApplicationRouter } from './modules/technician-applications/technician-application.routes.js'
 import { createTechnicianPortalRouter } from './modules/technician-portal/technician-portal.routes.js'
 import { createServiceCategoryRouter } from './modules/services/service-category.routes.js'
@@ -129,6 +132,9 @@ app.use('/api/admin/blogs', createAdminBlogRouter(blogController))
 app.use('/api/admin/complaints', createComplaintRouter(complaintController))
 app.use('/api/admin', createAdminVoucherRouter(voucherController))
 app.use('/api/admin/payments', createPaymentsRouter())
+app.use('/api/admin/revenue', createRevenueRouter())
+app.use('/api/admin/withdrawals', createWithdrawalsRouter())
+app.use('/api/admin/topups', createTopupsRouter())
 app.use('/api/admin/technicians', createTechnicianRouter())
 app.use('/api/admin/bookings', createBookingRouter())
 app.use('/api/catalog', createCatalogRouter(undefined, false))

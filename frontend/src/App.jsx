@@ -24,6 +24,11 @@ import { VouchersPage } from './features/vouchers/pages/VouchersPage.jsx'
 import { VoucherUsagePage } from './features/vouchers/pages/VoucherUsagePage.jsx'
 import PaymentsPage from './features/payments/pages/PaymentsPage.jsx'
 import PaymentDetailPage from './features/payments/pages/PaymentDetailPage.jsx'
+import RevenuePage from './features/revenue/pages/RevenuePage.jsx'
+import WithdrawalsPage from './features/withdrawals/pages/WithdrawalsPage.jsx'
+import WithdrawalDetailPage from './features/withdrawals/pages/WithdrawalDetailPage.jsx'
+import TopupsPage from './features/topups/pages/TopupsPage.jsx'
+import TopupDetailPage from './features/topups/pages/TopupDetailPage.jsx'
 
 function App() {
   const location = useLocation()
@@ -57,6 +62,11 @@ function App() {
           <Route path="/admin/users" element={<UsersPage />} />
           <Route path="/admin/payments" element={<PaymentsPage />} />
           <Route path="/admin/payments/:id" element={<PaymentDetailPage />} />
+          <Route path="/admin/revenue" element={<RevenuePage />} />
+          <Route path="/admin/withdrawals" element={<WithdrawalsPage />} />
+          <Route path="/admin/withdrawals/:id" element={<WithdrawalDetailPage />} />
+          <Route path="/admin/topups" element={<TopupsPage />} />
+          <Route path="/admin/topups/:id" element={<TopupDetailPage />} />
           <Route path="/admin/vouchers" element={<VouchersPage />} />
           <Route path="/admin/vouchers/new" element={<CreateVoucherPage />} />
           <Route path="/admin/voucher-usages" element={<VoucherUsagePage />} />
