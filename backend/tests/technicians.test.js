@@ -9,6 +9,48 @@ import { errorHandler } from '../src/middleware/error-handler.js'
 import { createTechnicianRouter } from '../src/modules/technicians/technician.routes.js'
 import { validateTechnicianQuery, validatePenaltyQuery, validateReview, validateTechnicianUpdate, validateTechnicianSkills } from '../src/modules/technicians/technician.validation.js'
 
+test('approving a technician repairs the receiving account and activates the profile', async () => {
+  const queries = []
+  const service = new TechnicianMutations({
+    audit: () => {},
+    transaction: async (work) => work({
+      async query(sql, params) {
+        queries.push({ sql, params })
+        if (sql.includes('SELECT * FROM technician_profiles')) {
+          return { rows: [{
+            id: 'technician-id',
+            verification_status: 'PENDING',
+            identity_number: '012345678901',
+            identity_front_url: 'https://example.com/front.jpg',
+            identity_back_url: 'https://example.com/back.jpg',
+          }] }
+        }
+        if (sql.includes('UPDATE technician_profiles SET verification_status')) {
+          return { rows: [{
+            id: 'technician-id',
+            verification_status: 'VERIFIED',
+            is_active: true,
+            availability_status: 'OFFLINE',
+          }] }
+        }
+        return { rows: [] }
+      },
+    }),
+  })
+
+  const result = await service.verification(
+    'technician-id',
+    { status: 'VERIFIED', reason: null },
+    'admin-id',
+  )
+
+  assert.equal(result.is_active, true)
+  assert.equal(result.availability_status, 'OFFLINE')
+  assert.ok(queries.some(({ sql }) => sql.includes('INSERT INTO technician_accounts')))
+  assert.ok(queries.some(({ sql }) => sql.includes('ON CONFLICT (technician_id) DO NOTHING')))
+  assert.ok(queries.some(({ sql }) => sql.includes("CASE WHEN $2='VERIFIED' THEN true")))
+})
+
 test('verified technicians cannot clear all skills or produce a successful audit', async () => {
   const queries = []
   const audits = []
