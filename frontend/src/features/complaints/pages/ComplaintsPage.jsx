@@ -41,7 +41,9 @@ export function ComplaintsPage() {
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('ALL')
   const [type, setType] = useState('ALL')
+  const [sort, setSort] = useState({ by: null, order: null })
   const [page, setPage] = useState(1)
+  const [limit, setLimit] = useState(10)
   const [data, setData] = useState({ items: [], total: 0 })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -57,7 +59,17 @@ export function ComplaintsPage() {
   useEffect(() => {
     const controller = new AbortController()
     const timer = setTimeout(() => {
-      const query = new URLSearchParams({ search, status, type, page, limit: 10 })
+      const query = new URLSearchParams({
+        search,
+        status,
+        type,
+        page,
+        limit,
+      })
+      if (sort.by) {
+        query.set('sort_by', sort.by)
+        query.set('sort_order', sort.order)
+      }
       adminRequest(`/complaints?${query}`, token, { signal: controller.signal })
         .then(setData)
         .then(() => setError(''))
@@ -67,13 +79,15 @@ export function ComplaintsPage() {
             if (err.status === 401) logout()
           }
         })
-        .finally(() => setLoading(false))
+        .finally(() => {
+          if (!controller.signal.aborted) setLoading(false)
+        })
     }, 250)
     return () => {
       clearTimeout(timer)
       controller.abort()
     }
-  }, [token, search, status, type, page, refresh, logout])
+  }, [token, search, status, type, sort, page, limit, refresh, logout])
   const reload = () => {
     setLoading(true)
     setRefresh((v) => v + 1)
@@ -183,7 +197,33 @@ export function ComplaintsPage() {
             <thead>
               <tr>
                 <th>{t('COMPLAINT ID')}</th>
-                <th>{t('CUSTOMER')}</th>
+                <th>
+                  <button
+                    type="button"
+                    className={`user-column-sort ${sort.by === 'customer_name' ? 'active' : ''}`}
+                    onClick={() => {
+                      setLoading(true)
+                      setPage(1)
+                      setSort((current) => {
+                        if (current.by !== 'customer_name')
+                          return { by: 'customer_name', order: 'asc' }
+                        if (current.order === 'asc')
+                          return { by: 'customer_name', order: 'desc' }
+                        return { by: null, order: null }
+                      })
+                    }}
+                    aria-label={t('Sort by customer name')}
+                  >
+                    {t('CUSTOMER')}
+                    <span aria-hidden="true">
+                      {sort.by === 'customer_name'
+                        ? sort.order === 'asc'
+                          ? 'A–Z'
+                          : 'Z–A'
+                        : '↕'}
+                    </span>
+                  </button>
+                </th>
                 <th>{t('ISSUE')}</th>
                 <th>{t('STATUS')}</th>
                 <th>{t('ACTION')}</th>
@@ -234,9 +274,15 @@ export function ComplaintsPage() {
           <Pagination
             page={page}
             total={data.total}
-            limit={10}
+            limit={limit}
             loading={loading}
             showTotal
+            pageSizeOptions={[5, 10, 15, 20, 25]}
+            onLimit={(value) => {
+              setLoading(true)
+              setPage(1)
+              setLimit(value)
+            }}
             onPage={(value) => {
               setLoading(true)
               setPage(value)

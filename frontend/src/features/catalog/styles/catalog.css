@@ -399,6 +399,23 @@
   gap: 13px;
   align-items: center;
 }
+.catalog-pagination .catalog-page-summary {
+  gap: 18px;
+}
+.catalog-page-summary label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.catalog-page-summary select {
+  height: 30px;
+  border: 1px solid #e6edf5;
+  border-radius: 5px;
+  padding: 0 24px 0 9px;
+  color: #52627a;
+  background: #fff;
+  font: inherit;
+}
 .catalog-pagination button {
   border: 1px solid #e6edf5;
   border-radius: 4px;

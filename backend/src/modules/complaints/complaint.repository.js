@@ -33,8 +33,12 @@ export class ComplaintRepository {
         ' FROM (SELECT complaints.*,ROW_NUMBER() OVER(ORDER BY created_at ASC,id ASC)::int complaint_number FROM complaints) c JOIN bookings b ON b.id=c.booking_id JOIN customer_profiles cp ON cp.id=c.customer_id JOIN users cu ON cu.id=cp.user_id LEFT JOIN technician_profiles tp ON tp.id=c.technician_id LEFT JOIN users tu ON tu.id=tp.user_id LEFT JOIN users ru ON ru.id=c.resolved_by_id'
       const where = clauses.length ? ` WHERE ${clauses.join(' AND ')}` : ''
       const count = await client.query(`SELECT count(*)::int total${from}${where}`, values)
+      const order =
+        filters.sortBy === 'customer_name'
+          ? `LOWER(cu.full_name) ${filters.sortOrder === 'asc' ? 'ASC' : 'DESC'},c.id ${filters.sortOrder === 'asc' ? 'ASC' : 'DESC'}`
+          : `c.created_at ${filters.sortOrder === 'asc' ? 'ASC' : 'DESC'},c.id ${filters.sortOrder === 'asc' ? 'ASC' : 'DESC'}`
       const rows = await client.query(
-        `SELECT c.*,b.booking_code,cu.full_name customer_name,cu.phone customer_phone,tu.full_name technician_name,ru.full_name resolved_by_name${from}${where} ORDER BY c.created_at DESC,c.id DESC LIMIT $${values.length + 1} OFFSET $${values.length + 2}`,
+        `SELECT c.*,b.booking_code,cu.full_name customer_name,cu.phone customer_phone,tu.full_name technician_name,ru.full_name resolved_by_name${from}${where} ORDER BY ${order} LIMIT $${values.length + 1} OFFSET $${values.length + 2}`,
         [...values, filters.limit, (filters.page - 1) * filters.limit]
       )
       return {

@@ -67,8 +67,13 @@ export class BlogRepository {
       const from =
         ' FROM (SELECT blogs.*,ROW_NUMBER() OVER(ORDER BY created_at ASC,id ASC)::int blog_number FROM blogs) b JOIN users u ON u.id=b.author_id'
       const count = await client.query(`SELECT count(*)::int total${from}${where}`, values)
-      const order =
-        filters.sort === 'OLDEST' ? 'b.created_at ASC,b.id ASC' : 'b.created_at DESC,b.id DESC'
+      const orders = {
+        NEWEST: 'b.created_at DESC,b.id DESC',
+        OLDEST: 'b.created_at ASC,b.id ASC',
+        TITLE_ASC: 'LOWER(b.title) ASC,b.id ASC',
+        TITLE_DESC: 'LOWER(b.title) DESC,b.id DESC',
+      }
+      const order = orders[filters.sort] ?? orders.NEWEST
       const rows = await client.query(
         `SELECT b.*,u.full_name author_name${from}${where} ORDER BY ${order} LIMIT $${values.length + 1} OFFSET $${values.length + 2}`,
         [...values, filters.limit, (filters.page - 1) * filters.limit]

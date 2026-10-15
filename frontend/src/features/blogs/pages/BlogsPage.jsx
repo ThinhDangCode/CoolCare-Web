@@ -32,7 +32,9 @@ export function BlogsPage() {
   const { locale, t } = useUiPreferences()
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('ALL')
+  const [sort, setSort] = useState('NEWEST')
   const [page, setPage] = useState(1)
+  const [limit, setLimit] = useState(10)
   const [data, setData] = useState({ items: [], total: 0 })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -47,7 +49,7 @@ export function BlogsPage() {
   useEffect(() => {
     const controller = new AbortController()
     const timer = setTimeout(() => {
-      const query = new URLSearchParams({ search, status, sort: 'NEWEST', page, limit: 10 })
+      const query = new URLSearchParams({ search, status, sort, page, limit })
       adminRequest(`/blogs?${query}`, token, { signal: controller.signal })
         .then((result) => {
           setData(result)
@@ -67,7 +69,7 @@ export function BlogsPage() {
       clearTimeout(timer)
       controller.abort()
     }
-  }, [token, search, status, page, refresh, logout])
+  }, [token, search, status, sort, page, limit, refresh, logout])
   const reload = () => {
     setLoading(true)
     setRefresh((value) => value + 1)
@@ -157,12 +159,23 @@ export function BlogsPage() {
             <option value="PUBLISHED">{t('Published')}</option>
             <option value="HIDDEN">{t('Hidden')}</option>
           </select>
+          <select
+            aria-label={t('Sort articles')}
+            value={sort}
+            onChange={(event) => {
+              setLoading(true)
+              setPage(1)
+              setSort(event.target.value)
+            }}
+          >
+            <option value="NEWEST">{t('Newest')}</option>
+            <option value="OLDEST">{t('Oldest')}</option>
+            <option value="TITLE_ASC">{t('Title A–Z')}</option>
+            <option value="TITLE_DESC">{t('Title Z–A')}</option>
+          </select>
           <Link className="primary" to="/admin/blogs/new">
             <PlusIcon /> {t('Create Article')}
           </Link>
-          <span className="repository-state">
-            <i /> {t('Operational Repository')}
-          </span>
         </div>
         <div className="figma-table-card">
           <table className="management-table blog-table">
@@ -227,8 +240,14 @@ export function BlogsPage() {
           <Pagination
             page={page}
             total={data.total}
-            limit={10}
+            limit={limit}
             loading={loading}
+            pageSizeOptions={[5, 10, 15, 20, 25]}
+            onLimit={(value) => {
+              setLoading(true)
+              setPage(1)
+              setLimit(value)
+            }}
             onPage={(value) => {
               setLoading(true)
               setPage(value)

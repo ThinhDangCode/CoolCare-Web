@@ -266,9 +266,6 @@
   color: #64748b;
   font-size: 10px;
 }
-.figma-pagination > span {
-  margin-right: auto;
-}
 .figma-pagination label {
   padding: 5px 8px;
   border-radius: 6px;
@@ -278,10 +275,15 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  margin-right: auto;
   border: 1px solid #dbe4ef;
   padding: 6px 10px;
   color: #52637a;
+}
+.figma-pagination-summary {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-right: auto;
 }
 .figma-page-size select {
   min-width: 58px;
@@ -3444,7 +3446,7 @@
   background-repeat: no-repeat;
 }
 .blog-toolbar {
-  grid-template-columns: minmax(300px, 1fr) 180px auto auto;
+  grid-template-columns: minmax(280px, 1fr) 170px 170px auto;
 }
 .blog-toolbar > a,
 .repository-state {
@@ -4044,7 +4046,7 @@
 .complaints-table + .figma-pagination {
   border-top: 1px solid #e2e8f0;
 }
-.complaints-table + .figma-pagination > span {
+.complaints-table + .figma-pagination .figma-pagination-summary > span {
   color: #64748b;
   font-size: 12px;
 }
