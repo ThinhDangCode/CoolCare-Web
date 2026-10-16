@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../../shared/context/AuthContext.jsx'
+import { useUiPreferences } from '../../../shared/context/UiPreferencesContext.jsx'
 import { CalendarIcon, ChevronDownIcon, PageHeader } from '../../../shared/components/AdminUi.jsx'
 import MonthYearPicker from '../../payments/components/MonthYearPicker.jsx'
 import layersIcon from '../assets/layers.svg'
@@ -24,6 +25,7 @@ import './revenue.css'
 const groupColors = ['var(--orange)', '#994700', '#4f6073', '#03b67e', '#8c7263', '#64748b']
 
 function GroupRevenueCard({ title, description, rows, area = false }) {
+  const { t } = useUiPreferences()
   return (
     <section className="revenue-card revenue-breakdown-card" aria-label={title}>
       <div className="revenue-card-heading">
@@ -51,20 +53,21 @@ function GroupRevenueCard({ title, description, rows, area = false }) {
               <p>
                 {formatRevenueAmount(row.amount)}
                 {row.amount === null && (
-                  <small>Known partial amount: {formatRevenueAmount(row.knownAmount)}</small>
+                  <small>{t('Known partial amount: {amount}', { amount: formatRevenueAmount(row.knownAmount) })}</small>
                 )}
               </p>
             </li>
           ))}
         </ul>
       ) : (
-        <p className="revenue-group-empty">No revenue recorded for this period and filters.</p>
+        <p className="revenue-group-empty">{t('No revenue recorded for this period and filters.')}</p>
       )}
     </section>
   )
 }
 
 function FilterSelect({ label, icon, value, onChange, options, allLabel }) {
+  const { t } = useUiPreferences()
   const hasSelection = value === 'ALL' || options.some((option) => option.id === value)
   return (
     <label className="revenue-filter">
@@ -73,7 +76,7 @@ function FilterSelect({ label, icon, value, onChange, options, allLabel }) {
         <img src={icon} alt="" />
         <select value={value} onChange={(event) => onChange(event.currentTarget.value)}>
           <option value="ALL">{allLabel}</option>
-          {!hasSelection && <option value={value}>Selected {label.toLowerCase()}</option>}
+          {!hasSelection && <option value={value}>{t('Selected {label}', { label: label.toLowerCase() })}</option>}
           {options.map((option) => (
             <option key={option.id} value={option.id}>
               {option.name}
@@ -88,6 +91,7 @@ function FilterSelect({ label, icon, value, onChange, options, allLabel }) {
 
 export default function RevenuePage() {
   const { token, clearSession } = useAuth()
+  const { t, locale } = useUiPreferences()
   const [params, setParams] = useSearchParams()
   const [defaults] = useState(defaultRevenueFilters)
   const filters = readRevenueFilters(params, defaults)
@@ -139,26 +143,26 @@ export default function RevenuePage() {
   return (
     <main className="revenue-page">
       <PageHeader
-        title="Revenue"
-        subtitle="Platform commission overview"
+        title={t('Revenue')}
+        subtitle={t('Platform commission overview')}
         onRefresh={reload}
         refreshing={loading}
       />
       <div className="revenue-content">
-        <section className="revenue-card revenue-toolbar" aria-label="Revenue filters">
-          <p className="revenue-breadcrumb">CoolCare Admin · Finance · Revenue</p>
+        <section className="revenue-card revenue-toolbar" aria-label={t('Revenue filters')}>
+          <p className="revenue-breadcrumb">{t('CoolCare Admin · Finance · Revenue')}</p>
           <div className="revenue-filters">
             <label className="revenue-filter">
-              <span>Report period</span>
+              <span>{t('Report period')}</span>
               <span className="revenue-filter-select">
                 <CalendarIcon />
                 <select
                   value={filters.period}
                   onChange={(event) => updateFilters({ period: event.currentTarget.value })}
                 >
-                  <option value="MONTH">Month</option>
-                  <option value="QUARTER">Quarter</option>
-                  <option value="YEAR">Year</option>
+                  <option value="MONTH">{t('Month')}</option>
+                  <option value="QUARTER">{t('Quarter')}</option>
+                  <option value="YEAR">{t('Year')}</option>
                 </select>
                 <ChevronDownIcon />
               </span>
@@ -175,7 +179,7 @@ export default function RevenuePage() {
               <div className="revenue-year-period">
                 {filters.period === 'QUARTER' && (
                   <label className="revenue-filter">
-                    <span>Quarter</span>
+                    <span>{t('Quarter')}</span>
                     <span className="revenue-filter-select revenue-quarter-select">
                       <select
                         value={filters.quarter}
@@ -191,7 +195,7 @@ export default function RevenuePage() {
                   </label>
                 )}
                 <label className="revenue-filter">
-                  <span>Year</span>
+                  <span>{t('Year')}</span>
                   <input
                     type="number"
                     min="1900"
@@ -206,20 +210,20 @@ export default function RevenuePage() {
               </div>
             )}
             <FilterSelect
-              label="Service"
+              label={t('Service')}
               icon={layersIcon}
               value={filters.service}
               onChange={(service) => updateFilters({ service })}
               options={options.services}
-              allLabel="All Services"
+              allLabel={t('All Services')}
             />
             <FilterSelect
-              label="Service area"
+              label={t('Service area')}
               icon={areaIcon}
               value={filters.area}
               onChange={(area) => updateFilters({ area })}
               options={options.areas}
-              allLabel="All Service Areas"
+              allLabel={t('All Service Areas')}
             />
             <button
               type="button"
@@ -231,56 +235,55 @@ export default function RevenuePage() {
               }}
             >
               <img src={resetIcon} alt="" />
-              Reset
+              {t('Reset')}
             </button>
           </div>
           <p className="revenue-filter-basis">
-            Settled payments · Commission only · Vietnam time (UTC+7)
-            {filters.service !== 'ALL' && ' · Selected service allocation'}
+            {t('Settled payments · Commission only · Vietnam time (UTC+7)')}
+            {filters.service !== 'ALL' && ` · ${t('Selected service allocation')}`}
           </p>
         </section>
 
         {validation ? (
           <div className="revenue-state error" role="alert">
-            <strong>Check the report period</strong>
-            <p>{validation}</p>
+            <strong>{t('Check the report period')}</strong>
+            <p>{t(validation)}</p>
           </div>
         ) : loading ? (
           <div className="revenue-state" role="status">
             <span className="revenue-loading-mark" aria-hidden="true" />
-            Loading revenue…
+            {t('Loading revenue…')}
           </div>
         ) : error ? (
           <div className="revenue-state error" role="alert">
-            <strong>Unable to load revenue</strong>
+            <strong>{t('Unable to load revenue')}</strong>
             <p>{error}</p>
             <button type="button" onClick={reload}>
-              Try again
+              {t('Try again')}
             </button>
           </div>
         ) : data ? (
           <>
             {warnings.length > 0 && (
-              <aside className="revenue-warning" aria-label="Revenue data warnings">
-                <strong>Some revenue data needs attention</strong>
+              <aside className="revenue-warning" aria-label={t('Revenue data warnings')}>
+                <strong>{t('Some revenue data needs attention')}</strong>
                 <ul>
                   {warnings.map((warning) => (
                     <li key={warning.code}>{warning.message}</li>
                   ))}
                 </ul>
-                <p>— means unavailable. Known partial amounts are shown separately.</p>
+                <p>{t('— means unavailable. Known partial amounts are shown separately.')}</p>
               </aside>
             )}
             {summary.paymentCount === 0 && (
               <p className="revenue-empty-notice" role="status">
-                No qualifying payments matched this period and filters. The previous period remains
-                visible for comparison.
+                {t('No qualifying payments matched this period and filters. The previous period remains visible for comparison.')}
               </p>
             )}
             <div className="revenue-kpis">
-              <section className="revenue-card revenue-kpi" aria-label="Total Revenue">
+              <section className="revenue-card revenue-kpi" aria-label={t('Total Revenue')}>
                 <div>
-                  <h2>Total Revenue</h2>
+                  <h2>{t('Total Revenue')}</h2>
                   {comparison !== null && (
                     <span className={`revenue-badge ${comparison < 0 ? 'negative' : ''}`}>
                       {formatRevenuePercent(comparison, true)}
@@ -290,27 +293,26 @@ export default function RevenuePage() {
                 <strong>{formatRevenueAmount(summary.totalRevenue)}</strong>
                 <p>
                   {summary.totalRevenue === null
-                    ? `Known partial amount: ${formatRevenueAmount(summary.knownRevenue)}`
-                    : `${summary.paymentCount.toLocaleString('en-US')} qualifying ${summary.paymentCount === 1 ? 'payment' : 'payments'} · ${revenuePeriodLabel(data.period)}`}
+                    ? t('Known partial amount: {amount}', { amount: formatRevenueAmount(summary.knownRevenue) })
+                    : `${summary.paymentCount.toLocaleString(locale === 'vi' ? 'vi-VN' : 'en-US')} ${t(summary.paymentCount === 1 ? 'qualifying payment' : 'qualifying payments')} · ${revenuePeriodLabel(data.period)}`}
                 </p>
                 <small>
-                  {comparison === null ? 'Previous total is not comparable' : 'vs. previous period'}
+                  {t(comparison === null ? 'Previous total is not comparable' : 'vs. previous period')}
                 </small>
               </section>
-              <section className="revenue-card revenue-kpi" aria-label="Average Revenue per Month">
+              <section className="revenue-card revenue-kpi" aria-label={t('Average Revenue per Month')}>
                 <div>
-                  <h2>Avg. Revenue / Month</h2>
+                  <h2>{t('Avg. Revenue / Month')}</h2>
                 </div>
                 <strong>{formatRevenueAmount(summary.averageMonthlyRevenue)}</strong>
                 <p>
-                  Across {data.period.monthCount} calendar{' '}
-                  {data.period.monthCount === 1 ? 'month' : 'months'}
+                  {t('Across {count} calendar {unit}', { count: data.period.monthCount, unit: t(data.period.monthCount === 1 ? 'month' : 'months') })}
                 </p>
-                <small>Commission total ÷ months in period</small>
+                <small>{t('Commission total ÷ months in period')}</small>
               </section>
-              <section className="revenue-card revenue-kpi" aria-label="Top Service Share">
+              <section className="revenue-card revenue-kpi" aria-label={t('Top Service Share')}>
                 <div>
-                  <h2>Top Service Share</h2>
+                  <h2>{t('Top Service Share')}</h2>
                   {summary.topService && (
                     <span className="revenue-badge">
                       {formatRevenuePercent(summary.topService.sharePercent)}
@@ -321,14 +323,14 @@ export default function RevenuePage() {
                 <p>
                   {summary.topService?.name ??
                     (summary.totalRevenue === null
-                      ? 'Service revenue unavailable'
-                      : 'No service revenue recorded')}
+                      ? t('Service revenue unavailable')
+                      : t('No service revenue recorded'))}
                 </p>
-                <small>Allocated platform commission</small>
+                <small>{t('Allocated platform commission')}</small>
               </section>
-              <section className="revenue-card revenue-kpi" aria-label="Top Area Share">
+              <section className="revenue-card revenue-kpi" aria-label={t('Top Area Share')}>
                 <div>
-                  <h2>Top Area Share</h2>
+                  <h2>{t('Top Area Share')}</h2>
                   {summary.topArea && (
                     <span className="revenue-badge">
                       {formatRevenuePercent(summary.topArea.sharePercent)}
@@ -339,22 +341,22 @@ export default function RevenuePage() {
                 <p>
                   {summary.topArea?.name ??
                     (summary.totalRevenue === null
-                      ? 'Area revenue unavailable'
-                      : 'No area revenue recorded')}
+                      ? t('Area revenue unavailable')
+                      : t('No area revenue recorded'))}
                 </p>
-                <small>Service address city</small>
+                <small>{t('Service address city')}</small>
               </section>
             </div>
             <RevenueTrend rows={data.trend} period={data.period} />
             <div className="revenue-breakdowns">
               <GroupRevenueCard
-                title="Revenue by Service"
-                description="Platform commission allocated by service contribution"
+                title={t('Revenue by Service')}
+                description={t('Platform commission allocated by service contribution')}
                 rows={data.services}
               />
               <GroupRevenueCard
-                title="Revenue by Area"
-                description="Service address city distribution"
+                title={t('Revenue by Area')}
+                description={t('Service address city distribution')}
                 rows={data.areas}
                 area
               />

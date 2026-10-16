@@ -12,9 +12,11 @@ const clean = (value, max) => {
   return result && result.length <= max ? result : null
 }
 
-const validDate = (value) =>
-  typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value) &&
-  !Number.isNaN(Date.parse(`${value}T00:00:00Z`))
+const validDate = (value) => {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
+  const date = new Date(`${value}T00:00:00.000Z`)
+  return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value
+}
 
 const validHttpsUrl = (value) => {
   if (typeof value !== 'string' || value.length > 2048) return false
