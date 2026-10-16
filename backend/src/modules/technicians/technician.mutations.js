@@ -8,6 +8,14 @@ const notFound = () => new AppError(404,'TECHNICIAN_NOT_FOUND','Technician not f
 export class TechnicianMutations {
   constructor({ transaction = withTransaction, audit = writeManagementAudit } = {}) { this.transaction=transaction;this.audit=audit }
   async lock(client,id) {
+    // Repair legacy profiles that were created without the account required by
+    // can_recommend_technician(). ON CONFLICT deliberately preserves wallet and
+    // debt restrictions on accounts that already exist.
+    await client.query(`INSERT INTO technician_accounts
+      (id,technician_id,settlement_balance,is_receiving_jobs_allowed,created_at,updated_at)
+      SELECT $2,$1,0,true,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP
+      WHERE EXISTS (SELECT 1 FROM technician_profiles WHERE id=$1)
+      ON CONFLICT (technician_id) DO NOTHING`,[id,randomUUID()])
     // Serialize administration with the existing job-assignment account lock.
     await client.query('SELECT id FROM technician_accounts WHERE technician_id=$1 FOR UPDATE',[id])
     const result=await client.query('SELECT * FROM technician_profiles WHERE id=$1 FOR UPDATE',[id])
@@ -21,7 +29,10 @@ export class TechnicianMutations {
       if(input.status==='VERIFIED' && (!before.identity_number || !before.identity_front_url || !before.identity_back_url)) throw new AppError(422,'INCOMPLETE_IDENTITY','Citizen ID and both identity documents are required for approval.')
       const result=await client.query(`UPDATE technician_profiles SET verification_status=$2::varchar,
         reviewed_by_id=$3,reviewed_at=CURRENT_TIMESTAMP,rejection_reason=$4,
-        updated_at=CURRENT_TIMESTAMP WHERE id=$1 RETURNING id,verification_status,reviewed_by_id,reviewed_at`,[id,input.status,actorId,input.reason])
+        is_active=CASE WHEN $2='VERIFIED' THEN true ELSE false END,
+        availability_status=CASE WHEN $2='VERIFIED' THEN availability_status ELSE 'OFFLINE' END,
+        updated_at=CURRENT_TIMESTAMP WHERE id=$1
+        RETURNING id,verification_status,reviewed_by_id,reviewed_at,is_active,availability_status`,[id,input.status,actorId,input.reason])
       // Do not enable receiving jobs here: wallet/debt restrictions are independent.
       return result.rows[0]
     })

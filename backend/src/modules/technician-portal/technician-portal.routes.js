@@ -10,13 +10,59 @@ import {
   validateSetAvailabilityStatus,
 } from './technician-portal.validation.js'
 import { validateTechnicianAreas } from '../technicians/technician.validation.js'
+import { ViewJobRequestsService } from './view-job-requests.service.js'
+import { AcceptDeclineJobRequestService } from './accept-decline-job-request.service.js'
+import { UpdateJobStatusService } from './update-job-status.service.js'
+import { CancelAcceptedJobService } from './cancel-accepted-job.service.js'
 
-export function createTechnicianPortalRouter(repository = new TechnicianPortalRepository()) {
+export function createTechnicianPortalRouter(
+  repository = new TechnicianPortalRepository(),
+  viewJobRequestsService = new ViewJobRequestsService(),
+  acceptDeclineJobRequestService = new AcceptDeclineJobRequestService(),
+  updateJobStatusService = new UpdateJobStatusService(),
+  cancelAcceptedJobService = new CancelAcceptedJobService(),
+) {
   const router = Router()
   router.use(authenticate, requireRole('CUSTOMER'))
 
   router.get('/dashboard', asyncHandler(async (request, response) => {
     response.set('Cache-Control', 'no-store').json({ data: await repository.dashboard(request.auth.userId) })
+  }))
+
+  router.get('/job-requests', asyncHandler(async (request, response) => {
+    response.set('Cache-Control', 'no-store').json({
+      data: await viewJobRequestsService.getViewJobRequests(request.auth.userId, request.query),
+    })
+  }))
+
+  router.patch('/job-requests/:id/response', asyncHandler(async (request, response) => {
+    response.json({
+      data: await acceptDeclineJobRequestService.respond(
+        request.auth.userId,
+        request.params.id,
+        request.body,
+      ),
+    })
+  }))
+
+  router.patch('/job-requests/:id/status', asyncHandler(async (request, response) => {
+    response.json({
+      data: await updateJobStatusService.update(
+        request.auth.userId,
+        request.params.id,
+        request.body,
+      ),
+    })
+  }))
+
+  router.patch('/job-requests/:id/cancel', asyncHandler(async (request, response) => {
+    response.json({
+      data: await cancelAcceptedJobService.cancel(
+        request.auth.userId,
+        request.params.id,
+        request.body,
+      ),
+    })
   }))
 
   router.get('/availability', asyncHandler(async (request, response) => {

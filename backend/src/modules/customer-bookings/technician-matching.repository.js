@@ -113,7 +113,7 @@ export class TechnicianMatchingRepository {
    * Eligibility:
    * - Database can_recommend_technician() predicate
    * - Active user
-   * - Matching service city (ward is a ranking preference)
+   * - Matching the registered service city and ward
    * - Required service skills and optional AC brands
    *
    * Ranking:
@@ -267,6 +267,8 @@ export class TechnicianMatchingRepository {
               WHERE area.technician_id = tp.id
                 AND LOWER(BTRIM(area.city)) =
                     LOWER(BTRIM(target.city))
+                AND LOWER(BTRIM(area.ward)) =
+                    LOWER(BTRIM(target.ward))
             )
 
             AND EXISTS (

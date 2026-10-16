@@ -16,6 +16,7 @@ export class BookingDetailRepository {
   async findUnits(bookingId) {
     const result = await this.db.query(`
       SELECT bu.id, bu.unit_number, bu.description, bu.diagnosis,
+             bu.ac_brand_id,bu.ac_model_id,
              ab.name AS brand_name, am.model_name,
              COALESCE((SELECT json_agg(json_build_object(
                'id', s.id, 'name', s.name, 'unitPrice', bus.unit_price
@@ -76,5 +77,46 @@ export class BookingDetailRepository {
       INSERT INTO booking_status_history (booking_id, status, changed_by_id, note)
       VALUES ($1, 'CANCELLED', $2, $3)
     `, [bookingId, userId, reason])
+  }
+
+  async findAcceptedAssignment(bookingId, db) {
+    const result = await db.query(`
+      SELECT bt.id,bt.technician_id,tp.user_id AS technician_user_id
+      FROM booking_technicians bt
+      JOIN technician_profiles tp ON tp.id=bt.technician_id
+      WHERE bt.booking_id=$1 AND bt.status='ACCEPTED'
+      ORDER BY bt.responded_at DESC NULLS LAST
+      LIMIT 1
+      FOR UPDATE OF bt
+    `, [bookingId])
+    return result.rows[0] ?? null
+  }
+
+  async confirmCompletion(userId, bookingId, technicianUserId, db) {
+    const result = await db.query(`
+      UPDATE bookings
+      SET completion_confirmed_by_id=$2,
+          completion_confirmed_at=CURRENT_TIMESTAMP,
+          technician_completed_by_id=COALESCE(technician_completed_by_id,$3),
+          technician_completed_at=COALESCE(technician_completed_at,CURRENT_TIMESTAMP),
+          updated_at=CURRENT_TIMESTAMP
+      WHERE id=$1 AND status IN ('ACCEPTED','WAITING_CONFIRMATION')
+      RETURNING id,booking_code,status,completed_at,updated_at
+    `, [bookingId, userId, technicianUserId])
+    return result.rows[0] ?? null
+  }
+
+  async insertCompletionHistory(userId, bookingId, db) {
+    await db.query(`
+      INSERT INTO booking_status_history(booking_id,status,changed_by_id,note)
+      VALUES($1,'COMPLETED',$2,'Khách hàng đã xác nhận hoàn thành công việc.')
+    `, [bookingId, userId])
+  }
+
+  async notifyTechnician(technicianUserId, bookingId, bookingCode, db) {
+    await db.query(`
+      INSERT INTO notifications(user_id,type,title,message,reference_type,reference_id)
+      VALUES($1,'BOOKING','Khách hàng đã xác nhận hoàn thành',$2,'BOOKING',$3)
+    `, [technicianUserId, `Booking ${bookingCode} đã được khách hàng xác nhận hoàn thành.`, bookingId])
   }
 }
