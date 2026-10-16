@@ -1,10 +1,7 @@
 import { adminRequest } from '../../../shared/api/adminApi.js'
 import { revenueFilename, revenueRowCount } from '../revenueReport.js'
 
-const apiBase = (import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000/api').replace(
-  /\/$/,
-  ''
-)
+const apiBase = (import.meta.env.VITE_API_BASE_URL ?? '/api').replace(/\/$/, '')
 const workbookType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 
 export function listPayments(query, token, signal) {

@@ -24,6 +24,13 @@ export function validateTechnicianAreas(body) {
 function bodyObject(body,allowed) {
   if(!body || typeof body !== 'object' || Array.isArray(body) || Object.keys(body).some(k=>!allowed.includes(k))) throw new AppError(422,'VALIDATION_ERROR','Invalid request fields.')
 }
+function isIsoTimestamp(value) {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/.test(value)) return false
+  const date = new Date(value)
+  if (!Number.isFinite(date.getTime())) return false
+  const normalized = date.toISOString()
+  return normalized === value || normalized.replace('.000Z', 'Z') === value
+}
 export function validateReview(body,certification=false) {
   bodyObject(body,['status','reason',...(certification?['expected_updated_at']:[])])
   const errors={}
@@ -31,7 +38,7 @@ export function validateReview(body,certification=false) {
   const reason=typeof body.reason==='string'?body.reason.trim():''
   if(body.reason!==undefined && typeof body.reason!=='string') errors.reason='Invalid reason.'
   if(reason.length>1000 || (body.status==='REJECTED' && reason.length<5)) errors.reason='Rejection reason must contain 5–1000 characters.'
-  if(certification && (typeof body.expected_updated_at!=='string' || Number.isNaN(Date.parse(body.expected_updated_at)))) errors.expected_updated_at='Refresh the certification before reviewing.'
+  if(certification && !isIsoTimestamp(body.expected_updated_at)) errors.expected_updated_at='Refresh the certification before reviewing.'
   requireValidBody(errors)
   return {status:body.status,reason:body.status==='REJECTED'?reason:null,...(certification?{expected_updated_at:body.expected_updated_at}:{})}
 }

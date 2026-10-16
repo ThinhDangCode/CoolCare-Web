@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Link, useLocation, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../../shared/context/AuthContext.jsx'
+import { useUiPreferences } from '../../../shared/context/UiPreferencesContext.jsx'
 import { PageHeader, TableState } from '../../../shared/components/AdminUi.jsx'
 import { listTopups } from '../api/topupsApi.js'
 import TopupDateFilter from '../components/TopupDateFilter.jsx'
@@ -18,6 +19,7 @@ import './topups.css'
 
 export default function TopupsPage() {
   const { token, clearSession } = useAuth()
+  const { t, locale } = useUiPreferences()
   const location = useLocation()
   const [params, setParams] = useSearchParams()
   const filters = readTopupFilters(params)
@@ -104,32 +106,32 @@ export default function TopupsPage() {
   const start = total ? (filters.page - 1) * filters.limit + 1 : 0
   const end = Math.min(filters.page * filters.limit, total)
   const subtitle = loading
-    ? 'Loading top-ups…'
+    ? t('Loading top-ups…')
     : error
-      ? 'Unable to load top-ups'
-      : `${total.toLocaleString('en-US')} top-up ${total === 1 ? 'transaction' : 'transactions'}`
+      ? t('Unable to load top-ups')
+      : `${total.toLocaleString(locale === 'vi' ? 'vi-VN' : 'en-US')} ${t(total === 1 ? 'top-up transaction' : 'top-up transactions')}`
 
   return (
     <main className="topups-page">
       <PageHeader
-        title="Top-up Transactions"
+        title={t('Top-up Transactions')}
         subtitle={subtitle}
         onRefresh={reload}
         refreshing={loading}
       />
-      <section className="topups-content" aria-label="Top-up history">
-        <nav className="topups-tabs" aria-label="Wallet history">
+      <section className="topups-content" aria-label={t('Top-up history')}>
+        <nav className="topups-tabs" aria-label={t('Wallet history')}>
           <Link to="/admin/withdrawals" className="topups-tab">
-            Withdrawal History
+            {t('Withdrawal history')}
           </Link>
           <span className="topups-tab active" aria-current="page">
-            Top-up History
+            {t('Top-up history')}
             <strong
               aria-label={
-                loading ? 'Loading count' : error ? 'Count unavailable' : `${total} top-ups`
+                loading ? t('Loading count') : error ? t('Count unavailable') : `${total} ${t('top-up transactions')}`
               }
             >
-              {loading ? '…' : error ? '—' : total.toLocaleString('en-US')}
+              {loading ? '…' : error ? '—' : total.toLocaleString(locale === 'vi' ? 'vi-VN' : 'en-US')}
             </strong>
           </span>
         </nav>
@@ -138,8 +140,8 @@ export default function TopupsPage() {
             <label className="topups-search">
               <img src="/topups/search.svg" alt="" />
               <input
-                aria-label="Search top-ups"
-                placeholder="Search top-up code, tech name, phone…"
+                aria-label={t('Search top-ups')}
+                placeholder={t('Search top-up code, tech name, phone…')}
                 maxLength={150}
                 value={search}
                 onChange={(event) =>
@@ -150,14 +152,14 @@ export default function TopupsPage() {
             <div className="topups-toolbar-filters">
               <span className="topups-select topups-status-select">
                 <select
-                  aria-label="Filter top-up status"
+                  aria-label={t('Filter top-up status')}
                   value={filters.status}
                   onChange={(event) => updateFilters({ status: event.target.value })}
                 >
-                  <option value="ALL">All Status</option>
+                  <option value="ALL">{t('All Status')}</option>
                   {Object.entries(topupStatuses).map(([value, label]) => (
                     <option key={value} value={value}>
-                      {label}
+                      {t(label)}
                     </option>
                   ))}
                 </select>
@@ -165,12 +167,12 @@ export default function TopupsPage() {
               </span>
               <span className="topups-select topups-method-select">
                 <select
-                  aria-label="Filter top-up method"
+                  aria-label={t('Filter top-up method')}
                   value={filters.method}
                   onChange={(event) => updateFilters({ method: event.target.value })}
                 >
-                  <option value="ALL">All Methods</option>
-                  {!hasSelectedMethod && <option value={filters.method}>Selected method</option>}
+                  <option value="ALL">{t('All Methods')}</option>
+                  {!hasSelectedMethod && <option value={filters.method}>{t('Selected method')}</option>}
                   {methods.map((method) => (
                     <option key={method.id} value={method.id}>
                       {topupMethodName(method)}
@@ -187,8 +189,8 @@ export default function TopupsPage() {
             <div className="topups-toolbar-actions">
               <button
                 type="button"
-                aria-label="Clear top-up filters"
-                title="Clear filters"
+                aria-label={t('Clear top-up filters')}
+                title={t('Clear filters')}
                 disabled={!hasFilters}
                 onClick={reset}
               >
@@ -196,8 +198,8 @@ export default function TopupsPage() {
               </button>
               <button
                 type="button"
-                aria-label="Refresh top-ups"
-                title="Refresh top-ups"
+                aria-label={t('Refresh top-ups')}
+                title={t('Refresh top-ups')}
                 disabled={loading}
                 onClick={reload}
               >
@@ -205,17 +207,17 @@ export default function TopupsPage() {
               </button>
             </div>
           </div>
-          <p className="topups-filter-basis">Created date · Vietnam time (UTC+7)</p>
+          <p className="topups-filter-basis">{t('Created date · Vietnam time (UTC+7)')}</p>
           <div className="topups-table-scroll">
             <table>
               <thead>
                 <tr>
-                  <th scope="col">TRANSACTION ID</th>
-                  <th scope="col">TECHNICIAN NAME</th>
-                  <th scope="col">AMOUNT</th>
-                  <th scope="col">PAYMENT METHOD</th>
-                  <th scope="col">STATUS</th>
-                  <th scope="col">CREATED DATE</th>
+                  <th scope="col">{t('TRANSACTION ID')}</th>
+                  <th scope="col">{t('TECHNICIAN NAME')}</th>
+                  <th scope="col">{t('AMOUNT')}</th>
+                  <th scope="col">{t('PAYMENT METHOD')}</th>
+                  <th scope="col">{t('STATUS')}</th>
+                  <th scope="col">{t('CREATED DATE')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -234,8 +236,8 @@ export default function TopupsPage() {
                         <Link
                           to={`/admin/topups/${row.id}${query ? `?${query}` : ''}`}
                           className="topups-code"
-                          aria-label={`View top-up ${topupReference(row)}`}
-                          title="View top-up details"
+                          aria-label={`${t('View top-up details')} ${topupReference(row)}`}
+                          title={t('View top-up details')}
                         >
                           {topupReference(row)}
                         </Link>
@@ -250,7 +252,7 @@ export default function TopupsPage() {
                       </td>
                       <td>
                         <span className={`topups-status status-${row.status.toLowerCase()}`}>
-                          {topupStatuses[row.status] ?? row.status}
+                          {t(topupStatuses[row.status] ?? row.status)}
                         </span>
                       </td>
                       <td>{formatTopupDate(row.createdAt)}</td>
@@ -263,22 +265,22 @@ export default function TopupsPage() {
             <div className="topups-page-summary">
               <span aria-live="polite">
                 {loading
-                  ? 'Loading top-ups…'
+                  ? t('Loading top-ups…')
                   : error
-                    ? 'Count unavailable'
-                    : `Showing ${start}–${end} of ${total.toLocaleString('en-US')} transactions`}
+                    ? t('Count unavailable')
+                    : t('Showing {start}–{end} of {total} transactions', { start, end, total: total.toLocaleString(locale === 'vi' ? 'vi-VN' : 'en-US') })}
               </span>
               <label className="topups-page-size">
-                Rows per page:
+                {t('Rows per page:')}
                 <span className="topups-select">
                   <select
-                    aria-label="Top-ups per page"
+                    aria-label={t('Rows per page:')}
                     value={filters.limit}
                     onChange={(event) => updateFilters({ limit: Number(event.target.value) })}
                   >
                     {[10, 25, 50, 100].map((limit) => (
                       <option key={limit} value={limit}>
-                        {limit} / page
+                        {t('{count} / page', { count: limit })}
                       </option>
                     ))}
                   </select>

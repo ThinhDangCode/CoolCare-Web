@@ -1,4 +1,5 @@
 import { useId, useState } from 'react'
+import { useUiPreferences } from '../../../shared/context/UiPreferencesContext.jsx'
 import {
   compactRevenueAmount,
   displayRevenueDate,
@@ -9,6 +10,7 @@ import {
 } from '../revenuePresentation.js'
 
 export default function RevenueTrend({ rows, period }) {
+  const { t } = useUiPreferences()
   const id = useId()
   const [activeKey, setActiveKey] = useState(null)
   const active = rows.find((row) => row.key === activeKey)
@@ -32,24 +34,24 @@ export default function RevenueTrend({ rows, period }) {
   const currentArea = revenueAreaPath(rows, 'amount', point, bottom)
   const previousPath = revenueLinePath(rows, 'previousAmount', point)
   const pointLabel = (row) =>
-    `${row.label}: current period ${formatRevenueAmount(row.amount)}, previous period ${formatRevenueAmount(row.previousAmount)}`
+    `${row.label}: ${t('Current: {current} · Previous: {previous}', { current: formatRevenueAmount(row.amount), previous: formatRevenueAmount(row.previousAmount) })}`
 
   return (
     <section className="revenue-card revenue-trend" aria-labelledby={`${id}-title`}>
       <div className="revenue-card-heading">
         <div>
-          <h2 id={`${id}-title`}>Revenue Trend</h2>
+          <h2 id={`${id}-title`}>{t('Revenue Trend')}</h2>
           <p>
-            {displayRevenueDate(period.from)} – {displayRevenueDate(period.to)} · Same filters for
-            both periods
+            {displayRevenueDate(period.from)} – {displayRevenueDate(period.to)} ·{' '}
+            {t('Same filters for both periods')}
           </p>
         </div>
-        <div className="revenue-chart-legend" aria-label="Chart legend">
+        <div className="revenue-chart-legend" aria-label={t('Chart legend')}>
           <span>
-            <i className="current" /> Current period
+            <i className="current" /> {t('Current period')}
           </span>
           <span>
-            <i className="previous" /> Previous period
+            <i className="previous" /> {t('Previous period')}
           </span>
         </div>
       </div>
@@ -62,8 +64,7 @@ export default function RevenueTrend({ rows, period }) {
             </linearGradient>
           </defs>
           <desc>
-            Recorded platform commission in Vietnamese dong. Missing amounts and days outside a
-            calendar month leave a gap. Focus a point to read both values, or open the data table.
+            {t('Recorded platform commission in Vietnamese dong. Missing amounts and days outside a calendar month leave a gap. Focus a point to read both values, or open the data table.')}
           </desc>
           {[0, 1, 2, 3, 4].map((tick) => {
             const value = (maximum * tick) / 4
@@ -133,31 +134,33 @@ export default function RevenueTrend({ rows, period }) {
       <p className="revenue-chart-value" aria-live="polite">
         {active ? (
           <>
-            <strong>{active.label}</strong> · Current: {formatRevenueAmount(active.amount)} ·
-            Previous: {formatRevenueAmount(active.previousAmount)}
+            <strong>{active.label}</strong> · {t('Current: {current} · Previous: {previous}', { current: formatRevenueAmount(active.amount), previous: formatRevenueAmount(active.previousAmount) })}
             {active.amount === null && active.knownAmount !== null && (
-              <> · Known partial amount: {formatRevenueAmount(active.knownAmount)}</>
+              <> · {t('Known partial amount: {amount}', { amount: formatRevenueAmount(active.knownAmount) })}</>
             )}
           </>
         ) : (
-          'Hover or focus a point to see its values. — means missing data or a day outside the month.'
+          t('Hover or focus a point to see its values. — means missing data or a day outside the month.')
         )}
       </p>
       <details className="revenue-trend-table">
-        <summary>View chart data</summary>
+        <summary>{t('View chart data')}</summary>
         <div>
           <table>
             <caption>
-              Current: {displayRevenueDate(period.from)} – {displayRevenueDate(period.to)}.
-              Previous: {displayRevenueDate(period.previousFrom)} –{' '}
-              {displayRevenueDate(period.previousTo)}.
+              {t('Current: {from} – {to}. Previous: {previousFrom} – {previousTo}.', {
+                from: displayRevenueDate(period.from),
+                to: displayRevenueDate(period.to),
+                previousFrom: displayRevenueDate(period.previousFrom),
+                previousTo: displayRevenueDate(period.previousTo),
+              })}
             </caption>
             <thead>
               <tr>
-                <th scope="col">Day / month</th>
-                <th scope="col">Current revenue</th>
-                <th scope="col">Known partial amount</th>
-                <th scope="col">Previous revenue</th>
+                <th scope="col">{t('Day / month')}</th>
+                <th scope="col">{t('Current revenue')}</th>
+                <th scope="col">{t('Known partial amount')}</th>
+                <th scope="col">{t('Previous revenue')}</th>
               </tr>
             </thead>
             <tbody>

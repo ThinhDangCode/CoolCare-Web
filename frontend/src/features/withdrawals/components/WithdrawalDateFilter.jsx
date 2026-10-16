@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react'
+import { useUiPreferences } from '../../../shared/context/UiPreferencesContext.jsx'
 import {
   currentWithdrawalMonth,
   withdrawalRangeError,
@@ -6,6 +7,7 @@ import {
 } from '../withdrawalFilters.js'
 
 export default function WithdrawalDateFilter({ value, onChange }) {
+  const { t } = useUiPreferences()
   const id = useId()
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState({ from: '', to: '' })
@@ -13,6 +15,11 @@ export default function WithdrawalDateFilter({ value, onChange }) {
   const buttonRef = useRef(null)
   const fromRef = useRef(null)
   const error = withdrawalRangeError(draft)
+  const rangeLabel = (range) =>
+    withdrawalRangeLabel(range)
+      .split(' – ')
+      .map((part) => t(part))
+      .join(' – ')
 
   useEffect(() => {
     if (!open) return
@@ -54,13 +61,13 @@ export default function WithdrawalDateFilter({ value, onChange }) {
         className="withdrawals-date-button"
         aria-expanded={open}
         aria-controls={open ? `${id}-panel` : undefined}
-        aria-label={`Filter withdrawal date: ${withdrawalRangeLabel(value)}`}
+        aria-label={t('Filter withdrawal date: {range}', { range: rangeLabel(value) })}
         onClick={() => {
           if (!open) setDraft({ from: value.from, to: value.to })
           setOpen((current) => !current)
         }}
       >
-        <span>{withdrawalRangeLabel(value)}</span>
+        <span>{rangeLabel(value)}</span>
         <img src="/withdrawals/calendar.svg" alt="" />
       </button>
       {open && (
@@ -68,10 +75,10 @@ export default function WithdrawalDateFilter({ value, onChange }) {
           id={`${id}-panel`}
           className="withdrawals-calendar"
           role="group"
-          aria-label="Withdrawal date range"
+          aria-label={t('Withdrawal date range')}
         >
-          <h2>Withdrawal date</h2>
-          <p>Initiated date · Vietnam time (UTC+7)</p>
+          <h2>{t('Withdrawal date')}</h2>
+          <p>{t('Initiated date · Vietnam time (UTC+7)')}</p>
           <form
             onSubmit={(event) => {
               event.preventDefault()
@@ -79,7 +86,7 @@ export default function WithdrawalDateFilter({ value, onChange }) {
             }}
           >
             <label>
-              From date
+              {t('From date')}
               <input
                 ref={fromRef}
                 type="date"
@@ -92,7 +99,7 @@ export default function WithdrawalDateFilter({ value, onChange }) {
               />
             </label>
             <label>
-              To date
+              {t('To date')}
               <input
                 type="date"
                 min={draft.from || '0001-01-01'}
@@ -105,18 +112,18 @@ export default function WithdrawalDateFilter({ value, onChange }) {
             </label>
             {error && (
               <p className="withdrawals-date-error" role="alert">
-                {error}
+                {t(error)}
               </p>
             )}
             <footer>
               <button type="button" onClick={() => apply({ from: '', to: '' })}>
-                All time
+                {t('All time')}
               </button>
               <button type="button" onClick={() => apply(currentWithdrawalMonth())}>
-                This month
+                {t('This month')}
               </button>
               <button type="submit" className="withdrawals-apply" disabled={Boolean(error)}>
-                Apply
+                {t('Apply')}
               </button>
             </footer>
           </form>

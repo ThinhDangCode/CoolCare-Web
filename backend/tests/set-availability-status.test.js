@@ -34,6 +34,9 @@ test('Set Availability Status freely toggles an active technician ONLINE or OFFL
         if (sql.includes('UPDATE technician_profiles')) {
           return { rows: [{ availability_status: params[1], updated_at: '2026-10-14T00:00:00.000Z' }] }
         }
+        if (sql.includes('can_recommend_technician')) {
+          return { rows: [{ allowed: params[0] === 'technician-id' }] }
+        }
         return { rows: [] }
       },
     }),
@@ -49,6 +52,9 @@ test('Set Availability Status freely toggles an active technician ONLINE or OFFL
     can_receive_jobs: false,
   })
   assert.ok(calls.some(({ sql }) => sql.includes('FOR UPDATE OF tp, u')))
+  assert.ok(calls.some(({ sql }) => sql.includes('INSERT INTO technician_accounts')))
+  assert.ok(calls.some(({ sql }) => sql.includes('ON CONFLICT (technician_id) DO NOTHING')))
+  assert.ok(calls.some(({ sql }) => sql.includes('can_recommend_technician')))
   assert.equal(calls.some(({ sql }) => sql.includes('technician_areas')), false)
   assert.equal(calls.some(({ sql }) => sql.includes('technician_skills')), false)
 })
@@ -103,7 +109,7 @@ test('Set Availability Status routes require a customer token and pass only vali
   }
 })
 
-test('OFFLINE technicians receive no matching booking proposals on the dashboard', async () => {
+test('dashboard counts only SELECTED requests already sent to the technician', async () => {
   const calls = []
   const repository = new TechnicianPortalRepository({
     queryable: {
@@ -119,7 +125,7 @@ test('OFFLINE technicians receive no matching booking proposals on the dashboard
         if (sql.includes('AS jobs_today')) {
           return { rows: [{ jobs_today: 0, earnings_today: 0 }] }
         }
-        if (sql.includes('count(DISTINCT b.id)')) {
+        if (sql.includes('SELECT count(*)::int AS count')) {
           return { rows: [{ count: 0 }] }
         }
         return { rows: [] }
@@ -128,8 +134,12 @@ test('OFFLINE technicians receive no matching booking proposals on the dashboard
   })
 
   const dashboard = await repository.dashboard('user-id')
-  const proposalQuery = calls.find(({ sql }) => sql.includes('count(DISTINCT b.id)'))
-  assert.deepEqual(proposalQuery.params, ['technician-id', 'OFFLINE'])
-  assert.match(proposalQuery.sql, /\$2='ONLINE'/)
+  const proposalQuery = calls.find(({ sql }) => sql.includes("bt.status='SELECTED'"))
+  assert.deepEqual(proposalQuery.params, ['technician-id'])
+  assert.match(proposalQuery.sql, /bt\.technician_id=\$1/)
+  assert.doesNotMatch(proposalQuery.sql, /technician_areas/)
+  const nextRequestQuery = calls.find(({ sql }) => sql.includes('AS assignment_status'))
+  assert.match(nextRequestQuery.sql, /bt\.status='SELECTED'/)
+  assert.doesNotMatch(nextRequestQuery.sql, /'ACCEPTED'/)
   assert.equal(dashboard.stats.pending_requests, 0)
 })

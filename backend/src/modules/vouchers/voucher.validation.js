@@ -55,10 +55,13 @@ export function validateVoucherListQuery(query, usages = false) {
     errors.period = 'Khoảng thời gian không hợp lệ.'
   const datePattern = /^\d{4}-\d{2}-\d{2}$/
   for (const key of ['from_date', 'to_date']) {
+    const date = query[key] === undefined ? null : new Date(`${query[key]}T00:00:00.000Z`)
     if (
       usages &&
       query[key] !== undefined &&
-      (!datePattern.test(query[key]) || Number.isNaN(Date.parse(`${query[key]}T00:00:00Z`)))
+      (!datePattern.test(query[key]) ||
+        !Number.isFinite(date.getTime()) ||
+        date.toISOString().slice(0, 10) !== query[key])
     )
       errors[key] = 'Ngày không hợp lệ.'
   }

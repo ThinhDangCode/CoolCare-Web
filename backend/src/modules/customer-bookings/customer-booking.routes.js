@@ -56,6 +56,7 @@ export function createCustomerBookingRouter(controller) {
   router.get('/:bookingId', asyncHandler(bookingDetailController.getDetail))
   router.get('/:bookingId/timeline', asyncHandler(bookingDetailController.getTimeline))
   router.post('/:bookingId/cancel', asyncHandler(bookingDetailController.cancel))
+  router.post('/:bookingId/confirm-completion', asyncHandler(bookingDetailController.confirmCompletion))
 
   return router
 }

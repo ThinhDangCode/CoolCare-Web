@@ -210,6 +210,105 @@ html[data-theme='dark'] .language-menu button.active {
   color: #f8fafc !important;
   background: #414b57 !important;
 }
+
+/* Wallet, top-up and revenue modules share the global light/dark design tokens. */
+html[data-theme='dark'] :is(.topups-page, .withdrawals-page, .revenue-page) {
+  color: var(--app-text);
+  background: var(--app-bg);
+}
+
+html[data-theme='dark'] :is(
+  .topups-toolbar,
+  .topups-table-card,
+  .topups-calendar,
+  .topup-detail-topbar,
+  .topup-detail-card,
+  .topup-detail-state,
+  .withdrawals-table-card,
+  .withdrawals-calendar,
+  .withdrawal-detail-topbar,
+  .withdrawal-detail-card,
+  .withdrawal-detail-state,
+  .revenue-toolbar,
+  .revenue-card,
+  .revenue-kpi,
+  .revenue-state,
+  .revenue-trend-table
+) {
+  color: var(--app-text);
+  background: var(--app-surface);
+  border-color: var(--app-border);
+}
+
+html[data-theme='dark'] :is(
+  .topups-tabs,
+  .topups-tab:not(.active),
+  .topups-search,
+  .topups-select select,
+  .topups-date-button,
+  .topups-calendar input,
+  .topups-calendar footer button:not(.topups-apply),
+  .topups-method,
+  .topups-eye,
+  .withdrawals-tab:not(.active),
+  .withdrawals-search,
+  .withdrawals-select select,
+  .withdrawals-date-button,
+  .withdrawals-calendar input,
+  .withdrawals-calendar footer button:not(.withdrawals-apply),
+  .withdrawals-eye,
+  .revenue-filter-select,
+  .revenue-quarter-select
+) {
+  color: var(--app-text);
+  background: var(--app-surface-soft);
+  border-color: var(--app-border);
+}
+
+html[data-theme='dark'] :is(.topups-page, .withdrawals-page) :is(th, td),
+html[data-theme='dark'] :is(.topups-table-footer, .withdrawals-table-footer),
+html[data-theme='dark'] :is(.topup-detail-fields > div, .withdrawal-detail-fields > div) {
+  color: var(--app-text);
+  background: transparent;
+  border-color: var(--app-border);
+}
+
+html[data-theme='dark'] :is(.topups-page, .withdrawals-page) th {
+  color: var(--app-muted);
+  background: var(--app-surface-soft);
+}
+
+html[data-theme='dark'] :is(
+  .topups-filter-basis,
+  .topups-page-summary,
+  .topups-phone,
+  .topups-calendar p,
+  .withdrawals-filter-summary,
+  .withdrawals-page-summary,
+  .withdrawals-phone,
+  .withdrawals-calendar p,
+  .topup-detail-help,
+  .withdrawal-detail-help,
+  .revenue-filter-basis,
+  .revenue-card-heading p,
+  .revenue-group-empty
+) {
+  color: var(--app-muted);
+}
+
+html[data-theme='dark'] :is(
+  .topups-calendar h2,
+  .withdrawals-calendar h2,
+  .topup-detail-heading h1,
+  .topup-detail-card h2,
+  .topup-detail-fields dd,
+  .withdrawal-detail-heading h1,
+  .withdrawal-detail-card h2,
+  .withdrawal-detail-fields dd,
+  .revenue-card-heading h2
+) {
+  color: var(--app-text);
+}
 html[data-theme='dark'] body,
 html[data-theme='dark'] .figma-admin-main,
 html[data-theme='dark'] .dashboard-main {

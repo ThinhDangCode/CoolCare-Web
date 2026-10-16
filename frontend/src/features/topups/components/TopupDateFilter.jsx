@@ -1,7 +1,9 @@
 import { useEffect, useId, useRef, useState } from 'react'
+import { useUiPreferences } from '../../../shared/context/UiPreferencesContext.jsx'
 import { currentTopupMonth, topupRangeError, topupRangeLabel } from '../topupFilters.js'
 
 export default function TopupDateFilter({ value, onChange }) {
+  const { t } = useUiPreferences()
   const id = useId()
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState({ from: '', to: '' })
@@ -9,6 +11,11 @@ export default function TopupDateFilter({ value, onChange }) {
   const buttonRef = useRef(null)
   const fromRef = useRef(null)
   const error = topupRangeError(draft)
+  const rangeLabel = (range) =>
+    topupRangeLabel(range)
+      .split(' – ')
+      .map((part) => t(part))
+      .join(' – ')
 
   useEffect(() => {
     if (!open) return
@@ -50,14 +57,14 @@ export default function TopupDateFilter({ value, onChange }) {
         className="topups-date-button"
         aria-expanded={open}
         aria-controls={open ? `${id}-panel` : undefined}
-        aria-label={`Filter top-up date: ${topupRangeLabel(value)}`}
+        aria-label={t('Filter top-up date: {range}', { range: rangeLabel(value) })}
         onClick={() => {
           if (!open) setDraft({ from: value.from, to: value.to })
           setOpen((current) => !current)
         }}
       >
         <img src="/topups/calendar.svg" alt="" />
-        <span>{topupRangeLabel(value)}</span>
+        <span>{rangeLabel(value)}</span>
         <img src="/topups/date-chevron.svg" alt="" />
       </button>
       {open && (
@@ -65,10 +72,10 @@ export default function TopupDateFilter({ value, onChange }) {
           id={`${id}-panel`}
           className="topups-calendar"
           role="group"
-          aria-label="Top-up date range"
+          aria-label={t('Top-up date range')}
         >
-          <h2>Top-up date</h2>
-          <p>Created date · Vietnam time (UTC+7)</p>
+          <h2>{t('Top-up date')}</h2>
+          <p>{t('Created date · Vietnam time (UTC+7)')}</p>
           <form
             onSubmit={(event) => {
               event.preventDefault()
@@ -76,7 +83,7 @@ export default function TopupDateFilter({ value, onChange }) {
             }}
           >
             <label>
-              From date
+              {t('From date')}
               <input
                 ref={fromRef}
                 type="date"
@@ -89,7 +96,7 @@ export default function TopupDateFilter({ value, onChange }) {
               />
             </label>
             <label>
-              To date
+              {t('To date')}
               <input
                 type="date"
                 min={draft.from || '0001-01-01'}
@@ -102,18 +109,18 @@ export default function TopupDateFilter({ value, onChange }) {
             </label>
             {error && (
               <p className="topups-date-error" role="alert">
-                {error}
+                {t(error)}
               </p>
             )}
             <footer>
               <button type="button" onClick={() => apply({ from: '', to: '' })}>
-                All time
+                {t('All time')}
               </button>
               <button type="button" onClick={() => apply(currentTopupMonth())}>
-                This month
+                {t('This month')}
               </button>
               <button type="submit" className="topups-apply" disabled={Boolean(error)}>
-                Apply
+                {t('Apply')}
               </button>
             </footer>
           </form>

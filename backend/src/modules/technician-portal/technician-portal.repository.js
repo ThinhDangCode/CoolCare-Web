@@ -40,7 +40,8 @@ export class TechnicianPortalRepository {
          FROM booking_technicians bt
          JOIN bookings b ON b.id=bt.booking_id
          WHERE bt.technician_id=$1
-           AND bt.status IN ('SELECTED','ACCEPTED')
+           AND bt.status='SELECTED'
+           AND (bt.expires_at IS NULL OR bt.expires_at>CURRENT_TIMESTAMP)
            AND b.status NOT IN ('COMPLETED','CANCELLED')
          ORDER BY b.scheduled_at ASC, b.id
          LIMIT 1`,
@@ -57,11 +58,14 @@ export class TechnicianPortalRepository {
         [technician.id],
       ),
       this.queryable.query(
-        `SELECT count(DISTINCT b.id)::int AS count
-         FROM bookings b
-         JOIN technician_areas ta ON ta.technician_id=$1 AND ta.city=b.city AND ta.ward=b.ward
-         WHERE b.status='PENDING' AND $2='ONLINE'`,
-        [technician.id, technician.availability_status],
+        `SELECT count(*)::int AS count
+         FROM booking_technicians bt
+         JOIN bookings b ON b.id=bt.booking_id
+         WHERE bt.technician_id=$1
+           AND bt.status='SELECTED'
+           AND (bt.expires_at IS NULL OR bt.expires_at>CURRENT_TIMESTAMP)
+           AND b.status NOT IN ('COMPLETED','CANCELLED')`,
+        [technician.id],
       ),
     ])
     return {
@@ -95,6 +99,15 @@ export class TechnicianPortalRepository {
       if (!technician.is_active || technician.account_status !== 'ACTIVE') {
         throw new AppError(409, 'TECHNICIAN_INACTIVE', 'Hồ sơ kỹ thuật viên hiện không hoạt động.')
       }
+      // Self-heal legacy verified profiles that have no technician account.
+      // Existing account restrictions are never overwritten.
+      await client.query(
+        `INSERT INTO technician_accounts
+           (id,technician_id,settlement_balance,is_receiving_jobs_allowed,created_at,updated_at)
+         VALUES($1,$2,0,true,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)
+         ON CONFLICT (technician_id) DO NOTHING`,
+        [randomUUID(), technician.id],
+      )
       const updated = await client.query(
         `UPDATE technician_profiles
          SET availability_status=$2, updated_at=CURRENT_TIMESTAMP
@@ -102,9 +115,13 @@ export class TechnicianPortalRepository {
          RETURNING availability_status, updated_at`,
         [technician.id, status],
       )
+      const eligibility = await client.query(
+        'SELECT can_recommend_technician($1) AS allowed',
+        [technician.id],
+      )
       return {
         ...updated.rows[0],
-        can_receive_jobs: status === 'ONLINE',
+        can_receive_jobs: status === 'ONLINE' && eligibility.rows[0].allowed,
       }
     })
   }
