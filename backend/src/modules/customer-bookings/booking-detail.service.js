@@ -1,3 +1,4 @@
+import { reconcileTechnicianRequest } from './reconcile-technician-request.js'
 import { AppError, validateUuid } from '../../utils.js'
 import { withTransaction } from '../../config/database.js'
 import { BookingDetailRepository } from './booking-detail.repository.js'
@@ -15,6 +16,7 @@ export class BookingDetailService {
   }
 
   async detail(userId, bookingId) {
+    await reconcileTechnicianRequest(userId, bookingId)
     const b = await this.owned(userId, bookingId)
     const [units, technician, timeline] = await Promise.all([
       this.repository.findUnits(bookingId),
@@ -30,12 +32,40 @@ export class BookingDetailService {
       units, technician, timeline,
       cancellationReason: b.cancellation_reason, cancelledAt: b.cancelled_at,
       canCancel: ['PENDING', 'TECHNICIAN_SELECTED'].includes(b.status),
+      canConfirmCompletion: !b.completion_confirmed_at && !!b.technician_completed_at && ['WAITING_CONFIRMATION','IN_PROGRESS','QUOTATION_ACCEPTED'].includes(b.status),
     }
   }
 
   async timeline(userId, bookingId) {
     await this.owned(userId, bookingId)
     return this.repository.findTimeline(bookingId)
+  }
+
+  async confirmCompletion(userId, bookingId) {
+    return withTransaction(async (db) => {
+      const booking = await this.owned(userId, bookingId, db, true)
+      if (booking.completion_confirmed_at) {
+        throw new AppError(409, 'COMPLETION_ALREADY_CONFIRMED', 'Already confirmed.')
+      }
+      if (!['WAITING_CONFIRMATION', 'IN_PROGRESS', 'QUOTATION_ACCEPTED'].includes(booking.status)) {
+        throw new AppError(409, 'COMPLETION_NOT_ALLOWED', 'Booking is not ready for completion.')
+      }
+      if (!booking.technician_completed_at) {
+        throw new AppError(409, 'TECHNICIAN_NOT_COMPLETED', 'Technician has not confirmed completion.')
+      }
+      const result = await db.query(`
+        UPDATE bookings SET completion_confirmed_at=CURRENT_TIMESTAMP,
+          completion_confirmed_by_id=$2, updated_at=CURRENT_TIMESTAMP
+        WHERE id=$1 RETURNING id, status, completion_confirmed_at, completed_at
+      `, [bookingId, userId])
+      const updated = result.rows[0]
+      // The existing database trigger sets COMPLETED only after both confirmations.
+      if (updated.status === 'COMPLETED' && booking.status !== 'COMPLETED') {
+        await db.query(`INSERT INTO booking_status_history (booking_id,status,changed_by_id,note)
+          VALUES ($1,'COMPLETED',$2,'Customer confirmed work completion')`, [bookingId,userId])
+      }
+      return updated
+    })
   }
 
   async cancel(userId, bookingId, body) {

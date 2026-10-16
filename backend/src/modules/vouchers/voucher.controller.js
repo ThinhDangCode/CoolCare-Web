@@ -12,6 +12,10 @@ export class VoucherController {
     this.service = service
   }
 
+  available = async (request, response) =>
+    response.json({ data: await this.service.available(
+      request.auth.userId, validateVoucherBookingId(request.params.id)
+    ) })
   apply = async (request, response) =>
     response.json({
       data: await this.service.apply(
