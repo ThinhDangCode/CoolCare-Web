@@ -95,7 +95,9 @@ export class BookingDetailRepository {
   async confirmCompletion(userId, bookingId, db) {
     const result = await db.query(`
       UPDATE bookings
-      SET completion_confirmed_by_id=$2,
+      SET status='COMPLETED',
+          completed_at=CURRENT_TIMESTAMP,
+          completion_confirmed_by_id=$2,
           completion_confirmed_at=CURRENT_TIMESTAMP,
           updated_at=CURRENT_TIMESTAMP
       WHERE id=$1
