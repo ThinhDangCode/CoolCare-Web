@@ -89,7 +89,7 @@ export function BlogEditorPage() {
     setForm((current) => ({
       ...current,
       [key]: value,
-      ...(key === 'title' && !editing ? { slug: slugify(value) } : {}),
+      ...(key === 'title' ? { slug: slugify(value) } : {}),
     }))
   const formatContent = (before, after = before) => {
     const input = contentRef.current
@@ -216,7 +216,7 @@ export function BlogEditorPage() {
                 value={form.title}
                 onChange={(event) => change('title', event.target.value)}
               />
-              <small>{errors.title}</small>
+              <small>{errors.title ? t(errors.title) : ''}</small>
             </label>
             <label>
               {t('Article Slug *')}
@@ -226,34 +226,38 @@ export function BlogEditorPage() {
                 value={form.slug}
                 onChange={(event) => change('slug', slugify(event.target.value))}
               />
-              <small>{errors.slug}</small>
+              <small>{errors.slug ? t(errors.slug) : ''}</small>
             </label>
             <label>
               {t('Article Body Content *')}
               <div className="blog-rich-editor">
-                <div className="blog-rich-toolbar" aria-label="Article formatting">
-                  <button type="button" title="Bold" onClick={() => formatContent('**')}>
+                <div className="blog-rich-toolbar" aria-label={t('Article formatting')}>
+                  <button type="button" title={t('Bold')} onClick={() => formatContent('**')}>
                     <b>B</b>
                   </button>
-                  <button type="button" title="Italic" onClick={() => formatContent('_')}>
+                  <button type="button" title={t('Italic')} onClick={() => formatContent('_')}>
                     <i>I</i>
                   </button>
-                  <button type="button" title="Heading" onClick={() => formatContent('## ', '')}>
+                  <button
+                    type="button"
+                    title={t('Heading')}
+                    onClick={() => formatContent('## ', '')}
+                  >
                     H2
                   </button>
                   <button
                     type="button"
-                    title="Bulleted list"
+                    title={t('Bulleted list')}
                     onClick={() => formatContent('- ', '')}
                   >
-                    • List
+                    • {t('List')}
                   </button>
                   <button
                     type="button"
-                    title="Link"
+                    title={t('Link')}
                     onClick={() => formatContent('[', '](https://)')}
                   >
-                    Link
+                    {t('Link')}
                   </button>
                 </div>
                 <textarea
@@ -264,7 +268,7 @@ export function BlogEditorPage() {
                   onChange={(event) => change('content', event.target.value)}
                 />
               </div>
-              <small>{errors.content}</small>
+              <small>{errors.content ? t(errors.content) : ''}</small>
             </label>
           </section>
           <aside className="blog-editor-card blog-settings-card">
@@ -302,10 +306,10 @@ export function BlogEditorPage() {
             <div className="blog-setting-block">
               <span>{t('Target Channels')}</span>
               <label>
-                <input type="checkbox" checked readOnly /> CoolCare Customer App
+                <input type="checkbox" checked readOnly /> {t('CoolCare Customer App')}
               </label>
               <label>
-                <input type="checkbox" checked readOnly /> Public Knowledge Base
+                <input type="checkbox" checked readOnly /> {t('Public Knowledge Base')}
               </label>
             </div>
           </aside>
@@ -327,7 +331,11 @@ export function BlogEditorPage() {
                 <small>{t('ARTICLE PREVIEW')}</small>
                 <h2>{form.title || t('Untitled article')}</h2>
               </div>
-              <button type="button" aria-label="Close preview" onClick={() => setPreview(false)}>
+              <button
+                type="button"
+                aria-label={t('Close preview')}
+                onClick={() => setPreview(false)}
+              >
                 <CloseIcon />
               </button>
             </header>

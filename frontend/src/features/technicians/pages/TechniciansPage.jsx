@@ -180,17 +180,9 @@ export function TechniciansPage() {
                     <br />
                     {t('NUMBER')}
                   </th>
-                  <th>
-                    {t('ASSIGNED')}
-                    <br />
-                    {t('AREA')}
-                  </th>
+                  <th>{t('ASSIGNED AREA')}</th>
                   <th>{t('RATING')}</th>
-                  <th>
-                    {t('COMPLETED')}
-                    <br />
-                    {t('JOBS')}
-                  </th>
+                  <th>{t('COMPLETED JOBS')}</th>
                   <th>{t('STATUS')}</th>
                   <th>{t('ACTION')}</th>
                 </tr>
