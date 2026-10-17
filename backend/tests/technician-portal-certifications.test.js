@@ -29,6 +29,7 @@ test('certification submission validation accepts all professional fields', () =
 test('certification submission validation rejects invalid dates, files and missing required values', () => {
   assert.throws(() => validateCertificationSubmission({ ...validCertification, certificate_number: '' }), { status: 422 })
   assert.throws(() => validateCertificationSubmission({ ...validCertification, expiry_date: '2025-01-10' }), { status: 422 })
+  assert.throws(() => validateCertificationSubmission({ ...validCertification, issued_date: '2025-02-30' }), { status: 422 })
   assert.throws(() => validateCertificationSubmission({ ...validCertification, document_url: 'http://example.com/file.pdf' }), { status: 422 })
   assert.throws(() => validateCertificationSubmission({ ...validCertification, extra: true }), { status: 422 })
 })

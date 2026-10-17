@@ -34,7 +34,9 @@ import { ComplaintController } from './modules/complaints/complaint.controller.j
 import { ComplaintRepository } from './modules/complaints/complaint.repository.js'
 import { createComplaintRouter } from './modules/complaints/complaint.routes.js'
 import { ComplaintService } from './modules/complaints/complaint.service.js'
+import { createQuotationRouter } from './modules/quotations/quotation.routes.js'
 import { createPaymentsRouter } from './modules/payments/payments.routes.js'
+import { createCustomerPaymentRouter } from './modules/payments/customer-payment.routes.js'
 import { createRevenueRouter } from './modules/revenue/revenue.routes.js'
 import { createWithdrawalsRouter } from './modules/withdrawals/withdrawals.routes.js'
 import { createTopupsRouter } from './modules/topups/topups.routes.js'
@@ -132,6 +134,7 @@ app.use('/api/admin/blogs', createAdminBlogRouter(blogController))
 app.use('/api/admin/complaints', createComplaintRouter(complaintController))
 app.use('/api/admin', createAdminVoucherRouter(voucherController))
 app.use('/api/admin/payments', createPaymentsRouter())
+app.use('/api/payments', createCustomerPaymentRouter())
 app.use('/api/admin/revenue', createRevenueRouter())
 app.use('/api/admin/withdrawals', createWithdrawalsRouter())
 app.use('/api/admin/topups', createTopupsRouter())
@@ -143,6 +146,7 @@ app.use('/api/customer', createReviewRouter(reviewController))
 app.use('/api/customer', createVoucherRouter(voucherController))
 app.use('/api/technician-applications', createTechnicianApplicationRouter())
 app.use('/api/technician-portal', createTechnicianPortalRouter())
+app.use('/api/quotations', createQuotationRouter())
 
 // ADDRESS
 app.use('/api/addresses', createAddressRouter(addressController))
