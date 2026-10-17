@@ -25,6 +25,16 @@ const messages = {
     'Sign-in was unsuccessful. Please try again.': 'Đăng nhập không thành công. Vui lòng thử lại.',
     'Unable to connect to CoolCare right now. Please try again in a moment.':
       'Hiện không thể kết nối với CoolCare. Vui lòng thử lại sau ít phút.',
+    'Incorrect email or password.': 'Email hoặc mật khẩu không đúng.',
+    'This account is currently unavailable.': 'Tài khoản hiện không thể đăng nhập.',
+    'Your email has not been verified. Please verify it before signing in.':
+      'Email chưa được xác thực. Vui lòng xác thực email trước khi đăng nhập.',
+    'This account uses Google sign-in.': 'Tài khoản này sử dụng đăng nhập Google.',
+    'This portal is only available to administrators.':
+      'Cổng này chỉ dành cho quản trị viên.',
+    'The system is busy. Please try again later.':
+      'Hệ thống đang bận. Vui lòng thử lại sau.',
+    'Request failed. Please try again.': 'Yêu cầu không thành công. Vui lòng thử lại.',
     logoutTitle: 'Bạn có chắc muốn đăng xuất?',
     logoutCopy: 'Phiên đăng nhập quản trị hiện tại sẽ kết thúc.',
     cancel: 'Hủy',

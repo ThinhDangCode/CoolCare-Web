@@ -1,11 +1,13 @@
-import { useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
 import { Brand } from './Brand.jsx'
+import { adminRequest } from '../api/adminApi.js'
+import { useAuth } from '../context/AuthContext.jsx'
 import { useUiPreferences } from '../context/UiPreferencesContext.jsx'
 import './AdminSidebar.css'
 
 const mainNavigation = [
-  ['booking', 'Booking', '12'],
+  ['booking', 'Booking'],
   ['user', 'User'],
   ['technician', 'Technician'],
 ]
@@ -109,8 +111,10 @@ export function AdminSidebar({
   onLogout,
 }) {
   const { t } = useUiPreferences()
+  const { token } = useAuth()
   const location = useLocation()
   const sidebarRef = useRef(null)
+  const [bookingTotal, setBookingTotal] = useState(null)
   const [technicianOpen, setTechnicianOpen] = useState(
     () =>
       location.pathname.startsWith('/admin/technicians') ||
@@ -142,6 +146,17 @@ export function AdminSidebar({
     const sidebar = sidebarRef.current
     if (sidebar) sidebar.scrollTop = Number(sessionStorage.getItem('admin-sidebar-scroll') || 0)
   }, [])
+
+  useEffect(() => {
+    if (!token) return undefined
+    const controller = new AbortController()
+    adminRequest('/bookings?page=1&limit=1', token, { signal: controller.signal })
+      .then((result) => setBookingTotal(Number(result.total) || 0))
+      .catch((error) => {
+        if (error.name !== 'AbortError') setBookingTotal(null)
+      })
+    return () => controller.abort()
+  }, [token])
 
   const rememberScroll = () =>
     sessionStorage.setItem('admin-sidebar-scroll', String(sidebarRef.current?.scrollTop || 0))
@@ -191,7 +206,7 @@ export function AdminSidebar({
             <NavLink key={label} to="/admin/bookings">
               <DashboardIcon name={icon} />
               <span>{t(label)}</span>
-              {badge && <em>{badge}</em>}
+              {bookingTotal !== null && <em>{bookingTotal.toLocaleString()}</em>}
             </NavLink>
           ) : label === 'Technician' ? (
             <div key={label} className="sidebar-accordion">

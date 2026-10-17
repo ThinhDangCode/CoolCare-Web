@@ -47,7 +47,6 @@ async function request(path, { method = 'GET', body, token, networkRetries = 0 }
         },
         ...(body ? { body: JSON.stringify(body) } : {}),
       })
-      break
     } catch {
       if (attempt === networkRetries)
         throw new ApiError({
@@ -56,7 +55,17 @@ async function request(path, { method = 'GET', body, token, networkRetries = 0 }
           message: 'Unable to connect to CoolCare right now. Please try again in a moment.',
         })
       await wait(500)
+      continue
     }
+
+    // During local development Vite can briefly reach the API while the Node
+    // process is still restarting. Retry only temporary server/proxy failures;
+    // validation and authentication responses must be shown immediately.
+    if (response.status >= 500 && attempt < networkRetries) {
+      await wait(500)
+      continue
+    }
+    break
   }
 
   if (response.status === 204) return null
@@ -65,7 +74,7 @@ async function request(path, { method = 'GET', body, token, networkRetries = 0 }
     throw new ApiError({
       status: response.status,
       code: payload.error?.code ?? 'REQUEST_FAILED',
-      message: payload.error?.message ?? 'Yêu cầu không thành công.',
+      message: payload.error?.message ?? 'Request failed. Please try again.',
       details: payload.error?.details,
     })
   }

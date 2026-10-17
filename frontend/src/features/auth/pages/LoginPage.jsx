@@ -5,6 +5,15 @@ import { useUiPreferences } from '../../../shared/context/UiPreferencesContext.j
 import { PreferenceControls } from '../../../shared/components/PreferenceControls.jsx'
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const loginErrorMessages = {
+  INVALID_CREDENTIALS: 'Incorrect email or password.',
+  ACCOUNT_UNAVAILABLE: 'This account is currently unavailable.',
+  EMAIL_NOT_VERIFIED: 'Your email has not been verified. Please verify it before signing in.',
+  GOOGLE_SIGN_IN_REQUIRED: 'This account uses Google sign-in.',
+  ADMIN_ONLY: 'This portal is only available to administrators.',
+  INTERNAL_SERVER_ERROR: 'The system is busy. Please try again later.',
+  REQUEST_FAILED: 'Request failed. Please try again.',
+}
 
 export function LoginPage() {
   const { isAuthenticated, login } = useAuth()
@@ -45,7 +54,8 @@ export function LoginPage() {
       setError(
         requestError.code === 'NETWORK_ERROR'
           ? 'Unable to connect to CoolCare right now. Please try again in a moment.'
-          : (requestError.message ?? 'Sign-in was unsuccessful. Please try again.')
+          : (loginErrorMessages[requestError.code] ??
+              'Sign-in was unsuccessful. Please try again.')
       )
     } finally {
       setIsSubmitting(false)
