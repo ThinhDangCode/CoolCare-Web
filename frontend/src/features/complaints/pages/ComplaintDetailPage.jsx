@@ -205,7 +205,7 @@ export function ComplaintDetailPage() {
           complaint ? (
             <span className="complaint-header-title">
               <span>{t('Complaint Detail')}</span>
-              <b>#CP{String(complaint.complaint_number).padStart(3, '0')}</b>
+              <b>#{complaint.complaint_code}</b>
               <span className={`figma-status complaint-${complaint.status.toLowerCase()}`}>
                 <i />
                 {statusName[complaint.status] || label(complaint.status)}
@@ -242,7 +242,7 @@ export function ComplaintDetailPage() {
           <header className="complaint-print-heading">
             <h1>{t('Complaint Detail')}</h1>
             <p>
-              <strong>#CP{String(complaint.complaint_number).padStart(3, '0')}</strong>
+              <strong>#{complaint.complaint_code}</strong>
               <span>{statusName[complaint.status] || label(complaint.status)}</span>
             </p>
           </header>
@@ -276,7 +276,7 @@ export function ComplaintDetailPage() {
                       </span>
                       <strong>{t('Complaint Information')}</strong>
                     </div>
-                    <small>ID: CP{String(complaint.complaint_number).padStart(3, '0')}</small>
+                    <small>ID: {complaint.complaint_code}</small>
                   </header>
                   <div className="complaint-facts">
                     <div>
@@ -461,7 +461,7 @@ export function ComplaintDetailPage() {
                           {t('Record supporting findings, select resolution decision, and notify the customer.')}
                         </p>
                       </div>
-                      <small>#CP{String(complaint.complaint_number).padStart(3, '0')}</small>
+                      <small>#{complaint.complaint_code}</small>
                       <button
                         type="button"
                         aria-label="Close"
@@ -533,7 +533,7 @@ export function ComplaintDetailPage() {
                         <h2>Gift Compensation Voucher</h2>
                         <p>Create a one-time voucher assigned only to this customer.</p>
                       </div>
-                      <small>#CP{String(complaint.complaint_number).padStart(3, '0')}</small>
+                      <small>#{complaint.complaint_code}</small>
                       <button
                         type="button"
                         aria-label="Close"

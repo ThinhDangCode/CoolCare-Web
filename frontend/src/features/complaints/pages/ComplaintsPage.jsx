@@ -241,7 +241,7 @@ export function ComplaintsPage() {
                 data.items.map((row) => (
                   <tr key={row.id}>
                     <td>
-                      <strong>CP{String(row.complaint_number).padStart(3, '0')}</strong>
+                      <strong>{row.complaint_code}</strong>
                     </td>
                     <td>
                       <strong>{row.customer_name}</strong>
