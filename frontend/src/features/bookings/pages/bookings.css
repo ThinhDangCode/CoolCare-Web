@@ -577,3 +577,15 @@
     flex-wrap: wrap;
   }
 }
+.booking-detail-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 18px;
+  color: #52637a;
+  font-size: 12px;
+  text-decoration: none;
+}
+.booking-detail-back:hover {
+  color: #f97316;
+}

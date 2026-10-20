@@ -12,6 +12,7 @@ import {
 } from '../../../shared/components/AdminUi.jsx'
 import { TechnicianBadge } from '../components/TechnicianShared.jsx'
 import { label } from '../components/technicianFormat.js'
+import { useUiPreferences } from '../../../shared/context/UiPreferencesContext.jsx'
 import '../../../shared/styles/admin.css'
 import './technicians.css'
 
@@ -27,6 +28,7 @@ const initialFilters = {
 
 export function TechniciansPage() {
   const { token, logout } = useAuth()
+  const { t } = useUiPreferences()
   const [search, setSearch] = useState('')
   const [keyword, setKeyword] = useState('')
   const [filters, setFilters] = useState(initialFilters)
@@ -91,12 +93,12 @@ export function TechniciansPage() {
   }
   const select = (key, title, items, placeholder = `All ${title}`) => (
     <label className="technician-filter">
-      <span>{title}</span>
-      <select aria-label={title} value={filters[key]} onChange={(e) => change(key, e.target.value)}>
-        <option value={key === 'skill' || key === 'area' ? '' : 'ALL'}>{placeholder}</option>
+      <span>{t(title)}</span>
+      <select aria-label={t(title)} value={filters[key]} onChange={(e) => change(key, e.target.value)}>
+        <option value={key === 'skill' || key === 'area' ? '' : 'ALL'}>{t(placeholder)}</option>
         {items.map((item) => (
           <option key={item} value={item}>
-            {label(item)}
+            {t(label(item))}
           </option>
         ))}
       </select>
@@ -106,7 +108,7 @@ export function TechniciansPage() {
     <main className="figma-admin-main technician-main technician-directory-page">
       <PageHeader
         title="Technicians"
-        subtitle={`${data.total} technicians · Directory and account management`}
+        subtitle={t('{count} technicians · Directory and account management', { count: data.total })}
         onRefresh={retry}
         refreshing={loading}
       />
@@ -117,8 +119,8 @@ export function TechniciansPage() {
               <SearchIcon />
               <input
                 maxLength={150}
-                aria-label="Search technicians"
-                placeholder="Search technician..."
+                aria-label={t('Search technicians')}
+                placeholder={t('Search technician...')}
                 value={search}
                 onChange={(e) => {
                   setLoading(true)
@@ -132,7 +134,7 @@ export function TechniciansPage() {
             {select('qualification', 'Levels', ['BEGINNER', 'INTERMEDIATE', 'ADVANCED', 'EXPERT'])}
             <button
               className={`technician-filter-toggle ${expandedFilters ? 'active' : ''}`}
-              aria-label="Additional filters"
+              aria-label={t('Additional filters')}
               aria-expanded={expandedFilters}
               aria-controls="technician-extra-filters"
               onClick={() => setExpandedFilters((open) => !open)}
@@ -144,7 +146,7 @@ export function TechniciansPage() {
           {expandedFilters && (
             <div className="technician-extra-filters" id="technician-extra-filters">
               <label className="technician-filter">
-                <span>Sort</span>
+                <span>{t('Sort')}</span>
                 <select
                   value={filters.sort}
                   onChange={(e) => {
@@ -153,8 +155,8 @@ export function TechniciansPage() {
                     setFilters((current) => ({ ...current, sort: e.target.value }))
                   }}
                 >
-                  <option value="NAME">Name</option>
-                  <option value="PRIORITY">Job priority</option>
+                  <option value="NAME">{t('Name')}</option>
+                  <option value="PRIORITY">{t('Job priority')}</option>
                 </select>
               </label>
               {select('availability', 'Availability', ['ONLINE', 'OFFLINE', 'BUSY'])}
@@ -169,7 +171,7 @@ export function TechniciansPage() {
                   setRefresh((n) => n + 1)
                 }}
               >
-                Reset filters
+                {t('Reset filters')}
               </button>
             </div>
           )}
@@ -182,7 +184,7 @@ export function TechniciansPage() {
                     <br />
                     ID
                   </th>
-                  <th>TECHNICIAN</th>
+                  <th>{t('TECHNICIAN')}</th>
                   <th>
                     PHONE
                     <br />
@@ -193,14 +195,14 @@ export function TechniciansPage() {
                     <br />
                     AREA
                   </th>
-                  <th>RATING</th>
+                  <th>{t('RATING')}</th>
                   <th>
                     COMPLETED
                     <br />
                     JOBS
                   </th>
-                  <th>STATUS</th>
-                  <th>ACTION</th>
+                  <th>{t('STATUS')}</th>
+                  <th>{t('ACTION')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -231,9 +233,9 @@ export function TechniciansPage() {
                           </strong>
                         ) : (
                           <em className="technician-unrated">
-                            No reviews
+                            {t('No reviews')}
                             <br />
-                            yet
+                            {t('yet')}
                           </em>
                         )}
                       </td>
@@ -244,8 +246,8 @@ export function TechniciansPage() {
                       <td>
                         <Link
                           className="technician-row-action"
-                          aria-label={`View details: ${row.full_name}`}
-                          title="View technician details"
+                          aria-label={`${t('View details')}: ${row.full_name}`}
+                          title={t('View technician details')}
                           to={`/admin/technicians/${row.id}`}
                         >
                           <EyeIcon />
@@ -258,7 +260,7 @@ export function TechniciansPage() {
             <div className="technician-list-footer">
               <div className="technician-page-size">
                 <label>
-                  Showing{' '}
+                  {t('Showing')}{' '}
                   <select
                     value={limit}
                     onChange={(e) => {
@@ -269,11 +271,11 @@ export function TechniciansPage() {
                   >
                     {[10, 20, 50].map((n) => (
                       <option key={n} value={n}>
-                        {n} / page
+                        {n} / {t('page')}
                       </option>
                     ))}
                   </select>{' '}
-                  of {data.total} technicians
+                  {t('of')} {data.total} {t('technicians')}
                 </label>
               </div>
               <Pagination

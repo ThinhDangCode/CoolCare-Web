@@ -50,6 +50,18 @@ export class CatalogRepository {
           : kind === 'categories'
             ? 'r.*, (SELECT count(*)::int FROM services s WHERE s.category_id=r.id) AS service_count'
             : 'r.*, (SELECT count(*)::int FROM ac_models m WHERE m.brand_id=r.id) AS model_count'
+    const nameColumn = kind === 'models' ? 'model_name' : 'name'
+    const orders = {
+      NEWEST: 'r.created_at DESC, r.id',
+      OLDEST: 'r.created_at ASC, r.id',
+      NAME_ASC: `LOWER(r.${nameColumn}) ASC, r.id`,
+      NAME_DESC: `LOWER(r.${nameColumn}) DESC, r.id DESC`,
+      PRICE_ASC: 'r.base_price ASC, r.id',
+      PRICE_DESC: 'r.base_price DESC, r.id DESC',
+      CAPACITY_ASC: 'r.capacity_btu ASC NULLS LAST, r.id',
+      CAPACITY_DESC: 'r.capacity_btu DESC NULLS LAST, r.id DESC',
+    }
+    const order = orders[filters.sort] ?? orders.NEWEST
     // Count and rows share a snapshot so pagination remains consistent during edits.
     return this.transaction(async (client) => {
       await client.query('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY')
@@ -59,7 +71,7 @@ export class CatalogRepository {
       )
       const pagination = [...values, filters.limit, (filters.page - 1) * filters.limit]
       const rows = await client.query(
-        `SELECT ${columns} FROM ${table} r${join}${where} ORDER BY r.created_at DESC, r.id LIMIT $${values.length + 1} OFFSET $${values.length + 2}`,
+        `SELECT ${columns} FROM ${table} r${join}${where} ORDER BY ${order} LIMIT $${values.length + 1} OFFSET $${values.length + 2}`,
         pagination
       )
       return {
@@ -68,6 +80,29 @@ export class CatalogRepository {
         page: filters.page,
         limit: filters.limit,
       }
+    })
+  }
+
+  async find(kind, id, mobile = false) {
+    const { table } = resources[kind]
+    const join =
+      kind === 'services'
+        ? ' JOIN service_categories c ON c.id = r.category_id'
+        : kind === 'models'
+          ? ' JOIN ac_brands b ON b.id = r.brand_id'
+          : kind === 'skills'
+            ? ' JOIN services s ON s.id = r.service_id JOIN service_categories c ON c.id = s.category_id'
+            : ''
+    const active = mobile
+      ? ` AND r.is_active = true${kind === 'services' ? ' AND c.is_active = true AND c.deleted_at IS NULL' : kind === 'models' ? ' AND b.is_active = true AND b.deleted_at IS NULL' : kind === 'skills' ? ' AND s.is_active = true AND s.deleted_at IS NULL AND c.is_active = true AND c.deleted_at IS NULL' : ''}`
+      : ''
+    return this.transaction(async (client) => {
+      const result = await client.query(
+        `SELECT r.* FROM ${table} r${join} WHERE r.id=$1 AND r.deleted_at IS NULL${active} LIMIT 1`,
+        [id]
+      )
+      if (!result.rows[0]) throw new AppError(404, 'NOT_FOUND', 'Không tìm thấy dữ liệu.')
+      return result.rows[0]
     })
   }
 
@@ -83,22 +118,17 @@ export class CatalogRepository {
           if (!existing) throw new AppError(404, 'NOT_FOUND', 'Không tìm thấy dữ liệu.')
           if (action === 'TRASH' || action === 'RESTORE' || action === 'DELETE') {
             const restoring = action === 'RESTORE'
-            if (restoring && !existing.deleted_at || !restoring && existing.deleted_at) return existing
+            if ((restoring && !existing.deleted_at) || (!restoring && existing.deleted_at)) return existing
             if (restoring) {
               const parent = kind === 'services' ? ['service_categories', existing.category_id] : kind === 'models' ? ['ac_brands', existing.brand_id] : kind === 'skills' ? ['services', existing.service_id] : null
               if (parent && !(await client.query(`SELECT id FROM ${parent[0]} WHERE id=$1 AND deleted_at IS NULL FOR SHARE`, [parent[1]])).rowCount)
                 throw new AppError(409, 'PARENT_IN_TRASH', 'Restore the related category, brand or service first.')
             }
-            const row = (await client.query(`UPDATE ${table} SET deleted_at=${restoring ? 'NULL' : 'CURRENT_TIMESTAMP'},updated_at=CURRENT_TIMESTAMP WHERE id=$1 RETURNING *`, [id])).rows[0]
-            return row
+            return (await client.query(`UPDATE ${table} SET deleted_at=${restoring ? 'NULL' : 'CURRENT_TIMESTAMP'},updated_at=CURRENT_TIMESTAMP WHERE id=$1 RETURNING *`, [id])).rows[0]
           }
           if (existing.deleted_at) throw new AppError(409, 'RESOURCE_IN_TRASH', 'Restore this item before editing it.')
         }
         if (kind === 'skills') {
-          if (action === 'DELETE') {
-            data = { is_active: false }
-            action = 'DEACTIVATE'
-          }
           before = existing
           if (data.service_id) {
             const service = await client.query(
@@ -112,12 +142,6 @@ export class CatalogRepository {
           }
         }
         if (kind === 'models') {
-          if (action === 'DELETE')
-            throw new AppError(
-              405,
-              'SOFT_DISABLE_ONLY',
-              'Model chỉ được vô hiệu hóa, không được xóa.'
-            )
           if (data.brand_id) {
             const brand = await client.query('SELECT id FROM ac_brands WHERE id=$1 AND deleted_at IS NULL FOR SHARE', [
               data.brand_id,
@@ -143,7 +167,7 @@ export class CatalogRepository {
         }
         if (kind === 'services' && data.category_id) {
           const category = await client.query(
-            'SELECT id FROM service_categories WHERE id=$1 AND deleted_at IS NULL FOR SHARE',
+          'SELECT id FROM service_categories WHERE id=$1 AND deleted_at IS NULL FOR SHARE',
             [data.category_id]
           )
           if (!category.rowCount)
@@ -199,12 +223,6 @@ export class CatalogRepository {
         })
       return result
     } catch (error) {
-      if (error.code === '23503' && action === 'DELETE' && kind === 'categories')
-        throw new AppError(
-          409,
-          'RESOURCE_IN_USE',
-          'Danh mục đang được dịch vụ sử dụng. Hãy chuyển dịch vụ sang danh mục khác trước khi xóa.'
-        )
       if (error.code === '23505')
         throw new AppError(409, 'DUPLICATE_NAME', 'Tên đã tồn tại.', {
           name: 'Vui lòng sử dụng tên khác.',

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../../shared/context/AuthContext.jsx'
 import { useUiPreferences } from '../../../shared/context/UiPreferencesContext.jsx'
@@ -17,13 +17,27 @@ const loginErrorMessages = {
 
 export function LoginPage() {
   const { isAuthenticated, login } = useAuth()
-  const { t } = useUiPreferences()
+  const { t, locale } = useUiPreferences()
   const navigate = useNavigate()
   const location = useLocation()
   const [form, setForm] = useState({ email: '', password: '', remember: true })
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [overview, setOverview] = useState(null)
+  const [overviewError, setOverviewError] = useState(false)
+
+  useEffect(() => {
+    const controller = new AbortController()
+    fetch('/api/public/overview', { signal: controller.signal })
+      .then((response) => {
+        if (!response.ok) throw new Error('Overview unavailable')
+        return response.json()
+      })
+      .then((body) => setOverview(body.data))
+      .catch(() => { if (!controller.signal.aborted) setOverviewError(true) })
+    return () => controller.abort()
+  }, [])
 
   if (isAuthenticated) return <Navigate to="/" replace />
 
@@ -82,7 +96,7 @@ export function LoginPage() {
 
         <div className="admin-visual-body">
           <span className="system-status">
-            <i /> {t('System operating normally')}
+            <i /> {overviewError ? t('Live data unavailable') : overview ? t('System operating normally') : t('Loading live data…')}
           </span>
           <h2>{t('Smarter HVAC service operations.')}</h2>
           <p>
@@ -95,7 +109,7 @@ export function LoginPage() {
             <header>
               <span>
                 <strong>{t('Operations overview')}</strong>
-                <small>{t('Updated 5 minutes ago')}</small>
+                <small>{overview ? `${t('Updated at')} ${new Date(overview.updated_at).toLocaleTimeString(locale === 'vi' ? 'vi-VN' : 'en-US')}` : t(overviewError ? 'Live data unavailable' : 'Loading live data…')}</small>
               </span>
               <em>
                 <i /> LIVE
@@ -106,37 +120,23 @@ export function LoginPage() {
                 <small>{t("Today's appointments")}</small>
                 <strong>
                   <i className="orange-dot" />
-                  48
+                  {overview?.today_appointments ?? '—'}
                 </strong>
               </span>
               <span>
                 <small>{t('Technicians')}</small>
                 <strong>
                   <i className="green-dot" />
-                  36 online
+                  {overview?.online_technicians ?? '—'}
                 </strong>
               </span>
               <span>
-                <small>{t('Completed')}</small>
+                <small>{t('Completed today')}</small>
                 <strong>
                   <i className="blue-dot" />
-                  92%
+                  {overview?.completed_today ?? '—'}
                 </strong>
               </span>
-            </div>
-            <div className="operation-job">
-              <span className="job-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none">
-                  <path d="M5 7h14v9H5zM8 16v2h8v-2M8 10h8M8 13h5" />
-                </svg>
-              </span>
-              <span>
-                <strong>{t('Central air conditioning maintenance')}</strong>
-                <small>
-                  #BK-0421 · {t('District Binh Thanh')} · {t('In progress')}
-                </small>
-              </span>
-              <em>90 {t('minutes')}</em>
             </div>
           </section>
         </div>

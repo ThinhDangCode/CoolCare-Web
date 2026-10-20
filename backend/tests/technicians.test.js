@@ -74,15 +74,7 @@ test('technician mutations validate decisions, limits and unique skill assignmen
   assert.equal(validateReview({status:'REJECTED',reason:' Missing documents '}).reason,'Missing documents')
   assert.throws(()=>validateReview({status:'VERIFIED'},true),{status:422})
   assert.throws(()=>validateReview({status:'VERIFIED',expected_updated_at:'2026-02-30T12:00:00.000Z'},true),{status:422})
-  const verificationEvidence = {
-    method: 'OFFICIAL_LOOKUP',
-    reference: 'https://issuer.example/lookup/123',
-    notes: 'Issuer confirmed holder and certificate validity.',
-    matched: true,
-    serial_number: '123',
-    register_number: '',
-  }
-  assert.equal(validateReview({status:'VERIFIED',expected_updated_at:'2026-02-28T12:00:00.000Z',verification_evidence:verificationEvidence},true).expected_updated_at,'2026-02-28T12:00:00.000Z')
+  assert.equal(validateReview({status:'VERIFIED',expected_updated_at:'2026-02-28T12:00:00.000Z'},true).expected_updated_at,'2026-02-28T12:00:00.000Z')
   const input={full_name:'Tran Nhat Nam',phone:'0908341882',qualification_level:'EXPERT',years_experience:4,bio:''}
   assert.equal(validateTechnicianUpdate(input).years_experience,4)
   assert.throws(()=>validateTechnicianUpdate({...input,years_experience:-1}),{status:422})

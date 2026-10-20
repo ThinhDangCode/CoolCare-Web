@@ -1,4 +1,4 @@
-.dashboard-main .catalog-topbar .catalog-topbar-controls > button.catalog-trash-top {
+.dashboard-main .figma-title-header .figma-header-actions > button.catalog-trash-top {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -20,7 +20,22 @@
   white-space: nowrap;
   cursor: pointer;
 }
-.dashboard-main .catalog-topbar .catalog-topbar-controls > button.catalog-trash-top:hover {
+.catalog-toolbar button.catalog-trash-top,
+.skill-toolbar button.catalog-trash-top,
+.models-toolbar button.catalog-trash-top {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--app-border, #e4ebf4);
+  border-radius: 7px;
+  color: var(--app-text, #435675);
+  background: var(--app-surface, #fff);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.dashboard-main .figma-title-header .figma-header-actions > button.catalog-trash-top:hover {
   background: #fff1f2;
   color: #dc2626;
 }

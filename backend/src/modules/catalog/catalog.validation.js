@@ -196,11 +196,11 @@ export function validateQuery(query, kind) {
   }
   requireValidBody(errors)
   return {
-    ...(query.trash !== undefined ? { trash: query.trash === 'true' } : {}),
     page,
     limit,
     search: query.search?.trim() ?? '',
     status: query.status ?? 'all',
+    trash: query.trash === 'true',
     sort,
     categoryId: query.category_id,
     ...modelFilters,

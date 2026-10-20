@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router-dom'
 import { useAuth } from '../../../shared/context/AuthContext.jsx'
 import { useUiPreferences } from '../../../shared/context/UiPreferencesContext.jsx'
-import { ArrowLeftIcon, CalendarIcon, UserIcon } from '../../../shared/components/AdminUi.jsx'
+import { ArrowLeftIcon, CalendarIcon, PageHeader, UserIcon } from '../../../shared/components/AdminUi.jsx'
+import '../../../shared/styles/admin.css'
 import { getWithdrawal } from '../api/withdrawalsApi.js'
 import { readWithdrawalFilters, writeWithdrawalFilters } from '../withdrawalFilters.js'
 import {
@@ -72,27 +73,13 @@ export default function WithdrawalDetailPage() {
 
   return (
     <main className="withdrawals-page withdrawal-detail-page">
-      <header className="withdrawal-detail-topbar">
-        <nav aria-label={t('Withdrawal breadcrumb')}>
-          <span>{t('Finance')}</span>
-          <span aria-hidden="true">/</span>
-          <span>{t('Wallet')}</span>
-          <span aria-hidden="true">/</span>
-          <Link to={backUrl}>{t('Withdrawals')}</Link>
-          <span aria-hidden="true">/</span>
-          <strong>{t('Detail')}</strong>
-        </nav>
-        <button type="button" disabled={loading || !validId} onClick={reload}>
-          ↻ {t('Refresh')}
-        </button>
-      </header>
+      <PageHeader title="Withdrawal Detail" subtitle="Withdrawals" onRefresh={reload} refreshing={loading || !validId} />
       <section className="withdrawal-detail-content" aria-busy={loading}>
         <div className="withdrawal-detail-heading">
           <Link to={backUrl} className="withdrawal-detail-back">
             <ArrowLeftIcon /> {t('Back to Withdrawal History')}
           </Link>
           <div>
-            <h1>{t('Withdrawal Detail')}</h1>
             {withdrawal && (
               <>
                 <code>{withdrawalReference(withdrawal)}</code>

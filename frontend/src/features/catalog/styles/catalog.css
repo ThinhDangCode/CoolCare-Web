@@ -1,27 +1,3 @@
-.dashboard-main .catalog-topbar .catalog-topbar-controls > button.catalog-refresh {
-  display: grid;
-  place-items: center;
-  width: 34px;
-  height: 34px;
-  min-width: 34px;
-  padding: 0;
-  flex: 0 0 34px;
-  border: 1px solid #e4ebf4;
-  border-radius: 7px;
-  background: #fff;
-  color: #8597b1;
-  cursor: pointer;
-  font-size: 20px;
-  line-height: 1;
-}
-.dashboard-main .catalog-topbar .catalog-topbar-controls > button.catalog-refresh:hover:not(:disabled) {
-  color: #f47720;
-  background: #fff1e6;
-}
-.dashboard-main .catalog-topbar .catalog-topbar-controls > button.catalog-refresh:disabled {
-  opacity: .5;
-  cursor: default;
-}
 .catalog-shell {
   grid-template-columns: 224px minmax(0, 1fr);
 }
@@ -971,7 +947,7 @@
 
 /* Align the remaining Service & AC Catalog screens with the Admin/Profile scale. */
 .catalog-content {
-  padding: 0 0 42px;
+  padding: 24px 0 42px;
 }
 .catalog-breadcrumb {
   display: none;

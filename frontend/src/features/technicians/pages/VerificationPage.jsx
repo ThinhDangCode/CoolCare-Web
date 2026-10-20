@@ -3,7 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../../shared/context/AuthContext.jsx'
 import { adminRequest } from '../../../shared/api/adminApi.js'
 import {
-  BellIcon,
+  PageHeader,
   SearchIcon,
   SlidersIcon,
   EyeIcon,
@@ -13,6 +13,7 @@ import {
   TableState,
 } from '../../../shared/components/AdminUi.jsx'
 import { TechnicianAvatar, TechnicianNotification } from '../components/TechnicianShared.jsx'
+import { useUiPreferences } from '../../../shared/context/UiPreferencesContext.jsx'
 import { formatDate } from '../components/technicianFormat.js'
 import '../../../shared/styles/admin.css'
 import './technicians.css'
@@ -20,7 +21,8 @@ import './verification.css'
 import { ReviewDialog } from '../components/TechnicianActions.jsx'
 
 export function VerificationPage() {
-  const { token, user, logout } = useAuth()
+  const { token, logout } = useAuth()
+  const { t } = useUiPreferences()
   const [params] = useSearchParams()
   const [search, setSearch] = useState(() => (params.get('search') || '').slice(0, 150))
   const [keyword, setKeyword] = useState(() => (params.get('search') || '').slice(0, 150).trim())
@@ -80,41 +82,27 @@ export function VerificationPage() {
   }
   return (
     <main className="figma-admin-main technician-main verification-page">
-      <header className="verification-topbar">
-        <nav aria-label="Breadcrumb">
-          <Link to="/">Admin</Link>
-          <span>›</span>
-          <Link to="/admin/technicians">Technician</Link>
-          <span>›</span>
-          <strong>Verification Queue</strong>
-        </nav>
-        <div className="verification-topbar-user">
-          <BellIcon />
-          <Link to="/profile">
-            <TechnicianAvatar name={user?.fullName} url={user?.avatarUrl} />
-            <span>
-              <strong>{user?.fullName || 'Admin'}</strong>
-              <small>Super Admin</small>
-            </span>
-          </Link>
-        </div>
-      </header>
-      <section className="verification-content">
-        <TechnicianNotification message={notice} onDismiss={setNotice} />
-        <div className="verification-heading">
-          <h1>Technician Verification</h1>
+      <PageHeader
+        title="Technician Verification"
+        subtitle={t('{count} pending verification requests', { count: data.total })}
+        headingAddon={
           <span className="verification-live">
             <i />
-            {loading ? 'Syncing' : error ? 'Unavailable' : 'Pipeline Live'}
+            {t(loading ? 'Syncing' : error ? 'Unavailable' : 'Pipeline Live')}
           </span>
-        </div>
+        }
+        onRefresh={retry}
+        refreshing={loading}
+      />
+      <section className="verification-content">
+        <TechnicianNotification message={notice} onDismiss={setNotice} />
         <div className="verification-toolbar">
           <label className="verification-search">
             <SearchIcon />
             <input
               maxLength={150}
-              aria-label="Search verification requests"
-              placeholder="Search technician name, citizen ID (CCCD), phone number..."
+              aria-label={t('Search verification requests')}
+              placeholder={t('Search technician name, citizen ID (CCCD), phone number...')}
               value={search}
               onChange={(e) => {
                 setLoading(true)
@@ -122,19 +110,19 @@ export function VerificationPage() {
               }}
             />
           </label>
-          <span className="verification-status pending">Pending Review</span>
+          <span className="verification-status pending">{t('Pending Review')}</span>
           <select
-            aria-label="Sort requests"
+            aria-label={t('Sort requests')}
             value={sort}
             onChange={(e) => change(setSort, e.target.value)}
           >
-            <option value="LATEST">Latest First</option>
-            <option value="OLDEST">Oldest First</option>
-            <option value="NAME">Name A–Z</option>
+            <option value="LATEST">{t('Latest First')}</option>
+            <option value="OLDEST">{t('Oldest First')}</option>
+            <option value="NAME">{t('Name A–Z')}</option>
           </select>
           <button
             className={`verification-filter-button ${filtersOpen ? 'active' : ''}`}
-            aria-label="Additional filters"
+            aria-label={t('Additional filters')}
             aria-expanded={filtersOpen}
             aria-controls="verification-extra-filters"
             onClick={() => setFiltersOpen((value) => !value)}
@@ -145,14 +133,14 @@ export function VerificationPage() {
         {filtersOpen && (
           <div className="verification-extra-filters" id="verification-extra-filters">
             <label>
-              Qualification{' '}
+              {t('Qualification')}{' '}
               <select
                 value={qualification}
                 onChange={(e) => change(setQualification, e.target.value)}
               >
-                <option value="ALL">All levels</option>
+                <option value="ALL">{t('All levels')}</option>
                 {['BEGINNER', 'INTERMEDIATE', 'ADVANCED', 'EXPERT'].map((value) => (
-                  <option key={value}>{value}</option>
+                  <option key={value}>{t(value)}</option>
                 ))}
               </select>
             </label>
@@ -166,7 +154,7 @@ export function VerificationPage() {
                 retry()
               }}
             >
-              Reset filters
+              {t('Reset filters')}
             </button>
           </div>
         )}
@@ -177,21 +165,21 @@ export function VerificationPage() {
                 <path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6l8-3Z" />
                 <path d="m8 12 3 3 5-6" />
               </svg>
-              VERIFICATION REQUESTS
+              {t('VERIFICATION REQUESTS')}
             </h2>
             <span>
-              Showing {data.items.length} of {data.total} Queue Items
+              {t('Showing {count} of {total} Queue Items', { count: data.items.length, total: data.total })}
             </span>
           </header>
           <div className="verification-table-scroll">
             <table>
               <thead>
                 <tr>
-                  <th>TECHNICIAN</th>
-                  <th>CONTACT</th>
-                  <th>SUBMITTED</th>
-                  <th>STATUS</th>
-                  <th>ACTIONS</th>
+                  <th>{t('TECHNICIAN')}</th>
+                  <th>{t('CONTACT')}</th>
+                  <th>{t('SUBMITTED')}</th>
+                  <th>{t('STATUS')}</th>
+                  <th>{t('ACTIONS')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -222,14 +210,14 @@ export function VerificationPage() {
                           className={`verification-status ${row.verification_status.toLowerCase()}`}
                         >
                           <i />
-                          Pending Review
+                          {t('Pending Review')}
                         </span>
                       </td>
                       <td>
                         <div className="verification-actions">
                           <button
                             className="view"
-                            aria-label={`View identity — ${row.full_name}`}
+                            aria-label={`${t('View identity')} — ${row.full_name}`}
                             title="Xem căn cước và kiểm tra AI trước khi duyệt"
                             onClick={() => setReview({technicianId:row.id,path:`/technicians/${row.id}/verification`,status:'VERIFIED',name:row.full_name})}
                           >
@@ -239,8 +227,8 @@ export function VerificationPage() {
                             <>
                               <button
                                 className="approve"
-                                aria-label={`Approve ${row.full_name}`}
-                                title="Approve profile"
+                                aria-label={`${t('Approve profile')} ${row.full_name}`}
+                                title={t('Approve profile')}
                                 onClick={() =>
                                   setReview({
                                     path: `/technicians/${row.id}/verification`,
@@ -254,8 +242,8 @@ export function VerificationPage() {
                               </button>
                               <button
                                 className="reject"
-                                aria-label={`Reject ${row.full_name}`}
-                                title="Reject profile"
+                                aria-label={`${t('Reject profile')} ${row.full_name}`}
+                                title={t('Reject profile')}
                                 onClick={() =>
                                   setReview({
                                     path: `/technicians/${row.id}/verification`,
@@ -278,12 +266,11 @@ export function VerificationPage() {
           </div>
           <footer className="verification-footer">
             <div>
-              Showing {data.total ? (page - 1) * limit + 1 : 0}–{Math.min(page * limit, data.total)}{' '}
-              of {data.total} requests{' '}
+              {t('Showing {first}–{last} of {total} requests', { first: data.total ? (page - 1) * limit + 1 : 0, last: Math.min(page * limit, data.total), total: data.total })}{' '}
               <label>
-                Rows per page:{' '}
+                {t('Rows per page')}:{' '}
                 <select
-                  aria-label="Rows per page"
+                  aria-label={t('Rows per page')}
                   value={limit}
                   onChange={(e) => change(setLimit, Number(e.target.value))}
                 >

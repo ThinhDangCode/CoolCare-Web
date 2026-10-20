@@ -9,6 +9,7 @@ import { CatalogTrash, CatalogTrashButton } from '../components/CatalogTrash.jsx
 import '../styles/catalog.css'
 import './models.css'
 import { nameError, numberError } from '../catalogValidation.js'
+import { useUiPreferences } from '../../../shared/context/UiPreferencesContext.jsx'
 
 const types = [
   ['WALL_MOUNTED', 'Wall mounted', '▱'],
@@ -22,6 +23,14 @@ const types = [
 const typeLabel = (value) => types.find(([code]) => code === value)?.[1] ?? value ?? '—'
 const btuLabel = (value) =>
   value == null ? '—' : `${new Intl.NumberFormat('en-US').format(value)} BTU`
+const initialFilters = {
+  brand_id: '',
+  ac_type: '',
+  capacity_btu: '',
+  inverter: '',
+  status: 'all',
+  sort: 'NEWEST',
+}
 
 function ModelIcon({ name }) {
   const paths = {
@@ -108,16 +117,11 @@ function useBrands(token) {
 
 export function AcModelsPage() {
   const { token, logout } = useAuth()
+  const { t } = useUiPreferences()
   const brandOptions = useBrands(token)
   const [search, setSearch] = useState('')
   const [querySearch, setQuerySearch] = useState('')
-  const [filters, setFilters] = useState({
-    brand_id: '',
-    ac_type: '',
-    capacity_btu: '',
-    inverter: '',
-    status: 'all',
-  })
+  const [filters, setFilters] = useState(initialFilters)
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState(10)
   const [counts, setCounts] = useState(null)
@@ -235,16 +239,8 @@ export function AcModelsPage() {
       className="models-main"
       heading={
         <h1>
-          AC Models <span className="models-count">{counts?.all ?? '…'} models</span>
+          {t('AC Models')} <span className="models-count">{counts?.all ?? '…'} {t('models')}</span>
         </h1>
-      }
-      actions={
-        <>
-          <CatalogTrash kind="models" onChanged={reload} />
-          <Link className="catalog-button primary" to="/catalog/models/new">
-            <ModelIcon name="plus" /> Add Model
-          </Link>
-        </>
       }
       onRefresh={reload}
       refreshing={loading}
@@ -284,16 +280,22 @@ export function AcModelsPage() {
                 className={filters.status === status ? 'selected' : ''}
                 onClick={() => filter('status', status)}
               >
-                {label} <span>{counts?.[status] ?? '…'}</span>
+                {t(label)} <span>{counts?.[status] ?? '…'}</span>
               </button>
             ))}
+          </div>
+          <div className="models-toolbar-actions">
+            <CatalogTrash kind="models" onChanged={reload} />
+            <Link className="catalog-button primary" to="/catalog/models/new">
+              <ModelIcon name="plus" /> {t('Add AC Model')}
+            </Link>
           </div>
           <div className="models-filters">
             <label className="models-search">
               <ModelIcon name="search" />
               <input
                 aria-label="Search AC models"
-                placeholder="Search model name…"
+                placeholder={t('Search model name…')}
                 value={search}
                 maxLength={150}
                 onChange={(event) => {
@@ -308,7 +310,7 @@ export function AcModelsPage() {
               disabled={brandOptions.loading}
               onChange={(event) => filter('brand_id', event.target.value)}
             >
-              <option value="">All Brands</option>
+              <option value="">{t('All brands')}</option>
               {brandOptions.brands.map((brand) => (
                 <option key={brand.id} value={brand.id}>
                   {brand.name}
@@ -320,13 +322,57 @@ export function AcModelsPage() {
               value={filters.ac_type}
               onChange={(event) => filter('ac_type', event.target.value)}
             >
-              <option value="">All Types</option>
+              <option value="">{t('All AC types')}</option>
               {types.map(([code, label]) => (
                 <option key={code} value={code}>
                   {label}
                 </option>
               ))}
             </select>
+            <input
+              aria-label="Filter by cooling capacity in BTU"
+              type="number"
+              min="1"
+              max="2147483647"
+              step="1"
+              placeholder={t('All BTU')}
+              value={filters.capacity_btu}
+              onChange={(event) => filter('capacity_btu', event.target.value)}
+            />
+            <select
+              aria-label="Filter by inverter technology"
+              value={filters.inverter}
+              onChange={(event) => filter('inverter', event.target.value)}
+            >
+              <option value="">{t('All inverter')}</option>
+              <option value="true">Inverter</option>
+              <option value="false">Non-inverter</option>
+            </select>
+            <select
+              aria-label="Sort models"
+              value={filters.sort}
+              onChange={(event) => filter('sort', event.target.value)}
+            >
+              <option value="NEWEST">{t('Newest')}</option>
+              <option value="OLDEST">{t('Oldest')}</option>
+              <option value="NAME_ASC">{t('Name A–Z')}</option>
+              <option value="NAME_DESC">{t('Name Z–A')}</option>
+              <option value="CAPACITY_ASC">{t('BTU low to high')}</option>
+              <option value="CAPACITY_DESC">{t('BTU high to low')}</option>
+            </select>
+            <button
+              type="button"
+              className="catalog-button"
+              onClick={() => {
+                setSearch('')
+                setQuerySearch('')
+                setFilters(initialFilters)
+                setPage(1)
+                setLoading(true)
+              }}
+            >
+              {t('Reset filters')}
+            </button>
           </div>
         </div>
         <div className="models-table-wrap">
@@ -334,27 +380,29 @@ export function AcModelsPage() {
             <thead>
               <tr>
                 <th>ID</th>
-                <th>MODEL &amp; SERIES</th>
-                <th>BRAND</th>
-                <th>TYPE</th>
-                <th>STATUS</th>
-                <th>ACTIONS</th>
+                <th>{t('MODEL NAME')}</th>
+                <th>{t('BRAND')}</th>
+                <th>{t('AC TYPE')}</th>
+                <th>{t('CAPACITY')}</th>
+                <th>{t('INVERTER')}</th>
+                <th>{t('STATUS')}</th>
+                <th>{t('ACTIONS')}</th>
               </tr>
             </thead>
             <tbody>
               {loading || error || !data.items.length ? (
                 <tr>
-                  <td colSpan={6}>
+                  <td colSpan={8}>
                     <div className="catalog-state" role="status">
                       {loading ? (
                         <>
                           <span className="catalog-spinner" />
-                          Loading models…
+                          {t('Loading models…')}
                         </>
                       ) : error ? (
                         'Models unavailable. Please retry.'
                       ) : (
-                        'No AC models found. Try changing the filters or add a model.'
+                        t('Try changing the filters or add a new model.')
                       )}
                     </div>
                   </td>
@@ -370,10 +418,12 @@ export function AcModelsPage() {
                     </td>
                     <td>{row.brand_name}</td>
                     <td>{typeLabel(row.ac_type)}</td>
+                    <td>{btuLabel(row.capacity_btu)}</td>
+                    <td>{row.inverter == null ? '—' : row.inverter ? 'Inverter' : 'Non-inverter'}</td>
                     <td>
                       <span className={`catalog-status ${row.is_active ? 'active' : 'inactive'}`}>
                         <i />
-                        {row.is_active ? 'Active' : 'Inactive'}
+                        {t(row.is_active ? 'Active' : 'Inactive')}
                       </span>
                     </td>
                     <td>
@@ -540,6 +590,7 @@ export function AcModelsPage() {
 
 function AcModelForm({ row, onCancel, onSaved, onBusyChange }) {
   const { token, logout } = useAuth()
+  const { t } = useUiPreferences()
   const options = useBrands(token)
   const [values, setValues] = useState(() => ({
     model_name: row?.model_name ?? '',
@@ -807,7 +858,7 @@ function AcModelForm({ row, onCancel, onSaved, onBusyChange }) {
           className="catalog-button primary"
           disabled={busy || options.loading || Boolean(options.error) || !options.brands.length}
         >
-          {busy ? 'Saving…' : row ? 'Save changes' : '＋ Create AC Model'}
+          {busy ? t('Saving…') : row ? t('Save changes') : `＋ ${t('Create AC Model')}`}
         </button>
       </footer>
     </form>
@@ -816,18 +867,20 @@ function AcModelForm({ row, onCancel, onSaved, onBusyChange }) {
 
 export function CreateAcModelPage() {
   const navigate = useNavigate()
+  const { t } = useUiPreferences()
   return (
-    <CatalogLayout>
-      <section className="catalog-content">
-        <div className="catalog-page-heading">
-          <div>
-            <h1>Create AC Model</h1>
-            <p>Add an air conditioner model to the catalog.</p>
-          </div>
+    <CatalogLayout
+      heading={
+        <div className="catalog-header-title">
+          <h1>{t('Create AC Model')}</h1>
+          <p>{t('Add an air conditioner model to the catalog.')}</p>
         </div>
+      }
+    >
+      <section className="catalog-content">
         <div className="catalog-create-context">
           <Link className="catalog-button" to="/catalog/models">
-            ← Back to AC Models
+            ← {t('Back to AC Models')}
           </Link>
         </div>
         <div className="catalog-create-panel model-create-panel">

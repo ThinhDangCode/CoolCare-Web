@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../../shared/context/AuthContext.jsx'
+import { useUiPreferences } from '../../../shared/context/UiPreferencesContext.jsx'
 import { useAutoDismiss } from '../../../shared/hooks/useAutoDismiss.js'
 import { catalogRequest } from '../api/catalogApi.js'
 import { CatalogLayout } from '../components/CatalogLayout.jsx'
@@ -90,6 +91,7 @@ function useServices(token) {
 
 function SkillForm({ row, onCancel, onSaved, onBusyChange }) {
   const { token, logout } = useAuth()
+  const { t } = useUiPreferences()
   const services = useServices(token)
   const nameRef = useRef(null)
   const submitting = useRef(false)
@@ -111,7 +113,7 @@ function SkillForm({ row, onCancel, onSaved, onBusyChange }) {
   const unavailable = !services.loading && !services.error && !options.length
   function change(field, value) {
     if (field === 'name' && /\p{N}/u.test(value)) {
-      setDetails((current) => ({ ...current, name: 'Skill names cannot contain numbers.' }))
+      setDetails((current) => ({ ...current, name: t('Skill names cannot contain numbers.') }))
       setError('')
       return
     }
@@ -123,12 +125,12 @@ function SkillForm({ row, onCancel, onSaved, onBusyChange }) {
     event.preventDefault()
     if (submitting.current || services.loading || services.error || unavailable) return
     if (!values.name.trim()) {
-      setDetails({ name: 'Enter a skill name.' })
+      setDetails({ name: t('Enter a skill name.') })
       nameRef.current?.focus()
       return
     }
     if (/\p{N}/u.test(values.name)) {
-      setDetails({ name: 'Skill names cannot contain numbers.' })
+      setDetails({ name: t('Skill names cannot contain numbers.') })
       nameRef.current?.focus()
       return
     }
@@ -175,19 +177,19 @@ function SkillForm({ row, onCancel, onSaved, onBusyChange }) {
         <div className="catalog-error" role="alert">
           {services.error}
           <button type="button" onClick={services.reload}>
-            Retry
+            {t('Retry')}
           </button>
         </div>
       )}
       {unavailable && (
         <div className="skill-form-hint" role="status">
-          Create an active service before adding a skill.{' '}
-          <Link to="/catalog/services/new">Create service</Link>
+          {t('Create an active service before adding a skill.')}{' '}
+          <Link to="/catalog/services/new">{t('Create service')}</Link>
         </div>
       )}
       <label className="catalog-field" htmlFor="skill-name">
         <span>
-          Skill Name <em>*</em>
+          {t('Skill Name')} <em>*</em>
         </span>
         <span className="skill-input-wrap">
           <SkillIcon name="bolt" />
@@ -212,7 +214,7 @@ function SkillForm({ row, onCancel, onSaved, onBusyChange }) {
       </label>
       <label className="catalog-field" htmlFor="skill-service">
         <span>
-          Related Service <em>*</em>
+          {t('Related Service')} <em>*</em>
         </span>
         <select
           id="skill-service"
@@ -224,12 +226,12 @@ function SkillForm({ row, onCancel, onSaved, onBusyChange }) {
           onChange={(e) => change('service_id', e.target.value)}
         >
           <option value="">
-            {services.loading ? 'Loading services…' : 'Select related service'}
+            {t(services.loading ? 'Loading services…' : 'Select related service')}
           </option>
           {options.map((service) => (
             <option key={service.id} value={service.id}>
               {service.name}
-              {service.is_active ? '' : ' (Inactive)'}
+              {service.is_active ? '' : ` (${t('Inactive')})`}
             </option>
           ))}
         </select>
@@ -241,7 +243,7 @@ function SkillForm({ row, onCancel, onSaved, onBusyChange }) {
       </label>
       {!row && options.length > 0 && (
         <div className="skill-suggestions">
-          <span>Suggestions:</span>
+          <span>{t('Suggestions')}:</span>
           {options
             .filter((service) => service.is_active)
             .slice(0, 3)
@@ -261,13 +263,13 @@ function SkillForm({ row, onCancel, onSaved, onBusyChange }) {
       )}
       {row && selectedService && (
         <div className="skill-suggestions">
-          <span>Linked:</span>
+          <span>{t('Linked')}:</span>
           <span className="skill-linked-service">{selectedService.name}</span>
         </div>
       )}
       <fieldset className="skill-status-field">
         <legend>
-          Status <em>*</em>
+          {t('Status')} <em>*</em>
         </legend>
         <div className="skill-status-options">
           {[true, false].map((active) => (
@@ -277,9 +279,9 @@ function SkillForm({ row, onCancel, onSaved, onBusyChange }) {
             >
               <span className="skill-status-dot" />
               <span className="skill-status-copy">
-                <strong>{active ? 'Active' : 'Inactive'}</strong>
+                <strong>{t(active ? 'Active' : 'Inactive')}</strong>
                 {row && (
-                  <small>{active ? 'Available for assignment' : 'Temporarily suspended'}</small>
+                  <small>{t(active ? 'Available for assignment' : 'Temporarily suspended')}</small>
                 )}
               </span>
               <input
@@ -301,14 +303,14 @@ function SkillForm({ row, onCancel, onSaved, onBusyChange }) {
           disabled={busy}
           onClick={onCancel}
         >
-          Cancel
+          {t('Cancel')}
         </button>
         <button
           className="catalog-button primary"
           disabled={busy || services.loading || !!services.error || unavailable}
         >
           <SkillIcon name="check" />
-          {busy ? 'Saving…' : row ? 'Save Changes' : 'Create Skill'}
+          {t(busy ? 'Saving…' : row ? 'Save Changes' : 'Create Skill')}
         </button>
       </footer>
     </form>
@@ -317,6 +319,7 @@ function SkillForm({ row, onCancel, onSaved, onBusyChange }) {
 
 export function SkillsPage() {
   const { token, logout } = useAuth()
+  const { t } = useUiPreferences()
   const location = useLocation()
   const services = useServices(token)
   const [search, setSearch] = useState('')
@@ -422,17 +425,8 @@ export function SkillsPage() {
       className="skills-main"
       heading={
         <h1>
-          Skills <span className="skill-count">{loading ? '…' : counts.all} skills</span>
+          {t('Skills')} <span className="skill-count">{loading ? '…' : counts.all} {t('skills')}</span>
         </h1>
-      }
-      actions={
-        <>
-          <CatalogTrash kind="skills" onChanged={reload} />
-          <Link className="catalog-button primary skill-add" to="/catalog/skills/new">
-            <SkillIcon name="plus" />
-            Add Skill
-          </Link>
-        </>
       }
       onRefresh={reload}
       refreshing={loading}
@@ -442,9 +436,9 @@ export function SkillsPage() {
           <div className="catalog-notice" role="status" {...noticeHover}>
             <span>
               <SkillIcon name="check" />
-              {notice}
+              {t(notice)}
             </span>
-            <button aria-label="Dismiss notification" onClick={() => setNotice('')}>
+            <button aria-label={t('Dismiss notification')} onClick={() => setNotice('')}>
               <SkillIcon name="close" />
             </button>
           </div>
@@ -452,17 +446,17 @@ export function SkillsPage() {
         {error && (
           <div className="catalog-error" role="alert">
             {error}
-            <button onClick={reload}>Retry</button>
+            <button onClick={reload}>{t('Retry')}</button>
           </div>
         )}
         {services.error && (
           <div className="catalog-error" role="alert">
             {services.error}
-            <button onClick={services.reload}>Retry services</button>
+            <button onClick={services.reload}>{t('Retry services')}</button>
           </div>
         )}
         <div className="skill-toolbar">
-          <div className="skill-tabs" role="group" aria-label="Filter by status">
+          <div className="skill-tabs" role="group" aria-label={t('Filter by status')}>
             {[
               ['all', 'All'],
               ['active', 'Active'],
@@ -474,7 +468,7 @@ export function SkillsPage() {
                 className={status === value ? 'selected' : ''}
                 onClick={() => filter(setStatus, value)}
               >
-                {text}
+                {t(text)}
                 <span>{loading ? '…' : counts[value]}</span>
               </button>
             ))}
@@ -482,14 +476,14 @@ export function SkillsPage() {
           <label className="catalog-search">
             <SkillIcon name="search" />
             <input
-              aria-label="Search skills"
-              placeholder="Search skill, service, code…"
+              aria-label={t('Search skills')}
+              placeholder={t('Search skill, service, code…')}
               maxLength={150}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
             {search && (
-              <button type="button" aria-label="Clear search" onClick={() => setSearch('')}>
+              <button type="button" aria-label={t('Clear search')} onClick={() => setSearch('')}>
                 <SkillIcon name="close" />
               </button>
             )}
@@ -497,16 +491,16 @@ export function SkillsPage() {
           <label className="skill-select">
             <SkillIcon name="filter" />
             <select
-              aria-label="Filter by service"
+              aria-label={t('Filter by service')}
               value={service}
               disabled={services.loading || !!services.error}
               onChange={(e) => filter(setService, e.target.value)}
             >
-              <option value="">All services</option>
+              <option value="">{t('All services')}</option>
               {services.items.map((item) => (
                 <option key={item.id} value={item.id}>
                   {item.name}
-                  {item.is_active ? '' : ' (Inactive)'}
+                  {item.is_active ? '' : ` (${t('Inactive')})`}
                 </option>
               ))}
             </select>
@@ -514,15 +508,19 @@ export function SkillsPage() {
           <label className="skill-select skill-sort">
             <SkillIcon name="sort" />
             <select
-              aria-label="Sort skills"
+              aria-label={t('Sort skills')}
               value={sort}
               onChange={(e) => filter(setSort, e.target.value)}
             >
-              <option value="newest">Newest</option>
-              <option value="oldest">Oldest</option>
-              <option value="name">Name A–Z</option>
+              <option value="newest">{t('Newest')}</option>
+              <option value="oldest">{t('Oldest')}</option>
+              <option value="name">{t('Name A–Z')}</option>
             </select>
           </label>
+          <CatalogTrash kind="skills" onChanged={reload} />
+          <Link className="catalog-button primary skill-add" to="/catalog/skills/new">
+            <SkillIcon name="plus" />{t('Add Skill')}
+          </Link>
         </div>
         <div className="catalog-panel skill-list-panel" aria-busy={loading}>
           <div className="catalog-table-scroll">
@@ -532,13 +530,13 @@ export function SkillsPage() {
               </caption>
               <thead>
                 <tr>
-                  <th scope="col">CODE</th>
-                  <th scope="col">SKILL NAME</th>
-                  <th scope="col">APPLICABLE SERVICE</th>
-                  <th scope="col">TECHNICIANS</th>
-                  <th scope="col">STATUS</th>
+                  <th scope="col">{t('CODE')}</th>
+                  <th scope="col">{t('SKILL NAME')}</th>
+                  <th scope="col">{t('APPLICABLE SERVICE')}</th>
+                  <th scope="col">{t('TECHNICIANS')}</th>
+                  <th scope="col">{t('STATUS')}</th>
                   <th scope="col" className="catalog-actions-title">
-                    ACTIONS
+                    {t('ACTIONS')}
                   </th>
                 </tr>
               </thead>
@@ -548,7 +546,7 @@ export function SkillsPage() {
                     <td colSpan={6}>
                       <div className="catalog-state" role="status">
                         <span className="catalog-spinner" />
-                        Loading skills…
+                        {t('Loading skills…')}
                       </div>
                     </td>
                   </tr>
@@ -556,10 +554,10 @@ export function SkillsPage() {
                   <tr>
                     <td colSpan={6}>
                       <div className="catalog-state">
-                        <strong>Unable to load skills</strong>
-                        <p>Please try again.</p>
+                        <strong>{t('Unable to load skills')}</strong>
+                        <p>{t('Please try again.')}</p>
                         <button className="catalog-button" onClick={reload}>
-                          Retry
+                          {t('Retry')}
                         </button>
                       </div>
                     </td>
@@ -571,11 +569,11 @@ export function SkillsPage() {
                         <span className="skill-empty-icon">
                           <SkillIcon name="bolt" />
                         </span>
-                        <strong>No skills found</strong>
+                        <strong>{t('No skills found')}</strong>
                         <p>
                           {filtered
-                            ? 'Try another search or reset your filters.'
-                            : 'Add your first technical skill to get started.'}
+                            ? t('Try another search or reset your filters.')
+                            : t('Add your first technical skill to get started.')}
                         </p>
                         {filtered ? (
                           <button
@@ -588,12 +586,12 @@ export function SkillsPage() {
                               setPage(1)
                             }}
                           >
-                            Reset filters
+                            {t('Reset filters')}
                           </button>
                         ) : (
                           <Link className="catalog-button primary" to="/catalog/skills/new">
                             <SkillIcon name="plus" />
-                            Add Skill
+                            {t('Add Skill')}
                           </Link>
                         )}
                       </div>
@@ -613,7 +611,7 @@ export function SkillsPage() {
                           {row.service_name}
                         </span>
                         {!row.service_is_active && (
-                          <small className="skill-service-inactive">Inactive service</small>
+                          <small className="skill-service-inactive">{t('Inactive service')}</small>
                         )}
                       </td>
                       <td>
@@ -627,7 +625,7 @@ export function SkillsPage() {
                       <td>
                         <span className={`catalog-status ${row.is_active ? 'active' : 'inactive'}`}>
                           <i />
-                          {row.is_active ? 'Active' : 'Inactive'}
+                          {t(row.is_active ? 'Active' : 'Inactive')}
                         </span>
                       </td>
                       <td>
@@ -659,38 +657,38 @@ export function SkillsPage() {
           <footer className="catalog-pagination skill-pagination">
             <span>
               {loading ? (
-                'Loading…'
+                t('Loading…')
               ) : error ? (
-                'Skills unavailable'
+                t('Skills unavailable')
               ) : (
                 <>
-                  Showing{' '}
+                  {t('Showing')}{' '}
                   <strong>
                     {result.total ? (page - 1) * limit + 1 : 0} to{' '}
                     {Math.min(page * limit, result.total)}
                   </strong>{' '}
-                  of <strong>{result.total}</strong> skills
+                  {t('of')} <strong>{result.total}</strong> {t('skills')}
                 </>
               )}
             </span>
             <div>
               <label>
-                Show:{' '}
+                {t('Show')}:{' '}
                 <select
-                  aria-label="Rows per page"
+                  aria-label={t('Rows per page')}
                   value={limit}
                   onChange={(e) => filter(setLimit, Number(e.target.value))}
                 >
                   {[10, 25, 50].map((value) => (
                     <option key={value} value={value}>
-                      {value} / page
+                      {value} / {t('page')}
                     </option>
                   ))}
                 </select>
               </label>
-              <nav aria-label="Skills pagination">
+              <nav aria-label={t('Skills pagination')}>
                 <button
-                  aria-label="Previous page"
+                  aria-label={t('Previous page')}
                   disabled={loading || !!error || page === 1}
                   onClick={() => setPage(page - 1)}
                 >
@@ -702,7 +700,7 @@ export function SkillsPage() {
                       <span className="skill-page-gap">…</span>
                     )}
                     <button
-                      aria-label={`Page ${value}`}
+                      aria-label={`${t('Page')} ${value}`}
                       aria-current={page === value ? 'page' : undefined}
                       className={page === value ? 'selected' : ''}
                       disabled={loading || !!error}
@@ -713,7 +711,7 @@ export function SkillsPage() {
                   </span>
                 ))}
                 <button
-                  aria-label="Next page"
+                  aria-label={t('Next page')}
                   disabled={loading || !!error || page >= pages}
                   onClick={() => setPage(page + 1)}
                 >
@@ -726,7 +724,7 @@ export function SkillsPage() {
       </section>
       {dialog?.type === 'edit' && (
         <Modal
-          title="Edit Skill"
+          title={t('Edit Skill')}
           subtitle={`#${dialog.row.code}`}
           icon={<SkillIcon name="bolt" />}
           className="skill-modal"
@@ -746,26 +744,26 @@ export function SkillsPage() {
         </Modal>
       )}
       {dialog?.type === 'details' && (
-        <Modal title={`Record details · ${dialog.row.name}`} onClose={close}>
+        <Modal title={`${t('Record details')} · ${dialog.row.name}`} onClose={close}>
           <dl className="catalog-record-details">
-            <dt>Skill code</dt>
+            <dt>{t('Skill code')}</dt>
             <dd>{dialog.row.code}</dd>
-            <dt>Service</dt>
+            <dt>{t('Service')}</dt>
             <dd>{dialog.row.service_name || '—'}</dd>
-            <dt>Assigned technicians</dt>
+            <dt>{t('Assigned technicians')}</dt>
             <dd>{dialog.row.technician_count ?? 0}</dd>
-            <dt>Created</dt>
+            <dt>{t('Created')}</dt>
             <dd>{dialog.row.created_at ? new Date(dialog.row.created_at).toLocaleString('vi-VN') : '—'}</dd>
-            <dt>Last updated</dt>
+            <dt>{t('Last updated')}</dt>
             <dd>{dialog.row.updated_at ? new Date(dialog.row.updated_at).toLocaleString('vi-VN') : '—'}</dd>
-            <dt>Status</dt>
-            <dd>{dialog.row.is_active ? 'Active' : 'Inactive'}</dd>
+            <dt>{t('Status')}</dt>
+            <dd>{t(dialog.row.is_active ? 'Active' : 'Inactive')}</dd>
           </dl>
         </Modal>
       )}
       {dialog?.type === 'toggle' && (
         <Modal
-          title={`${dialog.row.is_active ? 'Deactivate' : 'Activate'} Skill?`}
+          title={`${t(dialog.row.is_active ? 'Deactivate' : 'Activate')} ${t('Skill')}?`}
           subtitle={`#${dialog.row.code}`}
           icon={<SkillIcon name="power" />}
           className="skill-modal skill-confirm-modal"
@@ -774,13 +772,13 @@ export function SkillsPage() {
         >
           <div className="catalog-confirm">
             <p>
-              {dialog.row.is_active ? 'Deactivate' : 'Activate'} <strong>{dialog.row.name}</strong>?
+              {t(dialog.row.is_active ? 'Deactivate' : 'Activate')} <strong>{dialog.row.name}</strong>?
             </p>
             <p>
               {dialog.row.is_active
-                ? 'This skill will no longer be available for new technician assignments.'
-                : 'This skill will be available for new technician assignments.'}{' '}
-              Existing assignments and history will be preserved.
+                ? t('This skill will no longer be available for new technician assignments.')
+                : t('This skill will be available for new technician assignments.')}{' '}
+              {t('Existing assignments and history will be preserved.')}
             </p>
             {mutationError && (
               <div className="catalog-error" role="alert">
@@ -790,10 +788,10 @@ export function SkillsPage() {
           </div>
           <footer className="catalog-form-actions">
             <button className="catalog-button" disabled={busy} onClick={close}>
-              Cancel
+              {t('Cancel')}
             </button>
             <button className="catalog-button primary" disabled={busy} onClick={toggle}>
-              {busy ? 'Saving…' : dialog.row.is_active ? 'Deactivate Skill' : 'Activate Skill'}
+              {t(busy ? 'Saving…' : dialog.row.is_active ? 'Deactivate Skill' : 'Activate Skill')}
             </button>
           </footer>
         </Modal>
@@ -804,6 +802,7 @@ export function SkillsPage() {
 
 export function CreateSkillPage() {
   const navigate = useNavigate()
+  const { t } = useUiPreferences()
   const [busy, setBusy] = useState(false)
   const cancel = () => navigate('/catalog/skills')
   return (
@@ -813,31 +812,31 @@ export function CreateSkillPage() {
         <>
           <button
             className="skill-back-button"
-            aria-label="Back to skills"
+            aria-label={t('Back to skills')}
             disabled={busy}
             onClick={cancel}
           >
             <SkillIcon name="back" />
           </button>
           <h1>
-            Create Skill <span className="skill-new">New</span>
+            {t('Create Skill')} <span className="skill-new">{t('New')}</span>
           </h1>
         </>
       }
     >
       <section className="catalog-content skills-content">
         <div className="skill-create-wrap">
-          <nav className="catalog-breadcrumb" aria-label="Breadcrumb">
+          <nav className="catalog-breadcrumb" aria-label={t('Breadcrumb')}>
             <Link to="/catalog/skills">
               <SkillIcon name="back" />
-              Skills
+              {t('Skills')}
             </Link>
             <span>/</span>
-            <Link to="/catalog/services">Service</Link>
+            <Link to="/catalog/services">{t('Service')}</Link>
             <span>/</span>
-            <Link to="/catalog/skills">Skill Management</Link>
+            <Link to="/catalog/skills">{t('Skill Management')}</Link>
             <span>/</span>
-            <span aria-current="page">Create Skill</span>
+            <span aria-current="page">{t('Create Skill')}</span>
           </nav>
           <div className="catalog-panel skill-create-panel">
             <header>
@@ -845,8 +844,8 @@ export function CreateSkillPage() {
                 <SkillIcon name="plus" />
               </span>
               <div>
-                <strong>Skill Information</strong>
-                <small>Configure skill identity and mapped service</small>
+                <strong>{t('Skill Information')}</strong>
+                <small>{t('Configure skill identity and mapped service')}</small>
               </div>
             </header>
             <SkillForm

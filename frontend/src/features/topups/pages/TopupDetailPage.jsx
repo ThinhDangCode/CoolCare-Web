@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router-dom'
 import { useAuth } from '../../../shared/context/AuthContext.jsx'
 import { useUiPreferences } from '../../../shared/context/UiPreferencesContext.jsx'
-import { ArrowLeftIcon, CalendarIcon, UserIcon } from '../../../shared/components/AdminUi.jsx'
+import { ArrowLeftIcon, CalendarIcon, PageHeader, UserIcon } from '../../../shared/components/AdminUi.jsx'
+import '../../../shared/styles/admin.css'
 import { getTopup } from '../api/topupsApi.js'
 import { readTopupFilters, writeTopupFilters } from '../topupFilters.js'
 import {
@@ -70,28 +71,13 @@ export default function TopupDetailPage() {
 
   return (
     <main className="topups-page topup-detail-page">
-      <header className="topup-detail-topbar">
-        <nav aria-label={t('Top-up breadcrumb')}>
-          <span>{t('Finance')}</span>
-          <span aria-hidden="true">/</span>
-          <span>{t('Wallet')}</span>
-          <span aria-hidden="true">/</span>
-          <Link to={backUrl}>{t('Top-ups')}</Link>
-          <span aria-hidden="true">/</span>
-          <strong>{t('Detail')}</strong>
-        </nav>
-        <button type="button" disabled={loading || !validId} onClick={reload}>
-          <img src="/topups/refresh.svg" alt="" />
-          {t('Refresh')}
-        </button>
-      </header>
+      <PageHeader title="Top-up Detail" subtitle="Top-ups" onRefresh={reload} refreshing={loading || !validId} />
       <section className="topup-detail-content" aria-busy={loading}>
         <div className="topup-detail-heading">
           <Link to={backUrl} className="topup-detail-back">
             <ArrowLeftIcon /> {t('Back to Top-up History')}
           </Link>
           <div>
-            <h1>{t('Top-up Detail')}</h1>
             {topup && (
               <>
                 <code>{topupReference(topup)}</code>
