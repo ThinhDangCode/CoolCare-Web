@@ -599,6 +599,7 @@ const messages = {
     'Paid & Settled': 'Đã thanh toán & quyết toán',
     'Additional filters': 'Bộ lọc bổ sung',
     TECH: 'MÃ KỸ THUẬT VIÊN',
+    'NO.': 'STT',
     'ASSIGNED AREA': 'KHU VỰC PHỤC VỤ',
     AREA: 'KHU VỰC',
     RATING: 'ĐÁNH GIÁ',

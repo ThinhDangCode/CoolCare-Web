@@ -2,8 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../../shared/context/AuthContext.jsx'
 import { useUiPreferences } from '../../../shared/context/UiPreferencesContext.jsx'
-import { PreferenceControls } from '../../../shared/components/PreferenceControls.jsx'
-import { BellIcon } from '../../../shared/components/AdminUi.jsx'
+import { PageHeader } from '../../../shared/components/AdminUi.jsx'
 import { adminRequest } from '../../../shared/api/adminApi.js'
 import {
   CertificateTable,
@@ -36,7 +35,7 @@ function Field({ title, children }) {
 
 export function TechnicianDetailPage() {
   const { id } = useParams()
-  const { token, user, logout } = useAuth()
+  const { token, logout } = useAuth()
   const { t } = useUiPreferences()
   const [params, setParams] = useSearchParams()
   const requestedTab = params.get('tab')
@@ -77,43 +76,14 @@ export function TechnicianDetailPage() {
   }
   return (
     <main className="figma-admin-main technician-main technician-detail-page">
-      <header className="technician-detail-topbar">
-        <nav className="technician-breadcrumb" aria-label={t('Breadcrumb')}>
-          <span>{t('User Management')}</span>
-          <span>›</span>
-          <Link to="/admin/technicians">{t('Technicians')}</Link>
-          <span>›</span>
-          <strong>{t('Technician Details')}</strong>
-        </nav>
-        <div className="preference-controls">
-          <PreferenceControls compact />
-          <button
-            className="technician-detail-refresh"
-            onClick={retry}
-            disabled={loading}
-            aria-label={t('Refresh profile')}
-          >
-            ↻
-          </button>
-          <button className="figma-notification" aria-label={t('Notifications')}>
-            <BellIcon />
-            <i />
-          </button>
-          <Link className="technician-topbar-user" to="/profile">
-            <TechnicianAvatar name={user?.fullName} url={user?.avatarUrl} />
-            <span>
-              <strong>{user?.fullName || 'Admin'}</strong>
-              <small>{t('Admin')}</small>
-            </span>
-          </Link>
-        </div>
-      </header>
+      <PageHeader
+        title="Technician Details"
+        subtitle="Manage technician profile, verification documents, and service status"
+        onRefresh={retry}
+        refreshing={loading}
+      />
       <section className="technician-content">
         <div className="technician-detail-heading">
-          <div>
-            <h1>{t('Technician Details')}</h1>
-            <p>{t('Manage technician profile, verification documents, and service status')}</p>
-          </div>
           <div className="technician-profile-actions">
             <Link className="technician-view" to="/admin/technicians">
               ← {t('Back to list')}
