@@ -42,6 +42,18 @@ html[data-theme='dark'] {
   --app-muted: #a9b7c9;
   --app-border: #293d59;
 }
+html[data-theme='dark'] .confirm-dialog {
+  color: var(--app-text);
+  background: var(--app-surface);
+  border: 1px solid var(--app-border);
+}
+html[data-theme='dark'] .confirm-dialog h2 { color: var(--app-text); }
+html[data-theme='dark'] .confirm-dialog p { color: var(--app-muted); }
+html[data-theme='dark'] .confirm-dialog-actions button:not(.danger) {
+  color: var(--app-text);
+  background: var(--app-surface-soft);
+  border-color: var(--app-border);
+}
 .preference-controls {
   display: flex;
   align-items: center;
@@ -1476,5 +1488,57 @@ html[data-theme='dark']
     .payment-detail-booking-scope small,
     .payment-detail-booking-schedule small
   ) {
+  color: var(--app-muted);
+}
+
+/* The unified catalog and technician headers/pages keep the same theme tokens. */
+html[data-theme='dark'] :is(.models-main, .skills-main, .verification-page, .technician-detail-page) {
+  color: var(--app-text);
+  background: var(--app-bg);
+}
+html[data-theme='dark'] :is(.models-main, .skills-main) .catalog-topbar-heading h1 {
+  color: var(--app-text);
+}
+html[data-theme='dark'] .dashboard-main .figma-title-header .figma-header-title h1 {
+  color: var(--app-text);
+}
+html[data-theme='dark'] .catalog-header-title p {
+  color: var(--app-muted);
+}
+html[data-theme='dark'] :is(.models-content, .models-toolbar, .skill-toolbar, .skill-list-panel, .verification-toolbar, .verification-extra-filters, .verification-queue, .technician-detail-page .technician-summary, .technician-detail-page .technician-card, .models-menu > div) {
+  color: var(--app-text);
+  background: var(--app-surface);
+  border-color: var(--app-border);
+}
+html[data-theme='dark'] .verification-queue > header,
+html[data-theme='dark'] .models-table tbody tr:hover,
+html[data-theme='dark'] .verification-queue tbody tr:hover {
+  color: var(--app-text);
+  background: var(--app-surface-soft);
+  border-color: var(--app-border);
+}
+html[data-theme='dark'] :is(.verification-queue h2, .verification-person, .technician-detail-page .technician-card h3, .technician-detail-page .technician-summary h2) {
+  color: var(--app-text);
+}
+html[data-theme='dark'] :is(.models-tabs, .skill-tabs, .models-search, .verification-search, .verification-status-tabs, .technician-detail-page .technician-metrics > div, .technician-detail-emergency, .technician-detail-joined, .skill-service-tag, .models-count, .skill-count) {
+  color: var(--app-text);
+  background: var(--app-surface-soft);
+  border-color: var(--app-border);
+}
+html[data-theme='dark'] :is(.models-table th, .skill-table th, .verification-queue th) {
+  color: var(--app-muted);
+  background: var(--app-surface-soft);
+  border-color: var(--app-border);
+}
+html[data-theme='dark'] :is(.models-table td, .skill-table td, .verification-queue td, .technician-detail-page .technician-field dd, .skill-name strong, .models-table strong, .models-pagination strong, .technician-detail-page .technician-metrics strong) {
+  color: var(--app-text);
+  border-color: var(--app-border);
+}
+html[data-theme='dark'] :is(.models-main, .skills-main, .verification-page, .technician-detail-page) :is(input, select, textarea, button:not(.primary):not(.danger):not(.selected):not(.active)) {
+  color: var(--app-text);
+  background-color: var(--app-surface-soft);
+  border-color: var(--app-border);
+}
+html[data-theme='dark'] :is(.models-main, .skills-main, .verification-page, .technician-detail-page) :is(input, select, textarea)::placeholder {
   color: var(--app-muted);
 }

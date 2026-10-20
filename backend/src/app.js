@@ -126,6 +126,21 @@ app.get(
   })
 )
 
+// Public, aggregate-only figures for the sign-in screen. No booking or user details.
+app.get('/api/public/overview', asyncHandler(async (_request, response) => {
+  const [bookings, technicians] = await Promise.all([
+    pool.query(`SELECT
+      count(*) FILTER (WHERE (scheduled_at AT TIME ZONE 'Asia/Ho_Chi_Minh')::date = (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Ho_Chi_Minh')::date)::int AS today_appointments,
+      count(*) FILTER (WHERE (completed_at AT TIME ZONE 'Asia/Ho_Chi_Minh')::date = (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Ho_Chi_Minh')::date)::int AS completed_today
+      FROM bookings`),
+    pool.query(`SELECT count(*)::int AS online_technicians FROM technician_profiles
+      WHERE is_active = true AND verification_status = 'VERIFIED' AND availability_status = 'ONLINE'`),
+  ])
+  response.set('Cache-Control', 'public, max-age=60').json({ data: {
+    ...bookings.rows[0], ...technicians.rows[0], updated_at: new Date().toISOString(),
+  } })
+}))
+
 // AUTH
 app.use('/api/auth', createAuthRouter(authController))
 app.use('/api/admin/catalog', createCatalogRouter())

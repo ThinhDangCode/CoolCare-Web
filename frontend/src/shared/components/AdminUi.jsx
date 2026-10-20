@@ -1,4 +1,5 @@
 import { useAuth } from '../context/AuthContext.jsx'
+import { Link } from 'react-router-dom'
 import { useUiPreferences } from '../context/UiPreferencesContext.jsx'
 import { LanguageControl, ThemeControl } from './PreferenceControls.jsx'
 
@@ -158,15 +159,9 @@ export function LockIcon({ open = false }) {
   )
 }
 
-export function PageHeader({
-  title,
-  subtitle,
-  headingAddon,
-  children,
-  onRefresh,
-  refreshing = false,
-}) {
-  const { user } = useAuth()
+export function AdminHeaderControls({ onRefresh, refreshing = false, actions, className = '', headerUser }) {
+  const { user: authUser } = useAuth()
+  const user = headerUser ?? authUser
   const { t } = useUiPreferences()
   const initials = (user?.fullName || 'Admin User')
     .trim()
@@ -176,15 +171,7 @@ export function PageHeader({
     .join('')
     .toUpperCase()
   return (
-    <header className="figma-utility-header figma-title-header">
-      <div className="figma-header-title">
-        <div className="figma-header-title-line">
-          <h1>{t(title)}</h1>
-          {headingAddon}
-        </div>
-        <p>{t(subtitle)}</p>
-      </div>
-      <div className="figma-header-actions">
+      <div className={`figma-header-actions ${className}`.trim()}>
         <LanguageControl />
         <button
           className="figma-refresh"
@@ -201,17 +188,44 @@ export function PageHeader({
           <i />
         </button>
         <ThemeControl />
-        <span
+        {actions}
+        <Link
           className="figma-admin-avatar"
+          to="/profile"
+          aria-label={t('Open profile')}
           style={user?.avatarUrl ? { backgroundImage: `url(${user.avatarUrl})` } : undefined}
         >
           {!user?.avatarUrl && initials}
-        </span>
+        </Link>
         <small>
           <strong>{user?.fullName || 'Admin User'}</strong>
           <em>{t('Fleet Director')}</em>
         </small>
       </div>
+  )
+}
+
+export function PageHeader({
+  title,
+  subtitle,
+  headingAddon,
+  children,
+  onRefresh,
+  refreshing = false,
+  actions,
+  headerUser,
+}) {
+  const { t } = useUiPreferences()
+  return (
+    <header className="figma-utility-header figma-title-header">
+      <div className="figma-header-title">
+        <div className="figma-header-title-line">
+          <h1>{t(title)}</h1>
+          {headingAddon}
+        </div>
+        <p>{t(subtitle)}</p>
+      </div>
+      <AdminHeaderControls onRefresh={onRefresh} refreshing={refreshing} actions={actions} headerUser={headerUser} />
       {children}
     </header>
   )

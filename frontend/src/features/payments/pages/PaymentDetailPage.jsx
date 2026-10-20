@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router-dom'
 import { useAuth } from '../../../shared/context/AuthContext.jsx'
-import { PreferenceControls } from '../../../shared/components/PreferenceControls.jsx'
+import { PageHeader } from '../../../shared/components/AdminUi.jsx'
+import '../../../shared/styles/admin.css'
 import { useUiPreferences } from '../../../shared/context/UiPreferencesContext.jsx'
 import { getPayment } from '../api/paymentsApi.js'
 import { readPaymentFilters, writePaymentFilters } from '../paymentListFilters.js'
@@ -145,35 +146,18 @@ export default function PaymentDetailPage() {
 
   return (
     <main className="payments-page payment-detail-page">
-      <header className="payment-detail-topbar">
-        <nav aria-label={t('Payment breadcrumb')}>
-          <span>{t('Finance')}</span>
-          <DetailIcon name="breadcrumb" />
-          <Link to={backUrl}>{t('Payments')}</Link>
-          <DetailIcon name="breadcrumb" />
-          <strong>{t('Payment Detail')}</strong>
-          {payment && <code>{payment.paymentCode}</code>}
-        </nav>
-        <div className="preference-controls">
-          <PreferenceControls compact />
-          <button
-            type="button"
-            className="payment-detail-refresh"
-            disabled={loading || !validId}
-            onClick={() => setRefresh((current) => current + 1)}
-          >
-            <img src="/payments/refresh.svg" width="14" height="14" alt="" aria-hidden="true" />{' '}
-            {t('Refresh')}
-          </button>
-        </div>
-      </header>
+      <PageHeader
+        title="Payment Detail"
+        subtitle="Payments"
+        onRefresh={() => setRefresh((current) => current + 1)}
+        refreshing={loading || !validId}
+      />
       <section className="payment-detail-content" aria-busy={loading}>
         <div className="payment-detail-heading">
           <Link className="payment-detail-back" to={backUrl}>
             <DetailIcon name="back" /> {t('Back to Payments List')}
           </Link>
           <div>
-            <h1>{t('Payment Detail')}</h1>
             {payment && (
               <>
                 <code>{payment.paymentCode}</code>

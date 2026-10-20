@@ -62,8 +62,8 @@ export class TechnicianMutations {
         if(duplicate.rows.length) throw new AppError(409,'CERTIFICATE_NUMBER_ALREADY_VERIFIED','This certificate number already belongs to another certification.')
       }
       const row=(await client.query(`UPDATE technician_certifications SET verification_status=$2,reviewed_by_id=$3,
-        reviewed_at=CURRENT_TIMESTAMP,rejection_reason=$4,verification_evidence=$5::jsonb,updated_at=CURRENT_TIMESTAMP
-        WHERE id=$1 RETURNING id,verification_status,reviewed_by_id,reviewed_at`,[id,input.status,actorId,input.reason,JSON.stringify(input.verification_evidence ?? null)])).rows[0]
+        reviewed_at=CURRENT_TIMESTAMP,rejection_reason=$4,updated_at=CURRENT_TIMESTAMP
+        WHERE id=$1 RETURNING id,verification_status,reviewed_by_id,reviewed_at`,[id,input.status,actorId,input.reason])).rows[0]
       await client.query(`UPDATE technician_certification_submissions SET verification_status=$2,reviewed_by_id=$3,
         reviewed_at=CURRENT_TIMESTAMP,rejection_reason=$4 WHERE id=(SELECT id FROM technician_certification_submissions
         WHERE certification_id=$1 ORDER BY submission_number DESC LIMIT 1) AND verification_status='PENDING'`,[id,input.status,actorId,input.reason])

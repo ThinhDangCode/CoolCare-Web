@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useAuth } from '../../../shared/context/AuthContext.jsx'
+import { useUiPreferences } from '../../../shared/context/UiPreferencesContext.jsx'
 import { useAutoDismiss } from '../../../shared/hooks/useAutoDismiss.js'
 import { adminRequest } from '../../../shared/api/adminApi.js'
 import { ArrowLeftIcon, CheckIcon, CloseIcon, PageHeader } from '../../../shared/components/AdminUi.jsx'
@@ -69,6 +70,7 @@ function DetailIcon({ name }) {
 export function ComplaintDetailPage() {
   const { id } = useParams()
   const { token, logout } = useAuth()
+  const { locale, t } = useUiPreferences()
   const [complaint, setComplaint] = useState(null)
   const [status, setStatus] = useState('IN_PROGRESS')
   const [resolution, setResolution] = useState('')
@@ -80,6 +82,11 @@ export function ComplaintDetailPage() {
   const [saved, setSaved] = useState('')
   const [showResolution, setShowResolution] = useState(false)
   const [notifyCustomer, setNotifyCustomer] = useState(true)
+  const [showVoucher, setShowVoucher] = useState(false)
+  const [voucherAmount, setVoucherAmount] = useState('100000')
+  const [voucherMinimum, setVoucherMinimum] = useState('0')
+  const [voucherDays, setVoucherDays] = useState('30')
+  const [createdVoucher, setCreatedVoucher] = useState(null)
   const savedHover = useAutoDismiss(saved, setSaved)
   const errorHover = useAutoDismiss(error, setError)
 
@@ -152,6 +159,10 @@ export function ComplaintDetailPage() {
       return setError('Resolution notes must contain at least 10 characters.')
     if (draft && !resolution.trim())
       return setError('Enter a resolution note before saving a draft.')
+    if (resolution.trim().length > 5000)
+      return setError('Resolution notes must not exceed 5,000 characters.')
+    if (!(nextStatusOptions[complaint.status] || []).includes(nextStatus))
+      return setError('The selected status transition is not allowed.')
     setBusy(true)
     setSaved('')
     try {
@@ -187,9 +198,40 @@ export function ComplaintDetailPage() {
     }
   }
 
-  function submit(event) {
+  async function giftVoucher(event) {
     event.preventDefault()
-    saveResolution()
+    if (busy) return
+    const amount = Number(voucherAmount)
+    const minimum = Number(voucherMinimum)
+    const days = Number(voucherDays)
+    if (!Number.isInteger(amount) || amount < 1 || amount > 10000000)
+      return setError('Compensation amount must be a whole number from 1 to 10,000,000 VND.')
+    if (!Number.isInteger(minimum) || minimum < 0)
+      return setError('Minimum order amount must be a non-negative whole number.')
+    if (!Number.isInteger(days) || days < 1 || days > 365)
+      return setError('Voucher validity must be a whole number from 1 to 365 days.')
+    setBusy(true)
+    setSaved('')
+    try {
+      const voucher = await adminRequest(`/complaints/${id}/compensation-voucher`, token, {
+        method: 'POST',
+        body: {
+          discount_value: amount,
+          minimum_order_amount: minimum,
+          valid_days: days,
+          notify_customer: true,
+        },
+      })
+      setCreatedVoucher(voucher)
+      setShowVoucher(false)
+      setSaved(`Voucher ${voucher.code} đã được gửi cho khách hàng.`)
+      setError('')
+    } catch (err) {
+      setError(err.message)
+      if (err.status === 401) logout()
+    } finally {
+      setBusy(false)
+    }
   }
 
   return (
@@ -198,15 +240,15 @@ export function ComplaintDetailPage() {
         title={
           complaint ? (
             <span className="complaint-header-title">
-              <span>Complaint Detail</span>
-              <b>#CP{String(complaint.complaint_number).padStart(3, '0')}</b>
+              <span>{t('Complaint Detail')}</span>
+              <b>#{complaint.complaint_code}</b>
               <span className={`figma-status complaint-${complaint.status.toLowerCase()}`}>
                 <i />
                 {statusName[complaint.status] || label(complaint.status)}
               </span>
             </span>
           ) : (
-            'Complaint Detail'
+            t('Complaint Detail')
           )
         }
         subtitle=""
@@ -234,9 +276,9 @@ export function ComplaintDetailPage() {
         )}
         {complaint && (
           <header className="complaint-print-heading">
-            <h1>Complaint Detail</h1>
+            <h1>{t('Complaint Detail')}</h1>
             <p>
-              <strong>#CP{String(complaint.complaint_number).padStart(3, '0')}</strong>
+              <strong>#{complaint.complaint_code}</strong>
               <span>{statusName[complaint.status] || label(complaint.status)}</span>
             </p>
           </header>
@@ -244,23 +286,23 @@ export function ComplaintDetailPage() {
         <div className="complaint-detail-top">
           <div className="complaint-detail-actions">
             <Link to="/admin/complaints">
-              <ArrowLeftIcon /> Back to List
+              <ArrowLeftIcon /> {t('Back to List')}
             </Link>
             <button type="button" onClick={() => window.print()}>
-              <DetailIcon name="print" /> Print Log
+              <DetailIcon name="print" /> {t('Print Log')}
             </button>
           </div>
         </div>
         {loading ? (
           <div className="figma-table-state">
             <i className="figma-spinner" />
-            Loading complaint…
+            {t('Loading complaint…')}
           </div>
         ) : error && !complaint ? (
           <div className="figma-table-state error">{error}</div>
         ) : (
           complaint && (
-            <form className="complaint-figma-layout" onSubmit={submit}>
+            <div className="complaint-figma-layout">
               <div className="complaint-figma-main">
                 <section className="complaint-info-card">
                   <header>
@@ -268,21 +310,21 @@ export function ComplaintDetailPage() {
                       <span>
                         <DetailIcon name="complaint" />
                       </span>
-                      <strong>Complaint Information</strong>
+                      <strong>{t('Complaint Information')}</strong>
                     </div>
-                    <small>ID: CP{String(complaint.complaint_number).padStart(3, '0')}</small>
+                    <small>ID: {complaint.complaint_code}</small>
                   </header>
                   <div className="complaint-facts">
                     <div>
-                      <small>ISSUE CATEGORY</small>
+                      <small>{t('ISSUE CATEGORY')}</small>
                       <strong>{label(complaint.type)}</strong>
                     </div>
                     <div>
-                      <small>SUBMISSION DATE</small>
-                      <strong>{new Date(complaint.created_at).toLocaleString('vi-VN')}</strong>
+                      <small>{t('SUBMISSION DATE')}</small>
+                      <strong>{new Date(complaint.created_at).toLocaleString(locale === 'vi' ? 'vi-VN' : 'en-US')}</strong>
                     </div>
                     <div>
-                      <small>CURRENT STATUS</small>
+                      <small>{t('CURRENT STATUS')}</small>
                       <span className={`figma-status complaint-${complaint.status.toLowerCase()}`}>
                         <i />
                         {statusName[complaint.status] || label(complaint.status)}
@@ -290,19 +332,12 @@ export function ComplaintDetailPage() {
                     </div>
                   </div>
                   <div className="complaint-quote">
-                    <small>CUSTOMER COMPLAINT DESCRIPTION</small>
+                    <small>{t('CUSTOMER COMPLAINT DESCRIPTION')}</small>
                     <blockquote>“{complaint.description}”</blockquote>
                     <footer>
-                      <span>● Sent via CoolCare Customer App</span>
-                      <span>{complaint.description.length} characters</span>
+                      <span>● {t('Sent via CoolCare Customer App')}</span>
+                      <span>{complaint.description.length} {t('characters')}</span>
                     </footer>
-                  </div>
-                  <div className="complaint-evidence">
-                    <header>
-                      <strong>CUSTOMER UPLOADED EVIDENCE &amp; PHOTOS</strong>
-                      <span>0 ATTACHMENTS FOUND</span>
-                    </header>
-                    <div>No evidence files were submitted with this complaint.</div>
                   </div>
                 </section>
                 <section id="resolution-panel" className="complaint-detail-resolution">
@@ -311,8 +346,8 @@ export function ComplaintDetailPage() {
                       <CheckIcon />
                     </span>
                     <div>
-                      <h3>Resolution &amp; Operational Actions</h3>
-                      <p>Review resolution findings, assign outcomes, and complete the workflow.</p>
+                      <h3>{t('Resolution & Operational Actions')}</h3>
+                      <p>{t('Review resolution findings, assign outcomes, and complete the workflow.')}</p>
                     </div>
                     <span className={`figma-status complaint-${complaint.status.toLowerCase()}`}>
                       <i />
@@ -341,8 +376,27 @@ export function ComplaintDetailPage() {
                     disabled={complaint.status === 'CLOSED'}
                     onClick={() => setShowResolution(true)}
                   >
-                    <CheckIcon /> Process Resolution
+                    <CheckIcon /> {t('Process Resolution')}
                   </button>
+                  {['RESOLVED', 'CLOSED'].includes(complaint.status) && (
+                    <button
+                      className="complaint-voucher-button"
+                      type="button"
+                      onClick={() => setShowVoucher(true)}
+                    >
+                      Gift Compensation Voucher
+                    </button>
+                  )}
+                  {createdVoucher && (
+                    <div className="complaint-voucher-result">
+                      <span>Customer-only voucher</span>
+                      <strong>{createdVoucher.code}</strong>
+                      <small>
+                        {Number(createdVoucher.discount_value).toLocaleString('vi-VN')}đ · Valid
+                        until {new Date(createdVoucher.end_at).toLocaleDateString('vi-VN')}
+                      </small>
+                    </div>
+                  )}
                 </section>
               </div>
               <aside className="complaint-related">
@@ -441,13 +495,12 @@ export function ComplaintDetailPage() {
                         <CheckIcon />
                       </span>
                       <div>
-                        <h2>Resolution &amp; Operational Actions</h2>
+                        <h2>{t('Resolution & Operational Actions')}</h2>
                         <p>
-                          Record supporting findings, select resolution decision, and notify the
-                          customer.
+                          {t('Record supporting findings, select resolution decision, and notify the customer.')}
                         </p>
                       </div>
-                      <small>#CP{String(complaint.complaint_number).padStart(3, '0')}</small>
+                      <small>#{complaint.complaint_code}</small>
                       <button
                         type="button"
                         aria-label="Close"
@@ -464,7 +517,7 @@ export function ComplaintDetailPage() {
                         </p>
                       )}
                       <label>
-                        RESOLUTION DECISION
+                        {t('RESOLUTION DECISION')}
                         <select
                           disabled={busy}
                           value={status}
@@ -472,7 +525,7 @@ export function ComplaintDetailPage() {
                         >
                           {(nextStatusOptions[complaint.status] || []).map((value) => (
                             <option key={value} value={value}>
-                              {statusName[value]}
+                              {t(statusName[value])}
                             </option>
                           ))}
                         </select>
@@ -518,13 +571,13 @@ export function ComplaintDetailPage() {
                           </label>
                         )}
                       <label>
-                        ADMIN RESOLUTION NOTE / ACTION TAKEN
+                        {t('ADMIN RESOLUTION NOTE / ACTION TAKEN')}
                         <textarea
                           maxLength={5000}
                           disabled={busy}
                           value={resolution}
                           onChange={(event) => setResolution(event.target.value)}
-                          placeholder="Describe the investigation, decision, and action taken..."
+                          placeholder={t('Describe the investigation, decision, and action taken...')}
                         />
                       </label>
                       <label className="complaint-notify-customer">
@@ -534,7 +587,7 @@ export function ComplaintDetailPage() {
                           checked={notifyCustomer}
                           onChange={(event) => setNotifyCustomer(event.target.checked)}
                         />
-                        Notify customer via in-app notification immediately
+                        {t('Notify customer via in-app notification immediately')}
                       </label>
                     </div>
                     <footer>
@@ -553,7 +606,7 @@ export function ComplaintDetailPage() {
                         disabled={busy}
                         onClick={() => saveResolution(complaint.status, { draft: true })}
                       >
-                        Save as Draft
+                        {t('Save as Draft')}
                       </button>
                       <button
                         className="confirm"
@@ -561,13 +614,63 @@ export function ComplaintDetailPage() {
                         disabled={busy}
                         onClick={() => saveResolution(status)}
                       >
-                        <CheckIcon /> {busy ? 'Saving…' : 'Confirm Resolution'}
+                        <CheckIcon /> {busy ? t('Saving…') : t('Confirm Resolution')}
                       </button>
                     </footer>
                   </section>
                 </div>
               )}
-            </form>
+              {showVoucher && (
+                <div className="figma-modal-backdrop complaint-resolution-backdrop">
+                  <form
+                    className="complaint-resolution-dialog complaint-voucher-dialog"
+                    role="dialog"
+                    aria-modal="true"
+                    onSubmit={giftVoucher}
+                  >
+                    <header>
+                      <span aria-hidden="true">%</span>
+                      <div>
+                        <h2>Gift Compensation Voucher</h2>
+                        <p>Create a one-time voucher assigned only to this customer.</p>
+                      </div>
+                      <small>#{complaint.complaint_code}</small>
+                      <button type="button" aria-label="Close" disabled={busy} onClick={() => setShowVoucher(false)}>
+                        <CloseIcon />
+                      </button>
+                    </header>
+                    <div className="complaint-resolution-dialog-body complaint-voucher-fields">
+                      {error && <p role="alert" className="figma-table-state error">{error}</p>}
+                      <label>
+                        COMPENSATION AMOUNT (VND)
+                        <input type="number" min="1" max="10000000" step="1" required value={voucherAmount}
+                          onChange={(event) => setVoucherAmount(event.target.value)} />
+                      </label>
+                      <label>
+                        MINIMUM ORDER AMOUNT (VND)
+                        <input type="number" min="0" step="1" required value={voucherMinimum}
+                          onChange={(event) => setVoucherMinimum(event.target.value)} />
+                      </label>
+                      <label>
+                        VALID FOR (DAYS)
+                        <input type="number" min="1" max="365" step="1" required value={voucherDays}
+                          onChange={(event) => setVoucherDays(event.target.value)} />
+                      </label>
+                      <p>
+                        The code can be redeemed once and is bound to the complaint customer.
+                        A notification will be sent immediately.
+                      </p>
+                    </div>
+                    <footer>
+                      <button type="button" disabled={busy} onClick={() => setShowVoucher(false)}>Cancel</button>
+                      <button className="confirm" type="submit" disabled={busy}>
+                        {busy ? 'Creating…' : 'Create & Send Voucher'}
+                      </button>
+                    </footer>
+                  </form>
+                </div>
+              )}
+            </div>
           )
         )}
       </section>

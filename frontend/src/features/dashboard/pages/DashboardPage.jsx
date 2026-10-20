@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
 import { useAuth } from '../../../shared/context/AuthContext.jsx'
 import { AdminSidebar, DashboardIcon } from '../../../shared/components/AdminSidebar.jsx'
-import { LanguageControl, ThemeControl } from '../../../shared/components/PreferenceControls.jsx'
+import { PageHeader } from '../../../shared/components/AdminUi.jsx'
 import { useUiPreferences } from '../../../shared/context/UiPreferencesContext.jsx'
+import '../../../shared/styles/admin.css'
 
 const metrics = [
   {
@@ -58,39 +58,10 @@ export function DashboardPage() {
       <AdminSidebar user={user} activePage="dashboard" onLogout={() => setShowLogout(true)} />
 
       <main className="dashboard-main" id="overview">
-        <header className="dashboard-topbar">
-          <div>
-            <p>
-              <strong>{t('Overview')}</strong>
-              <span>/</span>
-              {t('Live operations')}
-            </p>
-            <h1>{t('Dashboard Overview')}</h1>
-          </div>
-          <div className="dashboard-actions">
-            <LanguageControl />
-            <span className="updated-pill">
-              <i /> {t('Updated 5 mins ago')}
-            </span>
-            <button type="button">▣&nbsp;&nbsp; {t('Last 30 Days')}⌄</button>
-            <button className="round-action" type="button" aria-label="Tìm kiếm">
-              ⌕
-            </button>
-            <button className="round-action notification" type="button" aria-label="Thông báo">
-              ●
-            </button>
-            <ThemeControl />
-            <Link
-              className="top-avatar"
-              to="/profile"
-              aria-label="Mở hồ sơ cá nhân"
-              style={user?.avatarUrl ? { backgroundImage: `url(${user.avatarUrl})` } : undefined}
-            >
-              {!user?.avatarUrl &&
-                (user?.fullName?.split(' ').at(-1)?.slice(0, 2).toUpperCase() ?? 'MV')}
-            </Link>
-          </div>
-        </header>
+        <PageHeader
+          title="Dashboard Overview"
+          subtitle="Live operations"
+        />
 
         <section className="dashboard-content">
           <div className="metric-grid">

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useAuth } from '../../../shared/context/AuthContext.jsx'
+import { useUiPreferences } from '../../../shared/context/UiPreferencesContext.jsx'
 import { catalogRequest } from '../api/catalogApi.js'
 import { Modal } from './Modal.jsx'
 import './catalogTrash.css'
@@ -25,6 +26,7 @@ export function TrashIcon() {
 
 export function CatalogTrashButton({ kind, row, onChanged }) {
   const { token, logout } = useAuth()
+  const { t } = useUiPreferences()
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -49,8 +51,8 @@ export function CatalogTrashButton({ kind, row, onChanged }) {
       <button
         type="button"
         className="catalog-trash-row"
-        title="Move to trash"
-        aria-label={`Move ${name} to trash`}
+        title={t('Move to trash')}
+        aria-label={`${t('Move to trash')}: ${name}`}
         onClick={() => {
           setError('')
           setOpen(true)
@@ -61,17 +63,17 @@ export function CatalogTrashButton({ kind, row, onChanged }) {
       {open &&
         createPortal(
           <Modal
-            title="Move to trash?"
+            title={t('Move to trash?')}
             icon={<TrashIcon />}
             onClose={() => setOpen(false)}
             busy={busy}
           >
             <div className="catalog-confirm">
               <p>
-                Move <strong>{name}</strong> to trash?
+                {t('Move to trash')}: <strong>{name}</strong>?
               </p>
               <p>
-                You can restore this item from Trash. Existing bookings and history are preserved.
+                {t('You can restore this item from Trash. Existing bookings and history are preserved.')}
               </p>
               {error && (
                 <div className="catalog-error" role="alert">
@@ -86,7 +88,7 @@ export function CatalogTrashButton({ kind, row, onChanged }) {
                 disabled={busy}
                 onClick={() => setOpen(false)}
               >
-                Cancel
+                {t('Cancel')}
               </button>
               <button
                 type="button"
@@ -94,7 +96,7 @@ export function CatalogTrashButton({ kind, row, onChanged }) {
                 disabled={busy}
                 onClick={remove}
               >
-                {busy ? 'Moving...' : 'Move to trash'}
+                {t(busy ? 'Moving...' : 'Move to trash')}
               </button>
             </footer>
           </Modal>,
@@ -106,6 +108,7 @@ export function CatalogTrashButton({ kind, row, onChanged }) {
 
 export function CatalogTrash({ kind, onChanged }) {
   const { token, logout } = useAuth()
+  const { t, locale } = useUiPreferences()
   const [open, setOpen] = useState(false)
   const [data, setData] = useState({ items: [], total: 0 })
   const [page, setPage] = useState(1)
@@ -145,7 +148,7 @@ export function CatalogTrash({ kind, onChanged }) {
     setError('')
     try {
       await catalogRequest(`/${kind}/${row.id}/restore`, token, { method: 'PATCH' })
-      setNotice(`${row.name || row.model_name} restored.`)
+      setNotice(`${row.name || row.model_name} ${t('restored.')}`)
       setLoading(true)
       setRefresh((n) => n + 1)
       onChanged()
@@ -169,19 +172,19 @@ export function CatalogTrash({ kind, onChanged }) {
           setNotice('')
         }}
       >
-        <TrashIcon /> Trash
+        <TrashIcon /> {t('Trash')}
       </button>
       {open &&
         createPortal(
           <Modal
-            title="Trash"
+            title={t('Trash')}
             icon={<TrashIcon />}
             className="catalog-trash-modal"
             onClose={() => setOpen(false)}
             busy={busy}
           >
             <div className="catalog-trash-body">
-              <p>Deleted items can be restored with their previous Active or Inactive status.</p>
+              <p>{t('Deleted items can be restored with their previous Active or Inactive status.')}</p>
               {error && (
                 <div className="catalog-error" role="alert">
                   {error}
@@ -193,7 +196,7 @@ export function CatalogTrash({ kind, onChanged }) {
                       setRefresh((n) => n + 1)
                     }}
                   >
-                    Retry
+                    {t('Retry')}
                   </button>
                 </div>
               )}
@@ -204,17 +207,17 @@ export function CatalogTrash({ kind, onChanged }) {
               )}
               {loading ? (
                 <div className="catalog-state" role="status">
-                  Loading trash...
+                  {t('Loading trash...')}
                 </div>
               ) : error ? null : !data.items.length ? (
-                <div className="catalog-state">Trash is empty.</div>
+                <div className="catalog-state">{t('Trash is empty.')}</div>
               ) : (
                 <ul className="catalog-trash-list">
                   {data.items.map((row) => (
                     <li key={row.id}>
                       <span>
                         <strong>{row.name || row.model_name}</strong>
-                        <small>Deleted {new Date(row.deleted_at).toLocaleString('vi-VN')}</small>
+                        <small>{t('Last updated')} {new Date(row.updated_at).toLocaleString(locale === 'vi' ? 'vi-VN' : 'en-US')}</small>
                       </span>
                       <button
                         type="button"
@@ -222,7 +225,7 @@ export function CatalogTrash({ kind, onChanged }) {
                         disabled={busy}
                         onClick={() => restore(row)}
                       >
-                        Restore
+                        {t('Restore')}
                       </button>
                     </li>
                   ))}
@@ -230,7 +233,7 @@ export function CatalogTrash({ kind, onChanged }) {
               )}
             </div>
             <footer className="catalog-form-actions">
-              <span>{loading || error ? '' : `${data.total} items`}</span>
+              <span>{loading || error ? '' : `${data.total} ${t('items')}`}</span>
               <button
                 type="button"
                 className="catalog-button"
@@ -240,7 +243,7 @@ export function CatalogTrash({ kind, onChanged }) {
                   setPage(page - 1)
                 }}
               >
-                Previous
+                {t('Previous')}
               </button>
               <span>{page}</span>
               <button
@@ -252,7 +255,7 @@ export function CatalogTrash({ kind, onChanged }) {
                   setPage(page + 1)
                 }}
               >
-                Next
+                {t('Next')}
               </button>
             </footer>
           </Modal>,
