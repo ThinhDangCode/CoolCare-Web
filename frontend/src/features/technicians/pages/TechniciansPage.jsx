@@ -169,17 +169,9 @@ export function TechniciansPage() {
             <table>
               <thead>
                 <tr>
-                  <th>
-                    {t('TECH')}
-                    <br />
-                    {t('ID')}
-                  </th>
+                  <th>{t('NO.')}</th>
                   <th>{t('TECHNICIAN')}</th>
-                  <th>
-                    {t('PHONE')}
-                    <br />
-                    {t('NUMBER')}
-                  </th>
+                  <th>{t('PHONE NUMBER')}</th>
                   <th>{t('ASSIGNED AREA')}</th>
                   <th>{t('RATING')}</th>
                   <th>{t('COMPLETED JOBS')}</th>
