@@ -23,6 +23,11 @@ export class UpdateJobStatusService {
         completedAt: result.booking.completed_at,
         updatedAt: result.booking.updated_at,
       },
+      initialQuotation: result.initial_quotation ? {
+        id: result.initial_quotation.id,
+        status: result.initial_quotation.status,
+        totalAmount: result.initial_quotation.total_amount,
+      } : null,
     }
   }
 }

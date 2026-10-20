@@ -14,6 +14,7 @@ import { ViewJobRequestsService } from './view-job-requests.service.js'
 import { AcceptDeclineJobRequestService } from './accept-decline-job-request.service.js'
 import { UpdateJobStatusService } from './update-job-status.service.js'
 import { CancelAcceptedJobService } from './cancel-accepted-job.service.js'
+import { AcServiceHistoryService } from './ac-service-history.service.js'
 
 export function createTechnicianPortalRouter(
   repository = new TechnicianPortalRepository(),
@@ -21,6 +22,7 @@ export function createTechnicianPortalRouter(
   acceptDeclineJobRequestService = new AcceptDeclineJobRequestService(),
   updateJobStatusService = new UpdateJobStatusService(),
   cancelAcceptedJobService = new CancelAcceptedJobService(),
+  acServiceHistoryService = new AcServiceHistoryService(),
 ) {
   const router = Router()
   router.use(authenticate, requireRole('CUSTOMER'))
@@ -61,6 +63,14 @@ export function createTechnicianPortalRouter(
         request.auth.userId,
         request.params.id,
         request.body,
+      ),
+    })
+  }))
+
+  router.get('/job-requests/:id/units/:unitId/service-history', asyncHandler(async (request, response) => {
+    response.set('Cache-Control', 'no-store').json({
+      data: await acServiceHistoryService.getHistory(
+        request.auth.userId,request.params.id,request.params.unitId,request.query,
       ),
     })
   }))

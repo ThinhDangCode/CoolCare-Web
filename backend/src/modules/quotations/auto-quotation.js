@@ -3,7 +3,7 @@ import { AppError } from '../../utils.js'
 // Called inside the caller's existing transaction; no schema changes.
 export async function ensureDefaultQuotation(db, bookingId, technicianId) {
   const existing = await db.query(
-    'SELECT id, status FROM quotations WHERE booking_id=$1 ORDER BY quotation_number FOR UPDATE',
+    'SELECT id, status, total_amount FROM quotations WHERE booking_id=$1 ORDER BY quotation_number FOR UPDATE',
     [bookingId],
   )
   if (existing.rows.length) {
