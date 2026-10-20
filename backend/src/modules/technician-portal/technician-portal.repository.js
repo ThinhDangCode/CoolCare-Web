@@ -28,7 +28,7 @@ export class TechnicianPortalRepository {
 
   async dashboard(userId) {
     const technician = await this.profile(userId)
-    const [nextJob, stats, pending] = await Promise.all([
+    const [nextJob, stats, pending, wallet, transactions] = await Promise.all([
       this.queryable.query(
         `SELECT b.id, b.booking_code, b.scheduled_at, b.service_address, b.ward, b.city,
                 b.status, bt.status AS assignment_status,
@@ -52,7 +52,7 @@ export class TechnicianPortalRepository {
            (SELECT count(*)::int FROM booking_technicians bt JOIN bookings b ON b.id=bt.booking_id
             WHERE bt.technician_id=$1 AND b.scheduled_at::date=CURRENT_DATE
               AND bt.status IN ('SELECTED','ACCEPTED','COMPLETED')) AS jobs_today,
-           (SELECT COALESCE(sum(p.amount),0) FROM payments p
+           (SELECT COALESCE(sum(p.technician_earning),0) FROM payments p
             WHERE p.technician_id=$1 AND p.payment_status='SUCCESS'
               AND p.paid_at::date=CURRENT_DATE) AS earnings_today`,
         [technician.id],
@@ -67,11 +67,27 @@ export class TechnicianPortalRepository {
            AND b.status NOT IN ('COMPLETED','CANCELLED')`,
         [technician.id],
       ),
+      this.queryable.query(
+        `SELECT settlement_balance, reserved_amount, available_balance
+         FROM technician_account_balances WHERE technician_id=$1 LIMIT 1`,
+        [technician.id],
+      ),
+      this.queryable.query(
+        `SELECT st.id, st.transaction_type, st.amount, st.balance_after,
+                st.description, st.created_at
+         FROM settlement_transactions st
+         JOIN technician_accounts a ON a.id=st.technician_account_id
+         WHERE a.technician_id=$1
+         ORDER BY st.created_at DESC, st.id DESC LIMIT 30`,
+        [technician.id],
+      ),
     ])
     return {
       technician,
       next_job: nextJob.rows[0] ?? null,
       stats: { ...stats.rows[0], pending_requests: pending.rows[0].count },
+      wallet: wallet.rows[0] ?? { settlement_balance: 0, reserved_amount: 0, available_balance: 0 },
+      wallet_transactions: transactions.rows,
     }
   }
 

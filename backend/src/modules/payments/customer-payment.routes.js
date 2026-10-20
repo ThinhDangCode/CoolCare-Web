@@ -60,6 +60,15 @@ const safeUrl = (url) => {
   return u.toString()
 }
 
+// VNPay requires IPv4; do not trust arbitrary X-Forwarded-For headers.
+const vnpClientIp = (req) => {
+  const raw = String(req.ip || req.socket?.remoteAddress || '127.0.0.1')
+  const ip = raw.startsWith('::ffff:') ? raw.slice(7) : raw
+  if (/^(?:\d{1,3}\.){3}\d{1,3}$/.test(ip) &&
+      ip.split('.').every(part => Number(part) <= 255)) return ip
+  return '127.0.0.1'
+}
+
 // =====================================================
 // DATABASE HELPERS
 // =====================================================
@@ -78,6 +87,16 @@ async function owned(db, userId, bookingId) {
     error('BOOKING_NOT_FOUND', 'Booking not found', 404)
   }
 
+  return r.rows[0]
+}
+
+async function assigned(db, userId, bookingId) {
+  const r = await db.query(`SELECT b.* FROM bookings b
+    JOIN booking_technicians bt ON bt.booking_id=b.id
+    JOIN technician_profiles tp ON tp.id=bt.technician_id
+    WHERE b.id=$1 AND tp.user_id=$2 AND bt.status IN ('ACCEPTED','COMPLETED')
+    FOR UPDATE OF b`, [bookingId,userId])
+  if (!r.rowCount) error('BOOKING_NOT_FOUND','Assigned booking not found',404)
   return r.rows[0]
 }
 
@@ -423,7 +442,7 @@ router.post(
     }
 
     const data = await withTransaction(async (db) => {
-      const b = await owned(
+      const b = await assigned(
         db,
         req.auth.userId,
         bookingId
@@ -519,7 +538,7 @@ router.post(
         )
       ).rows[0]
 
-      if (!tech) {
+      if (!tech || !(await db.query('SELECT 1 FROM technician_profiles WHERE id=$1 AND user_id=$2', [tech.technician_id,req.auth.userId])).rowCount) {
         error(
           'ASSIGNED_TECHNICIAN_REQUIRED',
           'No assigned technician'
@@ -588,13 +607,24 @@ router.post(
 )
 
 // =====================================================
+router.get('/technician/bookings/:bookingId/summary', authenticate, requireRole('CUSTOMER'), asyncHandler(async (req,res)=>{
+ const id=validateUuid(req.params.bookingId)
+ const data=await withTransaction(async db=>{
+   const b=await assigned(db,req.auth.userId,id)
+   const r=await db.query(`SELECT p.id,p.amount,p.payment_status,p.payment_kind,p.checkout_url,p.qr_expires_at,p.paid_at,pm.code AS method_code
+    FROM payments p JOIN payment_methods pm ON pm.id=p.payment_method_id WHERE p.booking_id=$1 ORDER BY p.created_at DESC`,[id])
+   return {booking:{id:b.id,status:b.status,total_amount:b.total_amount,charges_confirmed_at:b.charges_confirmed_at},payments:r.rows}
+ })
+ res.json({data})
+}))
+
 // TECHNICIAN CASH PAYMENTS
 // =====================================================
 
 router.get(
   '/technician/bookings/:bookingId',
   authenticate,
-  requireRole('TECHNICIAN'),
+  requireRole('CUSTOMER'),
   asyncHandler(async (req, res) => {
     const id = validateUuid(req.params.bookingId)
 
@@ -605,13 +635,14 @@ router.get(
            p.amount,
            p.payment_status,
            p.payment_kind,
-           p.created_at
+           p.created_at, p.paid_at, p.checkout_url, p.qr_expires_at,
+           pm.code AS method_code
          FROM payments p
+         JOIN payment_methods pm ON pm.id=p.payment_method_id
          JOIN technician_profiles tp
            ON tp.id = p.technician_id
          WHERE p.booking_id = $1
            AND tp.user_id = $2
-           AND p.payment_kind = 'CASH'
          ORDER BY p.created_at DESC`,
         [id, req.auth.userId]
       )
@@ -630,7 +661,7 @@ router.get(
 router.post(
   '/:paymentId/confirm-cash',
   authenticate,
-  requireRole('TECHNICIAN'),
+  requireRole('CUSTOMER'),
   asyncHandler(async (req, res) => {
     const id = validateUuid(req.params.paymentId)
 
@@ -704,13 +735,13 @@ router.post(
     const payment = await withTransaction(async (db) => {
       const p = await attempt(db, id)
 
-      const b = await owned(
+      const b = await assigned(
         db,
         req.auth.userId,
         p.booking_id
       )
 
-      if (b.customer_id !== p.customer_id) {
+      if (b.customer_id !== p.customer_id || !(await db.query('SELECT 1 FROM technician_profiles WHERE id=$1 AND user_id=$2',[p.technician_id,req.auth.userId])).rowCount) {
         error(
           'PAYMENT_NOT_FOUND',
           'Payment not found',
@@ -743,12 +774,25 @@ router.post(
 
       if (
         m.rows[0].code === 'ZALOPAY' &&
-        p.transaction_reference
+        (p.provider_order_id || p.transaction_reference)
       ) {
         error(
           'CHECKOUT_ALREADY_CREATED',
           'ZaloPay checkout already created; reconcile or close before retry'
         )
+      }
+
+      // Reserve the gateway order ID while holding the payment row lock.
+      // A network timeout is ambiguous, so never automatically clear it.
+      if (m.rows[0].code === 'ZALOPAY') {
+        const reservedOrderId =
+          `${utc7(new Date()).slice(2, 8)}_${p.id.replace(/-/g, '')}`
+        await db.query(
+          `UPDATE payments SET provider_order_id = $2, updated_at = NOW()
+           WHERE id = $1 AND payment_status = 'PENDING'`,
+          [p.id, reservedOrderId]
+        )
+        p.provider_order_id = reservedOrderId
       }
 
       return {
@@ -762,6 +806,9 @@ router.post(
     // =================================================
 
     if (payment.provider === 'VNPAY') {
+      if (payment.checkout_url) {
+        return res.json({data: {paymentId: payment.id, url: payment.checkout_url, provider: 'VNPAY'}})
+      }
       const now = new Date()
 
       const data = {
@@ -777,7 +824,7 @@ router.post(
         vnp_OrderType: 'other',
         vnp_Locale: 'vn',
         vnp_ReturnUrl: env('VNPAY_RETURN_URL'),
-        vnp_IpAddr: req.ip || '127.0.0.1',
+        vnp_IpAddr: vnpClientIp(req),
         vnp_CreateDate: utc7(now),
         vnp_ExpireDate: utc7(
           new Date(now.getTime() + 15 * 60000)
@@ -796,6 +843,9 @@ router.post(
         '&vnp_SecureHash=' +
         mac(env('VNPAY_HASH_SECRET'), qs, 'sha512')
 
+      await withTransaction(async db => {
+        await db.query(`UPDATE payments SET provider_order_id=COALESCE(provider_order_id,$2), checkout_url=$3, qr_expires_at=NOW()+INTERVAL '15 minutes', updated_at=NOW() WHERE id=$1 AND payment_status='PENDING'`,[payment.id,payment.payment_code,url])
+      })
       return res.json({
         data: {
           paymentId: payment.id,
@@ -806,16 +856,14 @@ router.post(
     }
 
     // =================================================
-    // ZALOPAY APP-TO-APP
+    // ZALOPAY: only accept gateway-provided scan QR data (not app-to-app URL)
     // =================================================
 
     const appId = env('ZALOPAY_APP_ID')
     const appUser = 'coolcare'
     const key = env('ZALOPAY_KEY1')
 
-    const orderId =
-      `${utc7(new Date()).slice(2, 8)}_` +
-      payment.id.replace(/-/g, '')
+    const orderId = payment.provider_order_id
 
     const amount = String(
       Math.round(Number(payment.amount))
@@ -828,8 +876,10 @@ router.post(
       amount: Number(amount),
       app_trans_id: orderId,
       embed_data: JSON.stringify({
-        payment_id: payment.id
+        payment_id: payment.id,
+        preferred_payment_method: ['zalopay_wallet']
       }),
+      bank_code: '',
       item: '[]',
       description: `CoolCare ${payment.payment_code}`,
       callback_url: env('ZALOPAY_CALLBACK_URL')
@@ -861,16 +911,29 @@ router.post(
 
     const result = await response.json()
 
+    // Clear reservation only for an explicit, unambiguous create rejection.
+    // Network errors and unknown responses must retain provider_order_id.
+    if (response.ok && Number(result.return_code) !== 1 &&
+        Number(result.return_code) !== 2) {
+      console.warn('[zalopay:create:rejected]', {
+        httpStatus: response.status,
+        returnCode: result.return_code,
+        returnMessage: result.return_message
+      })
+      // Do not clear for unrecognized response codes; they may be ambiguous.
+    }
+
     if (
       !response.ok ||
       Number(result.return_code) !== 1 ||
-      typeof result.zp_trans_token !== 'string' ||
-      !result.zp_trans_token
+      !(typeof result.qr_code === 'string' && result.qr_code.trim()) &&
+      !(typeof result.order_url === 'string' && result.order_url.trim()) &&
+      !(typeof result.zp_trans_token === 'string' && result.zp_trans_token.trim())
     ) {
       error(
         'GATEWAY_CREATE_FAILED',
         result.return_message ||
-          'ZaloPay did not return zp_trans_token',
+          'ZaloPay did not return a usable payment response',
         502
       )
     }
@@ -878,16 +941,44 @@ router.post(
     // Giữ transaction_reference để callback
     // và reconcile đối chiếu giao dịch.
 
+    const gatewayQr = typeof result.qr_code === 'string' && result.qr_code.trim()
+      ? result.qr_code.trim() : null
+
+    const rawOrderUrl = typeof result.order_url === 'string'
+      ? result.order_url.trim() : ''
+    let hostedCheckout = null
+    try {
+      const u = new URL(rawOrderUrl)
+      if (u.protocol === 'https:' && /(^|\.)zalopay\.vn$/i.test(u.hostname)) {
+        hostedCheckout = u.toString()
+      }
+    } catch (_) { /* Ignore invalid URLs. */ }
+
+    console.info('[zalopay:create]', {
+      httpStatus: response.status,
+      returnCode: result.return_code,
+      returnMessage: result.return_message,
+      hasNativeQr: Boolean(gatewayQr),
+      hasHostedCheckout: Boolean(hostedCheckout),
+      hasOrderUrl: Boolean(rawOrderUrl),
+      orderUrlHost: (() => { try { return rawOrderUrl ? new URL(rawOrderUrl).hostname : null } catch { return null } })(),
+      orderUrlPath: (() => { try { return rawOrderUrl ? new URL(rawOrderUrl).pathname : null } catch { return null } })(),
+      hasAppToken: Boolean(result.zp_trans_token)
+    })
+
     await withTransaction(async (db) => {
       const p = await attempt(db, payment.id)
 
       if (p.payment_status === 'PENDING') {
         await db.query(
           `UPDATE payments
-           SET transaction_reference = $2,
+           SET provider_order_id = $2,
+               provider_token = $3,
+               checkout_url = $4,
+               qr_expires_at = NOW() + INTERVAL '15 minutes',
                updated_at = CURRENT_TIMESTAMP
            WHERE id = $1`,
-          [p.id, orderId]
+          [p.id, orderId, result.zp_trans_token || null, gatewayQr || hostedCheckout]
         )
       }
     })
@@ -896,7 +987,8 @@ router.post(
       data: {
         paymentId: payment.id,
         provider: 'ZALOPAY',
-        zpTransToken: result.zp_trans_token
+        qrData: gatewayQr,
+        url: hostedCheckout
       }
     })
   })
@@ -916,7 +1008,7 @@ router.post(
     const p = await withTransaction(async (db) => {
       const row = await attempt(db, id)
 
-      await owned(
+      await assigned(
         db,
         req.auth.userId,
         row.booking_id
@@ -933,7 +1025,7 @@ router.post(
 
       if (
         m?.code !== 'ZALOPAY' ||
-        !row.transaction_reference
+        !row.provider_order_id
       ) {
         error(
           'INVALID_ZALOPAY_PAYMENT',
@@ -959,7 +1051,7 @@ router.post(
     }
 
     const appId = env('ZALOPAY_APP_ID')
-    const orderId = p.transaction_reference
+    const orderId = p.provider_order_id
     const key = env('ZALOPAY_KEY1')
 
     const response = await fetch(
@@ -1265,7 +1357,7 @@ router.post(
 
         if (
           methodRow?.code !== 'ZALOPAY' ||
-          p.transaction_reference !==
+          p.provider_order_id !==
             parsed.app_trans_id ||
           Number(p.amount) !==
             Number(parsed.amount) ||
