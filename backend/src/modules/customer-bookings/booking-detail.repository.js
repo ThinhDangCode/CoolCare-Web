@@ -92,17 +92,20 @@ export class BookingDetailRepository {
     return result.rows[0] ?? null
   }
 
-  async confirmCompletion(userId, bookingId, technicianUserId, db) {
+  async confirmCompletion(userId, bookingId, db) {
     const result = await db.query(`
       UPDATE bookings
-      SET completion_confirmed_by_id=$2,
+      SET status='COMPLETED',
+          completed_at=CURRENT_TIMESTAMP,
+          completion_confirmed_by_id=$2,
           completion_confirmed_at=CURRENT_TIMESTAMP,
-          technician_completed_by_id=COALESCE(technician_completed_by_id,$3),
-          technician_completed_at=COALESCE(technician_completed_at,CURRENT_TIMESTAMP),
           updated_at=CURRENT_TIMESTAMP
-      WHERE id=$1 AND status IN ('ACCEPTED','WAITING_CONFIRMATION')
+      WHERE id=$1
+        AND status='WAITING_CONFIRMATION'
+        AND technician_completed_at IS NOT NULL
+        AND completion_confirmed_at IS NULL
       RETURNING id,booking_code,status,completed_at,updated_at
-    `, [bookingId, userId, technicianUserId])
+    `, [bookingId, userId])
     return result.rows[0] ?? null
   }
 

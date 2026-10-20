@@ -1,3 +1,4 @@
+import { reconcileTechnicianRequest } from './reconcile-technician-request.js'
 
 import { AppError, validateUuid } from '../../utils.js'
 import { withTransaction } from '../../config/database.js'
@@ -68,6 +69,7 @@ export class TechnicianMatchingService {
     bookingId,
     db
   ) {
+    if (!db) await reconcileTechnicianRequest(userId, bookingId)
     const booking =
       await this.repository.findCustomerBooking(
         bookingId,

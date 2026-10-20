@@ -1,5 +1,6 @@
 import { withTransaction } from '../../config/database.js'
 import { AppError } from '../../utils.js'
+import { ensureDefaultQuotation } from '../quotations/auto-quotation.js'
 
 export class UpdateJobStatusRepository {
   constructor({ transaction = withTransaction } = {}) {
@@ -45,6 +46,16 @@ export class UpdateJobStatusRepository {
       if (job.status !== 'ACCEPTED' || job.booking_status !== 'ACCEPTED') {
         throw new AppError(409, 'JOB_CANNOT_BE_COMPLETED', 'Chỉ công việc đang thực hiện mới có thể được hoàn thành.')
       }
+
+      const outstanding = await client.query(
+        `SELECT 1 FROM quotations WHERE booking_id=$1 AND status IN ('DRAFT','PENDING') LIMIT 1`,
+        [job.booking_id],
+      )
+      if (outstanding.rowCount) {
+        throw new AppError(409, 'OUTSTANDING_QUOTATION', 'Cần xử lý báo giá đang chờ trước khi KTV hoàn thành.')
+      }
+
+      await ensureDefaultQuotation(client, job.booking_id, technician.id)
 
       const bookingResult = await client.query(
         `UPDATE bookings
