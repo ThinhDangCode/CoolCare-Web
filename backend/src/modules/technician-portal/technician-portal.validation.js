@@ -44,6 +44,22 @@ export function validateSetAvailabilityStatus(body) {
   return { status: body.status }
 }
 
+export function validateMyRatingsQuery(query) {
+  const allowed = ['limit']
+  if (!query || Object.keys(query).some((key) => !allowed.includes(key))) {
+    throw new AppError(400, 'VALIDATION_ERROR', 'Tham số đánh giá chưa hợp lệ.')
+  }
+  if (query.limit === undefined) return 20
+  if (!/^\d+$/.test(String(query.limit))) {
+    throw new AppError(400, 'VALIDATION_ERROR', 'Số đánh giá cần tải không hợp lệ.')
+  }
+  const limit = Number(query.limit)
+  if (!Number.isSafeInteger(limit) || limit < 1 || limit > 50) {
+    throw new AppError(400, 'VALIDATION_ERROR', 'Số đánh giá cần tải phải từ 1 đến 50.')
+  }
+  return limit
+}
+
 export function validateCertificationId(value) {
   if (!uuidPattern.test(String(value ?? ''))) {
     throw new AppError(400, 'INVALID_CERTIFICATION_ID', 'Certification ID is invalid.')

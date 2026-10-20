@@ -10,4 +10,12 @@ export class ReviewService {
   create(userId, input) {
     return this.repository.create(userId, input)
   }
+
+  update(userId, reviewId, input) {
+    return this.repository.update(userId, reviewId, input)
+  }
+
+  remove(userId, reviewId) {
+    return this.repository.remove(userId, reviewId)
+  }
 }

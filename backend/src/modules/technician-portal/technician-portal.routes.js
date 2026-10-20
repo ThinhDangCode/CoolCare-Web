@@ -8,6 +8,7 @@ import {
   validateTechnicianSkillId,
   validateTechnicianSkillSubmission,
   validateSetAvailabilityStatus,
+  validateMyRatingsQuery,
 } from './technician-portal.validation.js'
 import { validateTechnicianAreas } from '../technicians/technician.validation.js'
 import { ViewJobRequestsService } from './view-job-requests.service.js'
@@ -29,6 +30,12 @@ export function createTechnicianPortalRouter(
 
   router.get('/dashboard', asyncHandler(async (request, response) => {
     response.set('Cache-Control', 'no-store').json({ data: await repository.dashboard(request.auth.userId) })
+  }))
+
+  router.get('/ratings', asyncHandler(async (request, response) => {
+    response.set('Cache-Control', 'no-store').json({
+      data: await repository.ratings(request.auth.userId, validateMyRatingsQuery(request.query)),
+    })
   }))
 
   router.get('/job-requests', asyncHandler(async (request, response) => {

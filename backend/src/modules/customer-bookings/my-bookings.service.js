@@ -188,6 +188,8 @@ export class MyBookingsService {
       serviceCount: Number(
         booking.service_count ?? 0
       ),
+      reviewed: booking.reviewed === true,
+      serviceNames: booking.service_names ?? null,
 
       technician,
 
