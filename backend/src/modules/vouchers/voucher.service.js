@@ -3,6 +3,9 @@ export class VoucherService {
     this.repository = repository
   }
 
+  available(userId, bookingId) {
+    return this.repository.available(userId, bookingId)
+  }
   apply(userId, bookingId, code) {
     return this.repository.apply(userId, bookingId, code)
   }
