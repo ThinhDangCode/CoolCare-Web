@@ -2,6 +2,10 @@ import { randomUUID } from 'node:crypto'
 import { withTransaction } from '../../config/database.js'
 import { AppError } from '../../utils.js'
 import { writeAdminAudit } from '../audit/admin-audit.js'
+import {
+  enforcePenaltyBalance,
+  lockPenaltyTechnician,
+} from '../technicians/technician.points.js'
 import { createComplaintCompensationCode } from './complaint-compensation-code.js'
 
 const add = (values, value) => {
@@ -59,6 +63,9 @@ export class ComplaintRepository {
               cu.full_name customer_name,cu.phone customer_phone,cu.email customer_email,
               tu.full_name technician_name,tu.phone technician_phone,tp.qualification_level technician_qualification,
               ru.full_name resolved_by_name,
+              (SELECT p.id FROM technician_penalties p WHERE split_part(p.reason, ' ', 1) = '[COMPLAINT:' || c.id::text || ']') penalty_id,
+              (SELECT p.penalty_points FROM technician_penalties p WHERE split_part(p.reason, ' ', 1) = '[COMPLAINT:' || c.id::text || ']') penalty_points,
+              (SELECT p.expires_at FROM technician_penalties p WHERE split_part(p.reason, ' ', 1) = '[COMPLAINT:' || c.id::text || ']') penalty_expires_at,
               (SELECT string_agg(DISTINCT s.name, ', ' ORDER BY s.name) FROM booking_units bu
                 JOIN booking_unit_services bus ON bus.booking_unit_id=bu.id JOIN services s ON s.id=bus.service_id
                WHERE bu.booking_id=b.id) service_names
@@ -100,6 +107,73 @@ export class ComplaintRepository {
           'INVALID_DRAFT_STATUS',
           'Bản nháp không được thay đổi trạng thái khiếu nại.'
         )
+      const existingPenalty = (
+        await client.query(
+          `SELECT id,penalty_points,expires_at,status
+             FROM technician_penalties
+            WHERE split_part(reason, ' ', 1) = '[COMPLAINT:' || $1::text || ']'
+            FOR UPDATE`,
+          [id]
+        )
+      ).rows[0]
+      const applyPenalty =
+        !data.is_draft &&
+        data.status === 'RESOLVED' &&
+        ['OPEN', 'IN_PROGRESS', 'RESOLVED'].includes(before.status) &&
+        !existingPenalty &&
+        Boolean(before.technician_id || before.type === 'TECHNICIAN')
+      if (applyPenalty && !before.technician_id)
+        throw new AppError(
+          422,
+          'VALIDATION_ERROR',
+          'No technician is linked to this complaint.'
+        )
+      if (
+        (applyPenalty || data.penalty_expires_at !== undefined) &&
+        (typeof data.penalty_expires_at !== 'string' ||
+          !Number.isFinite(Date.parse(data.penalty_expires_at)) ||
+          Date.parse(data.penalty_expires_at) <= Date.now() ||
+          data.is_draft ||
+          data.status !== 'RESOLVED' ||
+          (!applyPenalty &&
+            (!existingPenalty ||
+              existingPenalty.status !== 'ACTIVE' ||
+              (existingPenalty.expires_at &&
+                new Date(existingPenalty.expires_at).getTime() !==
+                  Date.parse(data.penalty_expires_at)))))
+      )
+        throw new AppError(
+          422,
+          'VALIDATION_ERROR',
+          'Choose a future expiry for a new penalty or an active penalty without an expiry.'
+        )
+      if (
+        applyPenalty &&
+        (!Number.isInteger(data.penalty_points) ||
+          data.penalty_points < 1 ||
+          data.penalty_points > 12)
+      )
+        throw new AppError(
+          422,
+          'VALIDATION_ERROR',
+          'Enter positive whole-number penalty points.',
+          {
+            penalty_points:
+              'Penalty points are required when accepting a complaint with a linked technician.',
+          }
+        )
+      if (
+        data.penalty_points !== undefined &&
+        !applyPenalty &&
+        (data.is_draft ||
+          data.status !== 'RESOLVED' ||
+          existingPenalty?.penalty_points !== data.penalty_points)
+      )
+        throw new AppError(
+          422,
+          'VALIDATION_ERROR',
+          'Penalty points can only be applied when accepting a complaint.'
+        )
       const terminal = ['RESOLVED', 'REJECTED', 'CLOSED'].includes(data.status)
       const after = (
         await client.query(
@@ -107,6 +181,40 @@ export class ComplaintRepository {
           [data.status, data.resolution, actorId, terminal ? new Date() : null, id]
         )
       ).rows[0]
+      if (applyPenalty) {
+        const technician = await lockPenaltyTechnician(client, before.technician_id)
+        const penalty = (
+          await client.query(
+            `INSERT INTO technician_penalties
+               (technician_id,booking_id,penalty_type,penalty_points,reason,status,applied_at,expires_at)
+             VALUES ($1,$2,'RULE_VIOLATION',$3,$4,'ACTIVE',CURRENT_TIMESTAMP,$5)
+             RETURNING id,penalty_points,expires_at`,
+            [
+              before.technician_id,
+              before.booking_id,
+              data.penalty_points,
+              `[COMPLAINT:${id}] ${before.complaint_code}: ${data.resolution}`,
+              data.penalty_expires_at,
+            ]
+          )
+        ).rows[0]
+        after.penalty_id = penalty.id
+        after.penalty_points = penalty.penalty_points
+        after.penalty_expires_at = penalty.expires_at
+        after.remaining_points = await enforcePenaltyBalance(client, technician)
+      }
+      if (!applyPenalty && existingPenalty) {
+        if (data.penalty_expires_at !== undefined) {
+          await client.query('UPDATE technician_penalties SET expires_at=$1 WHERE id=$2', [
+            data.penalty_expires_at,
+            existingPenalty.id,
+          ])
+          existingPenalty.expires_at = data.penalty_expires_at
+        }
+        after.penalty_id = existingPenalty.id
+        after.penalty_points = existingPenalty.penalty_points
+        after.penalty_expires_at = existingPenalty.expires_at
+      }
       if (data.notify_customer && !data.is_draft)
         await client.query(
           `INSERT INTO notifications(user_id,type,title,message,reference_type,reference_id) SELECT cp.user_id,'COMPLAINT','Complaint status updated',$2,'COMPLAINT',$1::text FROM complaints c JOIN customer_profiles cp ON cp.id=c.customer_id WHERE c.id=$1::uuid`,

@@ -8,6 +8,7 @@ export const VIEW_JOB_REQUEST_STATUSES = [
   'COMPLETED',
   'CANCELLED',
 ]
+export const VIEW_JOB_REQUEST_FILTERS = [...VIEW_JOB_REQUEST_STATUSES, 'HISTORY']
 
 const DEFAULT_PAGE = 1
 const DEFAULT_LIMIT = 20
@@ -45,10 +46,10 @@ export function validateViewJobRequestsQuery(query = {}) {
   if (
     Array.isArray(rawStatus) ||
     typeof rawStatus !== 'string' ||
-    ![...VIEW_JOB_REQUEST_STATUSES, 'ALL'].includes(rawStatus)
+    ![...VIEW_JOB_REQUEST_FILTERS, 'ALL'].includes(rawStatus)
   ) {
     throw new AppError(422, 'INVALID_JOB_REQUEST_STATUS', 'Trạng thái yêu cầu công việc không hợp lệ.', {
-      status: `Trạng thái phải là ALL hoặc một trong: ${VIEW_JOB_REQUEST_STATUSES.join(', ')}.`,
+      status: `Trạng thái phải là ALL, HISTORY hoặc một trong: ${VIEW_JOB_REQUEST_STATUSES.join(', ')}.`,
     })
   }
 

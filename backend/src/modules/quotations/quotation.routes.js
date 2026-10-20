@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { authenticate, requireRole } from '../../middleware/authenticate.js'
 import { asyncHandler, AppError, validateUuid } from '../../utils.js'
 import { withTransaction } from '../../config/database.js'
+import { ensureDefaultQuotation } from './auto-quotation.js'
 
 const router = Router()
 router.use(authenticate, requireRole('CUSTOMER'))
@@ -81,7 +82,18 @@ router.post('/bookings/:bookingId', asyncHandler(async (req, res) => {
     if (!['ACCEPTED', 'IN_PROGRESS', 'QUOTATION_ACCEPTED', 'QUOTATION_REJECTED'].includes(job.status)) {
       fail('QUOTATION_NOT_ALLOWED', 'Không thể lập báo giá ở trạng thái hiện tại.')
     }
-    const existing = (await db.query('SELECT * FROM quotations WHERE booking_id=$1 ORDER BY quotation_number FOR UPDATE', [bookingId])).rows
+    let existing = (await db.query('SELECT * FROM quotations WHERE booking_id=$1 ORDER BY quotation_number FOR UPDATE', [bookingId])).rows
+    // A booking starts with prices selected by the customer, even when it has no
+    // quotation row yet. Materialize that original price as the accepted initial
+    // quotation before adding technician-requested work, so accepting an
+    // additional quotation adds to rather than replaces the original amount.
+    if (type === 'ADDITIONAL' && !existing.length) {
+      await ensureDefaultQuotation(db, bookingId, job.technician_id)
+      existing = (await db.query(
+        'SELECT * FROM quotations WHERE booking_id=$1 ORDER BY quotation_number FOR UPDATE',
+        [bookingId],
+      )).rows
+    }
     if (existing.some(q => ['DRAFT', 'PENDING'].includes(q.status))) fail('QUOTATION_ALREADY_OPEN', 'Cần xử lý báo giá hiện tại trước.')
     if (type === 'INITIAL' && existing.length) fail('INITIAL_QUOTATION_EXISTS', 'Booking đã có báo giá ban đầu.')
     if (type === 'ADDITIONAL' && !existing.some(q => q.quotation_type === 'INITIAL' && q.status === 'ACCEPTED')) {

@@ -19,6 +19,9 @@ test('View Job Requests validation defaults to pending SELECTED requests and val
   assert.deepEqual(validateViewJobRequestsQuery({ status: 'ALL', page: '2', limit: '10' }), {
     status: null, page: 2, limit: 10, offset: 10,
   })
+  assert.deepEqual(validateViewJobRequestsQuery({ status: 'HISTORY' }), {
+    status: 'HISTORY', page: 1, limit: 20, offset: 0,
+  })
   assert.throws(() => validateViewJobRequestsQuery({ status: 'PENDING' }), { status: 422 })
   assert.throws(() => validateViewJobRequestsQuery({ status: 'SELECTED', extra: 'x' }), { status: 422 })
   assert.throws(() => validateViewJobRequestsQuery({ limit: '51' }), { status: 422 })
@@ -64,6 +67,24 @@ test('View Job Requests is scoped to the authenticated technician and formats st
   assert.equal(result.items[0].canRespond, true)
   assert.equal(result.items[0].booking.address.city, 'Cần Thơ')
   assert.equal(result.items[0].matchScore, 95.5)
+})
+
+test('View Job History is scoped and ordered by newest terminal activity', async () => {
+  const queries = []
+  const repository = new ViewJobRequestsRepository({
+    queryable: {
+      async query(sql, params) { queries.push({ sql, params }); return { rows: [] } },
+    },
+  })
+  await repository.countJobRequests('technician-id', 'HISTORY')
+  await repository.findJobRequests('technician-id', {
+    status: 'HISTORY', limit: 20, offset: 0,
+  })
+  assert.match(queries[0].sql, /\$2='HISTORY'/)
+  assert.match(queries[0].sql, /'DECLINED','EXPIRED','COMPLETED','CANCELLED'/)
+  assert.match(queries[1].sql, /CASE WHEN \$2='HISTORY'/)
+  assert.match(queries[1].sql, /END DESC NULLS LAST/)
+  assert.deepEqual(queries[1].params, ['technician-id', 'HISTORY', 20, 0])
 })
 
 test('View Job Requests repository derives expired requests and never returns recommendations', async () => {

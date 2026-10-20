@@ -1,8 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../../shared/context/AuthContext.jsx'
-import { useUiPreferences } from '../../../shared/context/UiPreferencesContext.jsx'
-import { PageHeader } from '../../../shared/components/AdminUi.jsx'
 import { adminRequest } from '../../../shared/api/adminApi.js'
 import {
   CertificateTable,
@@ -10,9 +8,8 @@ import {
   DocumentLink,
   TechnicianAvatar,
   TechnicianBadge,
-  formatDate,
-  label,
 } from '../components/TechnicianShared.jsx'
+import { formatDate, label } from '../components/technicianFormat.js'
 import '../../../shared/styles/admin.css'
 import './technicians.css'
 import './technicianDetail.css'
@@ -24,11 +21,10 @@ const tabs = {
   qualification: 'Skills & Certifications',
 }
 function Field({ title, children }) {
-  const { t } = useUiPreferences()
   return (
     <div className="technician-field">
-      <dt>{t(title)}</dt>
-      <dd>{typeof children === 'string' ? t(children) : children || '—'}</dd>
+      <dt>{title}</dt>
+      <dd>{children || '—'}</dd>
     </div>
   )
 }
@@ -36,7 +32,6 @@ function Field({ title, children }) {
 export function TechnicianDetailPage() {
   const { id } = useParams()
   const { token, logout } = useAuth()
-  const { t } = useUiPreferences()
   const [params, setParams] = useSearchParams()
   const requestedTab = params.get('tab')
   const tab =
@@ -76,34 +71,49 @@ export function TechnicianDetailPage() {
   }
   return (
     <main className="figma-admin-main technician-main technician-detail-page">
-      <PageHeader
-        title="Technician Details"
-        subtitle="Manage technician profile, verification documents, and service status"
-        onRefresh={retry}
-        refreshing={loading}
-      />
+      <header className="technician-detail-topbar">
+        <nav className="technician-breadcrumb" aria-label="Breadcrumb">
+          <span>User Management</span>
+          <span>›</span>
+          <Link to="/admin/technicians">Technicians</Link>
+          <span>›</span>
+          <strong>Technician Details</strong>
+        </nav>
+        <button
+          className="technician-detail-refresh"
+          onClick={retry}
+          disabled={loading}
+          aria-label="Refresh profile"
+        >
+          ↻
+        </button>
+      </header>
       <section className="technician-content">
         <div className="technician-detail-heading">
+          <div>
+            <h1>Technician Details</h1>
+            <p>Manage technician profile, verification documents, and service status</p>
+          </div>
           <div className="technician-profile-actions">
             <Link className="technician-view" to="/admin/technicians">
-              ← {t('Back to list')}
+              ← Back to list
             </Link>
             {canManage && !loading && !error && (
               <>
                 {(!data.is_active || data.account_status === 'INACTIVE') &&
                   data.account_status !== 'LOCKED' && (
                     <button className="primary" onClick={() => setAction('activate')}>
-                      {t('Activate Account')}
+                      Activate Account
                     </button>
                   )}
                 {(data.is_active || data.account_status !== 'INACTIVE') && (
                   <button className="danger" onClick={() => setAction('deactivate')}>
-                    ⊘ {t('Deactivate Account')}
+                    ⊘ Deactivate Account
                   </button>
                 )}
-                <button onClick={() => setAction('edit')}>✎ {t('Edit Profile')}</button>
-                <button onClick={() => setAction('skills')}>{t('Update Skills')}</button>
-                <button onClick={() => setAction('areas')}>{t('Update Service Areas')}</button>
+                <button onClick={() => setAction('edit')}>✎ Edit Profile</button>
+                <button onClick={() => setAction('skills')}>Update Skills</button>
+                <button onClick={() => setAction('areas')}>Update Service Areas</button>
               </>
             )}
           </div>
@@ -111,12 +121,12 @@ export function TechnicianDetailPage() {
         <TechnicianNotification message={notice} onDismiss={setNotice} />
         {loading ? (
           <div role="status" className="technician-state">
-            <i className="figma-spinner" /> {t('Loading technician profile…')}
+            <i className="figma-spinner" /> Loading technician profile…
           </div>
         ) : error ? (
           <div role="alert" className="technician-state">
             <p>{error}</p>
-            <button onClick={retry}>{t('Try again')}</button>
+            <button onClick={retry}>Try again</button>
           </div>
         ) : (
           data && (
@@ -140,17 +150,29 @@ export function TechnicianDetailPage() {
                 </div>
                 <div className="technician-metrics">
                   <div>
-                    <small>{t('OVERALL RATING')}</small>
+                    <small>REMAINING POINTS</small>
+                    <strong>
+                      {data.remaining_points ?? 12}
+                      <span> / 12</span>
+                    </strong>
+                    <small>
+                      {data.remaining_points === 0
+                        ? 'Account locked: points exhausted'
+                        : data.active_penalty_points > 0
+                          ? 'Reduced job priority during penalty'
+                          : 'Normal job priority'}
+                    </small>
+                  </div>
+                  <div>
+                    <small>OVERALL RATING</small>
                     <strong>
                       {data.total_reviews ? Number(data.rating_average).toFixed(2) : '—'}{' '}
                       <span>/ 5</span>
                     </strong>
-                    <small>
-                      {data.total_reviews} {t('reviews')}
-                    </small>
+                    <small>{data.total_reviews} reviews</small>
                   </div>
                   <div>
-                    <small>{t('COMPLETED JOBS')}</small>
+                    <small>COMPLETED JOBS</small>
                     <strong>{data.completed_jobs}</strong>
                   </div>
                 </div>
@@ -162,7 +184,7 @@ export function TechnicianDetailPage() {
                       className="technician-view"
                       to={`/admin/technicians/verification?search=${encodeURIComponent(data.full_name)}`}
                     >
-                      {t('Pending verification · Open Verification Queue')} →
+                      Pending verification · Open Verification Queue →
                     </Link>
                   </>
                 )}
@@ -170,7 +192,7 @@ export function TechnicianDetailPage() {
               <div
                 className="technician-tabs"
                 role="tablist"
-                aria-label={t('Technician profile sections')}
+                aria-label="Technician profile sections"
               >
                 {Object.entries(tabs).map(([key, text]) => (
                   <button
@@ -182,7 +204,7 @@ export function TechnicianDetailPage() {
                     className={tab === key ? 'active' : ''}
                     onClick={() => setParams({ tab: key })}
                   >
-                    {t(text)}
+                    {text}
                   </button>
                 ))}
               </div>
@@ -191,7 +213,7 @@ export function TechnicianDetailPage() {
                   <>
                     <section className="technician-card">
                       <div className="technician-card-heading">
-                        <h3>{t('Personal information')}</h3>
+                        <h3>Personal information</h3>
                         <TechnicianBadge value={data.verification_status} />
                       </div>
                       <dl className="technician-fields">
@@ -201,7 +223,7 @@ export function TechnicianDetailPage() {
                         <Field title="CONTACT PHONE">
                           {data.phone}
                           {data.phone_verified_at && (
-                            <span className="technician-phone-check" title={t('Verified phone')}>
+                            <span className="technician-phone-check" title="Verified phone">
                               {' '}
                               ✓
                             </span>
@@ -217,7 +239,7 @@ export function TechnicianDetailPage() {
                               ? data.areas
                                   .map((a) => [a.ward, a.city].filter(Boolean).join(', '))
                                   .join(' · ')
-                              : t('No service areas assigned.')}
+                              : 'No service areas assigned.'}
                           </Field>
                         </div>
                       </dl>
@@ -227,13 +249,12 @@ export function TechnicianDetailPage() {
                       <div className="technician-detail-joined">
                         <span>▦</span>
                         <span>
-                          {t('Joined CoolCare Platform')}:{' '}
-                          <strong>{formatDate(data.created_at)}</strong>
+                          Joined CoolCare Platform: <strong>{formatDate(data.created_at)}</strong>
                         </span>
                       </div>
                       {data.bio && (
                         <div className="technician-note">
-                          <strong>{t('About technician')}</strong>
+                          <strong>About technician</strong>
                           <p>{data.bio}</p>
                         </div>
                       )}
@@ -243,7 +264,7 @@ export function TechnicianDetailPage() {
                 {tab === 'overview' && (
                   <section className="technician-card">
                     <div className="technician-card-heading">
-                      <h3>{t('Identity information')}</h3>
+                      <h3>Identity information</h3>
                       <TechnicianBadge value={data.verification_status} />
                     </div>
                     <dl className="technician-fields">
@@ -258,17 +279,17 @@ export function TechnicianDetailPage() {
                     </dl>
                     <div className="technician-document-grid">
                       <div>
-                        <h4>{t('CCCD · Front side')}</h4>
+                        <h4>CCCD · Front side</h4>
                         <DocumentLink url={data.identity_front_url}>Open front side</DocumentLink>
                       </div>
                       <div>
-                        <h4>{t('CCCD · Back side')}</h4>
+                        <h4>CCCD · Back side</h4>
                         <DocumentLink url={data.identity_back_url}>Open back side</DocumentLink>
                       </div>
                     </div>
                     {data.rejection_reason && (
                       <div className="technician-note">
-                        <strong>{t('Rejection reason')}</strong>
+                        <strong>Rejection reason</strong>
                         <p>{data.rejection_reason}</p>
                       </div>
                     )}
@@ -278,34 +299,25 @@ export function TechnicianDetailPage() {
                   <>
                     <section className="technician-card">
                       <div className="technician-card-heading">
-                        <h3>{t('Skills & qualification')}</h3>
-                        {canManage && (
-                          <div className="technician-profile-actions">
-                            <button onClick={() => setAction('skills')}>
-                              {t('Update skills')}
-                            </button>
-                          </div>
-                        )}
+                        <h3>Skills & qualification</h3>
                       </div>
                       <div className="technician-qualification">
                         <div>
-                          <small>{t('QUALIFICATION LEVEL')}</small>
-                          <strong>{t(label(data.qualification_level))}</strong>
+                          <small>QUALIFICATION LEVEL</small>
+                          <strong>{label(data.qualification_level)}</strong>
                         </div>
                         <div>
-                          <small>{t('EXPERIENCE')}</small>
-                          <strong>
-                            {data.years_experience} {t('years')}
-                          </strong>
+                          <small>EXPERIENCE</small>
+                          <strong>{data.years_experience} years</strong>
                         </div>
                       </div>
                       <div className="figma-users-table technician-table">
                         <table>
                           <thead>
                             <tr>
-                              <th>{t('SKILL')}</th>
-                              <th>{t('LEVEL')}</th>
-                              <th>{t('AC BRAND')}</th>
+                              <th>SKILL</th>
+                              <th>LEVEL</th>
+                              <th>AC BRAND</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -313,16 +325,14 @@ export function TechnicianDetailPage() {
                               data.skills.map((s) => (
                                 <tr key={s.id}>
                                   <td>{s.name}</td>
-                                  <td>{t(label(s.skill_level))}</td>
-                                  <td>{s.brand || t('All brands')}</td>
+                                  <td>{label(s.skill_level)}</td>
+                                  <td>{s.brand || 'All brands'}</td>
                                 </tr>
                               ))
                             ) : (
                               <tr>
                                 <td colSpan={3}>
-                                  <div className="figma-table-state">
-                                    {t('No skills assigned.')}
-                                  </div>
+                                  <div className="figma-table-state">No skills assigned.</div>
                                 </td>
                               </tr>
                             )}
@@ -332,7 +342,7 @@ export function TechnicianDetailPage() {
                     </section>
                     <section className="technician-card">
                       <h3>
-                        {t('Professional certifications')}{' '}
+                        Professional certifications{' '}
                         <span className="technician-count">{data.certifications.length}</span>
                       </h3>
                       <CertificateTable items={data.certifications} />
@@ -352,7 +362,7 @@ export function TechnicianDetailPage() {
             onClose={() => setAction(null)}
             onSuccess={() => {
               setAction(null)
-              setNotice(t('Technician service areas updated.'))
+              setNotice('Technician service areas updated.')
               retry()
             }}
           />
@@ -364,9 +374,7 @@ export function TechnicianDetailPage() {
             onSuccess={() => {
               setAction(null)
               setNotice(
-                action === 'skills'
-                  ? t('Technician skills updated.')
-                  : t('Technician profile updated.')
+                action === 'skills' ? 'Technician skills updated.' : 'Technician profile updated.'
               )
               retry()
             }}
@@ -378,11 +386,7 @@ export function TechnicianDetailPage() {
             onClose={() => setAction(null)}
             onSuccess={() => {
               setAction(null)
-              setNotice(
-                action === 'activate'
-                  ? t('Technician activated.')
-                  : t('Technician deactivated.')
-              )
+              setNotice(action === 'activate' ? 'Technician activated.' : 'Technician deactivated.')
               retry()
             }}
           />

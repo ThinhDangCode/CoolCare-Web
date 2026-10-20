@@ -27,7 +27,13 @@ export function createCatalogRouter(repository = new CatalogRepository(), admin 
       `/${kind}`,
       asyncHandler(async (req, res) =>
         res.status(201).json({
-          data: await repository.mutate(kind, null, validateInput(kind, req.body), 'CREATE'),
+          data: await repository.mutate(
+            kind,
+            null,
+            validateInput(kind, req.body),
+            'CREATE',
+            req.auth.userId
+          ),
         })
       )
     )
@@ -39,12 +45,13 @@ export function createCatalogRouter(repository = new CatalogRepository(), admin 
             kind,
             validateId(req.params.id),
             validateInput(kind, req.body, true),
-            'UPDATE'
+            'UPDATE',
+            req.auth.userId
           ),
         })
       )
     )
-    if (kind === 'services' || kind === 'models')
+    if (kind === 'services' || kind === 'models' || kind === 'skills')
       router.patch(
         `/${kind}/:id/status`,
         asyncHandler(async (req, res) => {
@@ -59,19 +66,20 @@ export function createCatalogRouter(repository = new CatalogRepository(), admin 
               kind,
               validateId(req.params.id),
               { is_active: req.body.is_active },
-              'TOGGLE'
+              'TOGGLE',
+              req.auth.userId
             ),
           })
         })
       )
-    if (kind === 'categories')
-      router.delete(
-        `/${kind}/:id`,
-        asyncHandler(async (req, res) => {
-          await repository.mutate(kind, validateId(req.params.id), {}, 'DELETE')
-          res.sendStatus(204)
-        })
-      )
+    router.delete(`/${kind}/:id`, asyncHandler(async (req,res) => {
+      await repository.mutate(kind,validateId(req.params.id),{},'TRASH',req.auth.userId)
+      res.sendStatus(204)
+    }))
+    router.patch(`/${kind}/:id/restore`, asyncHandler(async (req,res) => {
+      res.json({data:await repository.mutate(kind,validateId(req.params.id),{},'RESTORE',req.auth.userId)})
+    }))
+
   }
   return router
 }

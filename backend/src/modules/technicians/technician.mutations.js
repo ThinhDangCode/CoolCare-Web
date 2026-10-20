@@ -3,6 +3,7 @@ import { pool, withTransaction } from '../../config/database.js'
 import { AppError } from '../../utils.js'
 import { writeAdminAudit as writeManagementAudit } from '../audit/admin-audit.js'
 import { validateTechnicianAreas } from './technician.validation.js'
+import { remainingPointsSql } from './technician.points.js'
 
 const notFound = () => new AppError(404,'TECHNICIAN_NOT_FOUND','Technician not found.')
 export class TechnicianMutations {
@@ -61,8 +62,8 @@ export class TechnicianMutations {
         if(duplicate.rows.length) throw new AppError(409,'CERTIFICATE_NUMBER_ALREADY_VERIFIED','This certificate number already belongs to another certification.')
       }
       const row=(await client.query(`UPDATE technician_certifications SET verification_status=$2,reviewed_by_id=$3,
-        reviewed_at=CURRENT_TIMESTAMP,rejection_reason=$4,updated_at=CURRENT_TIMESTAMP
-        WHERE id=$1 RETURNING id,verification_status,reviewed_by_id,reviewed_at`,[id,input.status,actorId,input.reason])).rows[0]
+        reviewed_at=CURRENT_TIMESTAMP,rejection_reason=$4,verification_evidence=$5::jsonb,updated_at=CURRENT_TIMESTAMP
+        WHERE id=$1 RETURNING id,verification_status,reviewed_by_id,reviewed_at`,[id,input.status,actorId,input.reason,JSON.stringify(input.verification_evidence ?? null)])).rows[0]
       await client.query(`UPDATE technician_certification_submissions SET verification_status=$2,reviewed_by_id=$3,
         reviewed_at=CURRENT_TIMESTAMP,rejection_reason=$4 WHERE id=(SELECT id FROM technician_certification_submissions
         WHERE certification_id=$1 ORDER BY submission_number DESC LIMIT 1) AND verification_status='PENDING'`,[id,input.status,actorId,input.reason])
@@ -79,6 +80,11 @@ export class TechnicianMutations {
         bio=$4,updated_at=CURRENT_TIMESTAMP WHERE id=$1 RETURNING qualification_level,years_experience,bio`,[id,...fields.map(k=>input[k])])).rows[0]
       await client.query('UPDATE users SET full_name=$2,phone=$3::varchar,phone_verified_at=CASE WHEN phone IS DISTINCT FROM $3::varchar THEN NULL ELSE phone_verified_at END,updated_at=CURRENT_TIMESTAMP WHERE id=$1',[before.user_id,input.full_name,input.phone])
       return {before:Object.fromEntries(fields.map(k=>[k,before[k]])),after}
+    }).catch(error => {
+      if (error.code === '23505') throw new AppError(409, 'DUPLICATE_PHONE', 'Phone number is already in use.', {
+        phone: 'This phone number is already used by another account.',
+      })
+      throw error
     })
     this.audit({actorId,action:'UPDATE_TECHNICIAN',entityType:'TECHNICIAN',entityId:id,...event})
     return {id,...event.after}
@@ -96,6 +102,8 @@ export class TechnicianMutations {
     await this.transaction(async client=>{
       const before=await this.lock(client,id)
       const user=(await client.query('SELECT status FROM users WHERE id=$1 FOR UPDATE',[before.user_id])).rows[0]
+      const balance=(await client.query(`SELECT ${remainingPointsSql('$1')} AS remaining_points`,[id])).rows[0]
+      if(balance.remaining_points===0) throw new AppError(409,'POINTS_EXHAUSTED','This technician has no remaining points.')
       if(user.status==='LOCKED') throw new AppError(409,'ACCOUNT_LOCKED','Unlock the user account before activating this technician.')
       await client.query('UPDATE technician_profiles SET is_active=true,updated_at=CURRENT_TIMESTAMP WHERE id=$1',[id])
       await client.query("UPDATE users SET status='ACTIVE',updated_at=CURRENT_TIMESTAMP WHERE id=$1",[before.user_id])
@@ -110,8 +118,8 @@ export class TechnicianMutations {
         throw new AppError(422,'SKILL_REQUIRED','A verified technician must have at least one skill.')
       }
       for(const item of input.skills){
-        if(!(await client.query('SELECT id FROM skills WHERE id=$1 AND is_active',[item.skill_id])).rows.length) throw new AppError(422,'INVALID_SKILL','Choose an active skill.')
-        if(item.ac_brand_id && !(await client.query('SELECT id FROM ac_brands WHERE id=$1 AND is_active',[item.ac_brand_id])).rows.length) throw new AppError(422,'INVALID_BRAND','Choose an active AC brand.')
+        if(!(await client.query('SELECT id FROM skills WHERE id=$1 AND is_active AND deleted_at IS NULL',[item.skill_id])).rows.length) throw new AppError(422,'INVALID_SKILL','Choose an active skill.')
+        if(item.ac_brand_id && !(await client.query('SELECT id FROM ac_brands WHERE id=$1 AND is_active AND deleted_at IS NULL',[item.ac_brand_id])).rows.length) throw new AppError(422,'INVALID_BRAND','Choose an active AC brand.')
       }
       await client.query('DELETE FROM technician_skills WHERE technician_id=$1',[id])
       for(const item of input.skills) await client.query('INSERT INTO technician_skills(id,technician_id,skill_id,ac_brand_id,skill_level) VALUES($1,$2,$3,$4,$5)',[randomUUID(),id,item.skill_id,item.ac_brand_id,item.skill_level])
@@ -120,7 +128,7 @@ export class TechnicianMutations {
     return {id,skills:input.skills}
   }
   async skillOptions() {
-    const [skills,brands]=await Promise.all([pool.query('SELECT id,name FROM skills WHERE is_active ORDER BY name'),pool.query('SELECT id,name FROM ac_brands WHERE is_active ORDER BY name')])
+    const [skills,brands]=await Promise.all([pool.query('SELECT id,name FROM skills WHERE is_active AND deleted_at IS NULL ORDER BY name'),pool.query('SELECT id,name FROM ac_brands WHERE is_active AND deleted_at IS NULL ORDER BY name')])
     return {skills:skills.rows,brands:brands.rows}
   }
   async areas(id,input,actorId) {
