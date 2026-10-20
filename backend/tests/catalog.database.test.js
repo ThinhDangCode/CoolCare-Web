@@ -49,9 +49,8 @@ test(
         },
         'CREATE'
       )
-      await assert.rejects(repository.mutate('categories', category.id, {}, 'DELETE'), {
-        code: 'RESOURCE_IN_USE',
-      })
+      assert.ok((await repository.mutate('categories', category.id, {}, 'TRASH')).deleted_at)
+      await repository.mutate('categories', category.id, {}, 'RESTORE')
       assert.equal(
         (await client.query('SELECT id FROM service_categories WHERE id=$1', [category.id]))
           .rowCount,
@@ -106,7 +105,7 @@ test(
       )
       await repository.mutate('categories', emptyCategory.id, {}, 'DELETE')
       assert.equal(
-        (await client.query('SELECT id FROM service_categories WHERE id=$1', [emptyCategory.id]))
+        (await client.query('SELECT id FROM service_categories WHERE id=$1 AND deleted_at IS NULL', [emptyCategory.id]))
           .rowCount,
         0
       )
@@ -155,9 +154,8 @@ test(
       )
       assert.equal(changedModel.capacity_btu, 18000)
       assert.equal(changedModel.inverter, true)
-      await assert.rejects(repository.mutate('models', model.id, {}, 'DELETE'), {
-        code: 'SOFT_DISABLE_ONLY',
-      })
+      assert.ok((await repository.mutate('models', model.id, {}, 'TRASH')).deleted_at)
+      await repository.mutate('models', model.id, {}, 'RESTORE')
       const disabled = await repository.mutate('models', model.id, { is_active: false }, 'TOGGLE')
       assert.equal(disabled.is_active, false)
       assert.equal(

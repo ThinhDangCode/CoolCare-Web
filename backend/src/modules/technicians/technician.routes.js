@@ -7,10 +7,18 @@ import { TechnicianRepository } from './technician.repository.js'
 import { validateTechnicianQuery, validatePenaltyQuery, validateReview, validateTechnicianUpdate, validateTechnicianSkills, validateTechnicianAreas } from './technician.validation.js'
 import { TechnicianMutations } from './technician.mutations.js'
 import { serviceCity, serviceWards } from './technician.areas.js'
+import { IdentityOcr } from './technician.identity-ocr.js'
 
-export function createTechnicianRouter(repository = new TechnicianRepository(), writeAudit = writeManagementAudit, mutations = new TechnicianMutations()) {
+export function createTechnicianRouter(repository = new TechnicianRepository(), writeAudit = writeManagementAudit, mutations = new TechnicianMutations(), identityOcr = new IdentityOcr()) {
   const router = Router()
   router.use(authenticate, requireRole('ADMIN'))
+  router.post('/:id/identity-ocr',asyncHandler(async (req,res) => {
+    const id = validateUuid(req.params.id)
+    const profile = await repository.detail(id)
+    const result = await identityOcr.check(profile)
+    writeAudit({actorId:req.auth.userId,action:'CHECK_TECHNICIAN_IDENTITY_OCR',entityType:'TECHNICIAN',entityId:id})
+    res.set('Cache-Control','no-store').json({data:result})
+  }))
   const audit = (req, action, entityId) => writeAudit({ actorId: req.auth.userId, action, entityType: 'TECHNICIAN', entityId })
   router.get('/area-options', (_req,res) => res.json({data:{city:serviceCity,wards:serviceWards}}))
   router.get('/skill-options',asyncHandler(async (_req,res)=>res.json({data:await mutations.skillOptions()})))

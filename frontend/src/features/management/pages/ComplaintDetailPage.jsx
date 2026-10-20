@@ -19,7 +19,7 @@ const statusName = {
   CLOSED: 'Closed',
 }
 const nextStatusOptions = {
-  OPEN: ['IN_PROGRESS'],
+  OPEN: ['IN_PROGRESS', 'RESOLVED', 'REJECTED'],
   IN_PROGRESS: ['IN_PROGRESS', 'RESOLVED', 'REJECTED'],
   RESOLVED: ['RESOLVED', 'CLOSED'],
   REJECTED: ['REJECTED', 'CLOSED'],
@@ -72,6 +72,8 @@ export function ComplaintDetailPage() {
   const [complaint, setComplaint] = useState(null)
   const [status, setStatus] = useState('IN_PROGRESS')
   const [resolution, setResolution] = useState('')
+  const [penaltyPoints, setPenaltyPoints] = useState('')
+  const [penaltyExpiry, setPenaltyExpiry] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -119,6 +121,33 @@ export function ComplaintDetailPage() {
   }, [id, token, logout])
 
   async function saveResolution(nextStatus = status, { draft = false } = {}) {
+    if (busy) return
+    const applyPenalty =
+      !draft &&
+      nextStatus === 'RESOLVED' &&
+      Boolean(complaint.technician_id || complaint.type === 'TECHNICIAN') &&
+      !complaint.penalty_id &&
+      ['OPEN', 'IN_PROGRESS', 'RESOLVED'].includes(complaint.status)
+    const setExpiry =
+      !draft &&
+      nextStatus === 'RESOLVED' &&
+      (applyPenalty || (complaint.penalty_id && !complaint.penalty_expires_at && penaltyExpiry))
+    if (
+      setExpiry &&
+      (!penaltyExpiry ||
+        !Number.isFinite(new Date(penaltyExpiry).getTime()) ||
+        new Date(penaltyExpiry).getTime() <= Date.now())
+    )
+      return setError('Choose a penalty expiry date and time in the future.')
+    if (applyPenalty && !complaint.technician_id)
+      return setError('This complaint has no linked technician. A penalty cannot be applied.')
+    if (
+      applyPenalty &&
+      (!Number.isInteger(Number(penaltyPoints)) ||
+        Number(penaltyPoints) < 1 ||
+        Number(penaltyPoints) > 12)
+    )
+      return setError('Enter penalty points from 1 to 12.')
     if (!draft && resolution.trim().length < 10)
       return setError('Resolution notes must contain at least 10 characters.')
     if (draft && !resolution.trim())
@@ -133,12 +162,22 @@ export function ComplaintDetailPage() {
           resolution: resolution.trim(),
           notify_customer: draft ? false : notifyCustomer,
           is_draft: draft,
+          ...(applyPenalty ? { penalty_points: Number(penaltyPoints) } : {}),
+          ...(setExpiry ? { penalty_expires_at: new Date(penaltyExpiry).toISOString() } : {}),
         },
       })
       setComplaint((current) => ({ ...current, ...row }))
       setStatus(row.status === 'OPEN' ? 'IN_PROGRESS' : row.status)
       if (!draft) setShowResolution(false)
-      setSaved(draft ? 'Resolution draft saved successfully.' : 'Complaint updated successfully.')
+      setSaved(
+        draft
+          ? 'Resolution draft saved successfully.'
+          : applyPenalty
+            ? 'Complaint accepted. The technician penalty is now listed in Penalties.'
+            : nextStatus === 'REJECTED'
+              ? 'Complaint rejected. No penalty was applied.'
+              : 'Complaint updated successfully.'
+      )
       setError('')
     } catch (err) {
       setError(err.message)
@@ -184,7 +223,7 @@ export function ComplaintDetailPage() {
             </button>
           </div>
         )}
-        {error && complaint && (
+        {error && complaint && !showResolution && (
           <div className="figma-toast danger" role="alert" {...errorHover}>
             <span className="toast-symbol">!</span>
             <span>{error}</span>
@@ -282,6 +321,19 @@ export function ComplaintDetailPage() {
                   </header>
                   {complaint.resolution && (
                     <p className="complaint-resolution-summary">{complaint.resolution}</p>
+                  )}
+                  {complaint.penalty_id && (
+                    <p className="complaint-resolution-summary">
+                      Penalty applied to {complaint.technician_name}: {complaint.penalty_points}{' '}
+                      points.{' '}
+                      {complaint.penalty_expires_at && (
+                        <>
+                          Expires: {new Date(complaint.penalty_expires_at).toLocaleString('vi-VN')}
+                          .{' '}
+                        </>
+                      )}
+                      <Link to="/admin/technicians/penalties">View technician penalties</Link>
+                    </p>
                   )}
                   <button
                     className="complaint-process-button"
@@ -399,15 +451,25 @@ export function ComplaintDetailPage() {
                       <button
                         type="button"
                         aria-label="Close"
+                        disabled={busy}
                         onClick={() => setShowResolution(false)}
                       >
                         <CloseIcon />
                       </button>
                     </header>
                     <div className="complaint-resolution-dialog-body">
+                      {error && (
+                        <p role="alert" className="figma-table-state error">
+                          {error}
+                        </p>
+                      )}
                       <label>
                         RESOLUTION DECISION
-                        <select value={status} onChange={(event) => setStatus(event.target.value)}>
+                        <select
+                          disabled={busy}
+                          value={status}
+                          onChange={(event) => setStatus(event.target.value)}
+                        >
                           {(nextStatusOptions[complaint.status] || []).map((value) => (
                             <option key={value} value={value}>
                               {statusName[value]}
@@ -415,9 +477,51 @@ export function ComplaintDetailPage() {
                           ))}
                         </select>
                       </label>
+                      {Boolean(complaint.technician_id || complaint.type === 'TECHNICIAN') &&
+                        !complaint.penalty_id &&
+                        status === 'RESOLVED' &&
+                        ['OPEN', 'IN_PROGRESS', 'RESOLVED'].includes(complaint.status) && (
+                          <label>
+                            PENALTY POINTS FOR{' '}
+                            {complaint.technician_name || 'UNASSIGNED TECHNICIAN'}
+                            <input
+                              type="number"
+                              min="1"
+                              max="12"
+                              step="1"
+                              disabled={busy}
+                              value={penaltyPoints}
+                              onChange={(event) => setPenaltyPoints(event.target.value)}
+                              placeholder="Enter positive whole-number points"
+                            />
+                            <small>
+                              Accepting applies an active rule violation penalty. Rejecting or
+                              saving a draft does not apply a penalty.
+                            </small>
+                          </label>
+                        )}
+                      {status === 'RESOLVED' &&
+                        (complaint.technician_id || complaint.type === 'TECHNICIAN') &&
+                        !complaint.penalty_expires_at && (
+                          <label>
+                            PENALTY EXPIRY DATE &amp; TIME
+                            <input
+                              type="datetime-local"
+                              value={penaltyExpiry}
+                              disabled={busy}
+                              onChange={(event) => setPenaltyExpiry(event.target.value)}
+                            />
+                            <small>
+                              The penalty starts when approved and expires at the selected time. You
+                              can also set an expiry for an existing penalty with no end date.
+                            </small>
+                          </label>
+                        )}
                       <label>
                         ADMIN RESOLUTION NOTE / ACTION TAKEN
                         <textarea
+                          maxLength={5000}
+                          disabled={busy}
                           value={resolution}
                           onChange={(event) => setResolution(event.target.value)}
                           placeholder="Describe the investigation, decision, and action taken..."
@@ -426,6 +530,7 @@ export function ComplaintDetailPage() {
                       <label className="complaint-notify-customer">
                         <input
                           type="checkbox"
+                          disabled={busy}
                           checked={notifyCustomer}
                           onChange={(event) => setNotifyCustomer(event.target.checked)}
                         />
@@ -433,7 +538,7 @@ export function ComplaintDetailPage() {
                       </label>
                     </div>
                     <footer>
-                      {complaint.status === 'IN_PROGRESS' && (
+                      {['OPEN', 'IN_PROGRESS'].includes(complaint.status) && (
                         <button
                           className="reject"
                           type="button"

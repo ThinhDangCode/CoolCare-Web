@@ -12,7 +12,8 @@ import {
   Pagination,
   TableState,
 } from '../../management/components/ManagementShared.jsx'
-import { TechnicianAvatar, TechnicianNotification, formatDate } from '../components/TechnicianShared.jsx'
+import { TechnicianAvatar, TechnicianNotification } from '../components/TechnicianShared.jsx'
+import { formatDate } from '../components/technicianFormat.js'
 import '../../management/pages/management.css'
 import './technicians.css'
 import './verification.css'
@@ -226,14 +227,14 @@ export function VerificationPage() {
                       </td>
                       <td>
                         <div className="verification-actions">
-                          <Link
+                          <button
                             className="view"
                             aria-label={`View identity — ${row.full_name}`}
-                            title="View identity information"
-                            to={`/admin/technicians/${row.id}?tab=overview`}
+                            title="Xem căn cước và kiểm tra AI trước khi duyệt"
+                            onClick={() => setReview({technicianId:row.id,path:`/technicians/${row.id}/verification`,status:'VERIFIED',name:row.full_name})}
                           >
                             <EyeIcon />
-                          </Link>
+                          </button>
                           {row.verification_status === 'PENDING' && (
                             <>
                               <button
@@ -244,6 +245,7 @@ export function VerificationPage() {
                                   setReview({
                                     path: `/technicians/${row.id}/verification`,
                                     status: 'VERIFIED',
+                                    technicianId: row.id,
                                     name: row.full_name,
                                   })
                                 }
@@ -258,6 +260,7 @@ export function VerificationPage() {
                                   setReview({
                                     path: `/technicians/${row.id}/verification`,
                                     status: 'REJECTED',
+                                    technicianId: row.id,
                                     name: row.full_name,
                                   })
                                 }

@@ -5,7 +5,10 @@ import { useAutoDismiss } from '../../../hooks/useAutoDismiss.js'
 import { catalogRequest } from '../api/catalogApi.js'
 import { CatalogLayout } from '../components/CatalogLayout.jsx'
 import { Modal } from '../components/Modal.jsx'
+import { CatalogTrash, CatalogTrashButton } from '../components/CatalogTrash.jsx'
 import './catalog.css'
+import './models.css'
+import { nameError, numberError } from '../catalogValidation.js'
 
 const types = [
   ['WALL_MOUNTED', 'Wall mounted', '▱'],
@@ -19,6 +22,45 @@ const types = [
 const typeLabel = (value) => types.find(([code]) => code === value)?.[1] ?? value ?? '—'
 const btuLabel = (value) =>
   value == null ? '—' : `${new Intl.NumberFormat('en-US').format(value)} BTU`
+
+function ModelIcon({ name }) {
+  const paths = {
+    plus: <path d="M12 5v14M5 12h14" />,
+    search: (
+      <>
+        <circle cx="10.5" cy="10.5" r="6.5" />
+        <path d="m16 16 4 4" />
+      </>
+    ),
+    edit: (
+      <>
+        <path d="m16 3 5 5L9 20H4v-5Z" />
+        <path d="m14 5 5 5" />
+      </>
+    ),
+    more: (
+      <>
+        <circle cx="12" cy="5" r="1" />
+        <circle cx="12" cy="12" r="1" />
+        <circle cx="12" cy="19" r="1" />
+      </>
+    ),
+  }
+  return (
+    <svg
+      className="models-icon"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      {paths[name]}
+    </svg>
+  )
+}
 
 function useBrands(token) {
   const [brands, setBrands] = useState([])
@@ -77,6 +119,8 @@ export function AcModelsPage() {
     status: 'all',
   })
   const [page, setPage] = useState(1)
+  const [limit, setLimit] = useState(10)
+  const [counts, setCounts] = useState(null)
   const [data, setData] = useState({ items: [], total: 0 })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -99,14 +143,14 @@ export function AcModelsPage() {
   }, [search])
   useEffect(() => {
     const controller = new AbortController()
-    const query = new URLSearchParams({ page, limit: 10, search: querySearch })
+    const query = new URLSearchParams({ page, limit, search: querySearch })
     Object.entries(filters).forEach(([key, value]) => {
       if (value !== '') query.set(key, value)
     })
     catalogRequest(`/models?${query}`, token, { signal: controller.signal })
       .then((result) => {
-        if (page > 1 && page > Math.max(1, Math.ceil(result.total / 10))) {
-          setPage(Math.max(1, Math.ceil(result.total / 10)))
+        if (page > 1 && page > Math.max(1, Math.ceil(result.total / limit))) {
+          setPage(Math.max(1, Math.ceil(result.total / limit)))
           return
         }
         setData(result)
@@ -120,8 +164,9 @@ export function AcModelsPage() {
         if (error.status === 401) logout()
       })
     return () => controller.abort()
-  }, [token, querySearch, filters, page, refresh, logout])
+  }, [token, querySearch, filters, page, limit, refresh, logout])
   const filter = (key, value) => {
+    if (filters[key] === value) return
     setLoading(true)
     setPage(1)
     setFilters((current) => ({ ...current, [key]: value }))
@@ -156,22 +201,58 @@ export function AcModelsPage() {
       setBusy(false)
     }
   }
-  const totalPages = Math.max(1, Math.ceil(data.total / 10))
+  useEffect(() => {
+    const controller = new AbortController()
+    Promise.all(
+      ['all', 'active', 'inactive'].map((status) =>
+        catalogRequest('/models?limit=1&status=' + status, token, {
+          signal: controller.signal,
+        }).then((result) => result.total)
+      )
+    )
+      .then(([all, active, inactive]) => {
+        if (!controller.signal.aborted) setCounts({ all, active, inactive })
+      })
+      .catch((error) => {
+        if (error.name !== 'AbortError') {
+          setCounts(null)
+          if (error.status === 401) logout()
+        }
+      })
+    return () => controller.abort()
+  }, [token, refresh, logout])
+  const totalPages = Math.max(1, Math.ceil(data.total / limit))
+  const pages = [...new Set([1, page - 1, page, page + 1, totalPages])]
+    .filter((value) => value > 0 && value <= totalPages)
+    .sort((a, b) => a - b)
+  function goToPage(value) {
+    if (page === value) return
+    setPage(value)
+    setLoading(true)
+  }
   return (
-    <CatalogLayout>
-      <section className="catalog-content">
-        <div className="catalog-breadcrumb">
-          Catalog <span>/</span> AC Models
-        </div>
-        <div className="catalog-page-heading">
-          <div>
-            <h1>AC Models</h1>
-            <p>Manage air conditioner models, specifications and availability.</p>
-          </div>
-        </div>
+    <CatalogLayout
+      className="models-main"
+      heading={
+        <h1>
+          AC Models <span className="models-count">{counts?.all ?? '…'} models</span>
+        </h1>
+      }
+      actions={
+        <>
+          <CatalogTrash kind="models" onChanged={reload} />
+          <Link className="catalog-button primary" to="/catalog/models/new">
+            <ModelIcon name="plus" /> Add Model
+          </Link>
+        </>
+      }
+      onRefresh={reload}
+      refreshing={loading}
+    >
+      <section className="models-content">
         {notice && (
           <div className="catalog-notice" role="status" {...noticeHover}>
-            ✓ {notice}
+            {notice}
             <button aria-label="Dismiss notification" onClick={() => setNotice('')}>
               ×
             </button>
@@ -180,19 +261,36 @@ export function AcModelsPage() {
         {error && (
           <div className="catalog-error" role="alert">
             {error}
-            <button onClick={reload}>Thử lại</button>
+            <button onClick={reload}>Retry</button>
           </div>
         )}
         {brandOptions.error && (
           <div className="catalog-error" role="alert">
-            Không tải được danh sách hãng. {brandOptions.error}
-            <button onClick={brandOptions.reload}>Thử lại</button>
+            {brandOptions.error}
+            <button onClick={brandOptions.reload}>Retry brands</button>
           </div>
         )}
-        <div className="catalog-panel">
-          <div className="catalog-toolbar model-toolbar">
-            <label className="catalog-search">
-              <span>⌕</span>
+        <div className="models-toolbar">
+          <div className="models-tabs" role="group" aria-label="Model status">
+            {[
+              ['all', 'All'],
+              ['active', 'Active'],
+              ['inactive', 'Inactive'],
+            ].map(([status, label]) => (
+              <button
+                key={status}
+                type="button"
+                aria-pressed={filters.status === status}
+                className={filters.status === status ? 'selected' : ''}
+                onClick={() => filter('status', status)}
+              >
+                {label} <span>{counts?.[status] ?? '…'}</span>
+              </button>
+            ))}
+          </div>
+          <div className="models-filters">
+            <label className="models-search">
+              <ModelIcon name="search" />
               <input
                 aria-label="Search AC models"
                 placeholder="Search model name…"
@@ -210,7 +308,7 @@ export function AcModelsPage() {
               disabled={brandOptions.loading}
               onChange={(event) => filter('brand_id', event.target.value)}
             >
-              <option value="">{brandOptions.loading ? 'Loading brands…' : 'All brands'}</option>
+              <option value="">All Brands</option>
               {brandOptions.brands.map((brand) => (
                 <option key={brand.id} value={brand.id}>
                   {brand.name}
@@ -222,194 +320,149 @@ export function AcModelsPage() {
               value={filters.ac_type}
               onChange={(event) => filter('ac_type', event.target.value)}
             >
-              <option value="">All AC types</option>
+              <option value="">All Types</option>
               {types.map(([code, label]) => (
                 <option key={code} value={code}>
                   {label}
                 </option>
               ))}
             </select>
-            <label className="model-btu-filter">
-              <input
-                type="number"
-                min="1"
-                max="2147483647"
-                step="1"
-                aria-label="Filter by BTU"
-                placeholder="All BTU"
-                value={filters.capacity_btu}
-                onChange={(event) => filter('capacity_btu', event.target.value)}
-              />
-            </label>
-            <select
-              aria-label="Filter by inverter"
-              value={filters.inverter}
-              onChange={(event) => filter('inverter', event.target.value)}
-            >
-              <option value="">All inverter</option>
-              <option value="true">Inverter</option>
-              <option value="false">Non-inverter</option>
-            </select>
-            <select
-              aria-label="Filter by status"
-              value={filters.status}
-              onChange={(event) => filter('status', event.target.value)}
-            >
-              <option value="all">All statuses</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-            </select>
-            <button
-              className="catalog-button"
-              onClick={() => {
-                setSearch('')
-                setFilters({
-                  brand_id: '',
-                  ac_type: '',
-                  capacity_btu: '',
-                  inverter: '',
-                  status: 'all',
-                })
-                setPage(1)
-                reload()
-              }}
-            >
-              Reset filters
-            </button>
-            <Link className="catalog-button primary catalog-add-button" to="/catalog/models/new">
-              ＋ Add AC Model
-            </Link>
           </div>
-          <div className="catalog-table-scroll">
-            <table className="catalog-table">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>MODEL NAME</th>
-                  <th>BRAND</th>
-                  <th>AC TYPE</th>
-                  <th>CAPACITY</th>
-                  <th>INVERTER</th>
-                  <th>STATUS</th>
-                  <th>ACTIONS</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  <tr>
-                    <td colSpan={8}>
-                      <div className="catalog-state" role="status">
-                        <span className="catalog-spinner" />
-                        Loading models…
-                      </div>
-                    </td>
-                  </tr>
-                ) : error ? (
-                  <tr>
-                    <td colSpan={8}>
-                      <div className="catalog-state">Không thể tải danh sách model.</div>
-                    </td>
-                  </tr>
-                ) : !data.items.length ? (
-                  <tr>
-                    <td colSpan={8}>
-                      <div className="catalog-state">
-                        <span className="catalog-empty-icon">❄</span>
-                        <strong>No AC models found</strong>
-                        <p>Try changing the filters or add a new model.</p>
-                      </div>
-                    </td>
-                  </tr>
-                ) : (
-                  data.items.map((row, index) => (
-                    <tr key={row.id}>
-                      <td className="catalog-index">
-                        {String((page - 1) * 10 + index + 1).padStart(2, '0')}
-                      </td>
-                      <td>
-                        <div className="catalog-name">
-                          <span className={`catalog-row-icon tone-${index % 4}`}>❄</span>
-                          <strong>{row.model_name}</strong>
-                        </div>
-                      </td>
-                      <td>{row.brand_name}</td>
-                      <td>{typeLabel(row.ac_type)}</td>
-                      <td className="catalog-price">{btuLabel(row.capacity_btu)}</td>
-                      <td>
-                        <span
-                          className={`model-inverter ${row.inverter === true ? 'enabled' : ''}`}
-                        >
-                          {row.inverter === null ? '—' : row.inverter ? 'Inverter' : 'Non-inverter'}
-                        </span>
-                      </td>
-                      <td>
-                        <span className={`catalog-status ${row.is_active ? 'active' : 'inactive'}`}>
-                          <i />
-                          {row.is_active ? 'Active' : 'Inactive'}
-                        </span>
-                      </td>
-                      <td>
-                        <div className="catalog-row-actions">
-                          <button
-                            aria-label={`Edit ${row.model_name}`}
-                            title="Edit model"
-                            onClick={() => open('edit', row)}
-                          >
-                            ✎
-                          </button>
-                          <button
-                            aria-label={`View details of ${row.model_name}`}
-                            title="Record details"
-                            onClick={() => open('details', row)}
-                          >
-                            ◷
-                          </button>
-                          <button
-                            aria-label={`${row.is_active ? 'Deactivate' : 'Activate'} ${row.model_name}`}
-                            title={row.is_active ? 'Deactivate model' : 'Activate model'}
-                            onClick={() => open('status', row)}
-                          >
-                            ⏻
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-          <footer className="catalog-pagination">
-            <span>
-              {data.total
-                ? `${(page - 1) * 10 + 1}–${Math.min(page * 10, data.total)} of ${data.total} models`
-                : '0 models'}
-            </span>
-            <div>
-              <button
-                disabled={page <= 1 || loading}
-                onClick={() => {
-                  setPage(page - 1)
-                  setLoading(true)
-                }}
-              >
-                ‹ Previous
-              </button>
-              <span>
-                {page} / {totalPages}
-              </span>
-              <button
-                disabled={page >= totalPages || loading}
-                onClick={() => {
-                  setPage(page + 1)
-                  setLoading(true)
-                }}
-              >
-                Next ›
-              </button>
-            </div>
-          </footer>
         </div>
+        <div className="models-table-wrap">
+          <table className="models-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>MODEL &amp; SERIES</th>
+                <th>BRAND</th>
+                <th>TYPE</th>
+                <th>STATUS</th>
+                <th>ACTIONS</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading || error || !data.items.length ? (
+                <tr>
+                  <td colSpan={6}>
+                    <div className="catalog-state" role="status">
+                      {loading ? (
+                        <>
+                          <span className="catalog-spinner" />
+                          Loading models…
+                        </>
+                      ) : error ? (
+                        'Models unavailable. Please retry.'
+                      ) : (
+                        'No AC models found. Try changing the filters or add a model.'
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                data.items.map((row) => (
+                  <tr key={row.id}>
+                    <td className="models-id" title={row.id}>
+                      #MD{row.id.split('-')[0].toUpperCase()}
+                    </td>
+                    <td>
+                      <strong>{row.model_name}</strong>
+                    </td>
+                    <td>{row.brand_name}</td>
+                    <td>{typeLabel(row.ac_type)}</td>
+                    <td>
+                      <span className={`catalog-status ${row.is_active ? 'active' : 'inactive'}`}>
+                        <i />
+                        {row.is_active ? 'Active' : 'Inactive'}
+                      </span>
+                    </td>
+                    <td>
+                      <div className="catalog-row-actions">
+                        <button
+                          type="button"
+                          aria-label={'Edit ' + row.model_name}
+                          title="Edit model"
+                          onClick={() => open('edit', row)}
+                        >
+                          ✎
+                        </button>
+                        <button type="button" title="Record details" aria-label={`View details of ${row.model_name}`} onClick={() => open('details', row)}>◷</button>
+                        <CatalogTrashButton kind="models" row={row} onChanged={reload} />
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+        <footer className="models-pagination">
+          <span>
+            {loading ? (
+              'Loading…'
+            ) : error ? (
+              'Models unavailable'
+            ) : (
+              <>
+                Showing{' '}
+                <strong>
+                  {data.total ? (page - 1) * limit + 1 : 0}-{Math.min(page * limit, data.total)}
+                </strong>{' '}
+                of <strong>{data.total}</strong> models
+              </>
+            )}
+          </span>
+          <div>
+            <label>
+              Rows:{' '}
+              <select
+                aria-label="Rows per page"
+                value={limit}
+                onChange={(event) => {
+                  setLimit(Number(event.target.value))
+                  goToPage(1)
+                }}
+              >
+                {[10, 25, 50].map((value) => (
+                  <option key={value} value={value}>
+                    {value} / page
+                  </option>
+                ))}
+              </select>
+            </label>
+            <nav aria-label="Models pagination">
+              <button
+                aria-label="Previous page"
+                disabled={loading || !!error || page <= 1}
+                onClick={() => goToPage(page - 1)}
+              >
+                ‹
+              </button>
+              {pages.map((value, index) => (
+                <span key={value}>
+                  {index > 0 && value - pages[index - 1] > 1 && (
+                    <span className="models-page-gap">…</span>
+                  )}
+                  <button
+                    aria-label={'Page ' + value}
+                    aria-current={page === value ? 'page' : undefined}
+                    disabled={loading || !!error}
+                    onClick={() => goToPage(value)}
+                  >
+                    {value}
+                  </button>
+                </span>
+              ))}
+              <button
+                aria-label="Next page"
+                disabled={loading || !!error || page >= totalPages}
+                onClick={() => goToPage(page + 1)}
+              >
+                ›
+              </button>
+            </nav>
+          </div>
+        </footer>
       </section>
       {dialog?.type === 'edit' && (
         <Modal title="Edit AC Model" onClose={close} busy={busy}>
@@ -468,6 +521,10 @@ export function AcModelsPage() {
       {dialog?.type === 'details' && (
         <Modal title={dialog.row.model_name} onClose={close}>
           <dl className="catalog-record-details">
+            <dt>Cooling capacity</dt>
+            <dd>{btuLabel(dialog.row.capacity_btu)}</dd>
+            <dt>Inverter technology</dt>
+            <dd>{dialog.row.inverter ? 'Inverter' : 'Non-inverter'}</dd>
             <dt>Description</dt>
             <dd>{dialog.row.description || '—'}</dd>
             <dt>Created</dt>
@@ -497,6 +554,10 @@ function AcModelForm({ row, onCancel, onSaved, onBusyChange }) {
   const [error, setError] = useState('')
   const [errors, setErrors] = useState({})
   const change = (key, value) => {
+    if (key === 'model_name' && /\p{N}/u.test(value)) {
+      setErrors((current) => ({ ...current, model_name: 'Names cannot contain numbers.' }))
+      return
+    }
     setValues((current) => ({ ...current, [key]: value }))
     setErrors((current) => ({ ...current, [key]: undefined }))
   }
@@ -508,6 +569,18 @@ function AcModelForm({ row, onCancel, onSaved, onBusyChange }) {
     )
   async function submit(event) {
     event.preventDefault()
+    if (busy || options.loading || options.error) return
+    const fieldErrors = {
+      model_name: nameError(values.model_name),
+      capacity_btu: numberError(values.capacity_btu, { max: 2147483647 }),
+      brand_id: options.brands.some((brand) => brand.id === values.brand_id)
+        ? ''
+        : 'Choose a valid brand.',
+    }
+    if (Object.values(fieldErrors).some(Boolean)) {
+      setErrors(fieldErrors)
+      return
+    }
     if (
       !values.model_name.trim() ||
       !values.brand_id ||
@@ -713,7 +786,7 @@ function AcModelForm({ row, onCancel, onSaved, onBusyChange }) {
                     onChange={() => change('is_active', active)}
                   />
                   <span>
-                    <strong>{active ? 'Active model' : 'Inactive model'}</strong>
+                    <strong>{active ? 'Active' : 'Inactive'}</strong>
                     <small>
                       {active ? 'Available for selection' : 'Unavailable for selection'}
                     </small>

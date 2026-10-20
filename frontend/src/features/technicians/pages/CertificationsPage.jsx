@@ -11,7 +11,8 @@ import {
   CloseIcon,
   TableState,
 } from '../../management/components/ManagementShared.jsx'
-import { DocumentLink, TechnicianNotification, formatDate, safeDocumentUrl } from '../components/TechnicianShared.jsx'
+import { DocumentLink, TechnicianNotification } from '../components/TechnicianShared.jsx'
+import { formatDate, safeDocumentUrl } from '../components/technicianFormat.js'
 import '../../management/pages/management.css'
 import './technicians.css'
 import './certifications.css'
@@ -87,6 +88,17 @@ function CertificateDialog({ certificate, onClose }) {
           <dd>{formatDate(certificate.reviewed_at)}</dd>
         </div>
       </dl>
+      {certificate.verification_evidence && (
+        <section>
+          <h3>Issuer verification evidence</h3>
+          <p>Số hiệu: {certificate.verification_evidence.serial_number || '—'}</p>
+          <p>Số vào sổ: {certificate.verification_evidence.register_number || '—'}</p>
+          <p>Method: {certificate.verification_evidence.method === 'OFFICIAL_LOOKUP' ? 'Official issuer website' : 'Confirmation from issuer'}</p>
+          <p>Reference: {certificate.verification_evidence.reference}</p>
+          {certificate.verification_evidence.method === 'OFFICIAL_LOOKUP' && <DocumentLink url={certificate.verification_evidence.reference} />}
+          <p style={{ whiteSpace: 'pre-wrap' }}>{certificate.verification_evidence.notes}</p>
+        </section>
+      )}
       {certificate.rejection_reason && (
         <p className="certification-reason">{certificate.rejection_reason}</p>
       )}
@@ -301,6 +313,7 @@ export function CertificationsPage() {
                                   setReview({
                                     path: `/technicians/certifications/${c.id}/review`,
                                     status: 'VERIFIED',
+                                    certificate: c,
                                     name: `${c.certificate_name} — ${c.full_name}`,
                                     kind: 'certification',
                                     updatedAt: c.updated_at,

@@ -1,15 +1,19 @@
 import { withTransaction } from '../../config/database.js'
 import { AppError } from '../../utils.js'
+import { writeManagementAudit } from '../management/management.audit.js'
 import { resources } from './catalog.validation.js'
+import { listSkills } from './skill.repository.js'
 
 export class CatalogRepository {
-  constructor({ transaction = withTransaction } = {}) {
+  constructor({ transaction = withTransaction, audit = writeManagementAudit } = {}) {
     this.transaction = transaction
+    this.audit = audit
   }
   async list(kind, filters, mobile = false) {
+    if (kind === 'skills') return listSkills(filters, mobile, this.transaction)
     const { table } = resources[kind]
     const values = []
-    const clauses = []
+    const clauses = [`r.deleted_at IS ${!mobile && filters.trash ? 'NOT ' : ''}NULL`]
     const bind = (value) => {
       values.push(value)
       return `$${values.length}`
@@ -22,14 +26,14 @@ export class CatalogRepository {
       clauses.push(`r.is_active = ${bind(mobile || filters.status === 'active')}`)
     if (kind === 'services' && filters.categoryId)
       clauses.push(`r.category_id = ${bind(filters.categoryId)}`)
-    if (mobile && kind === 'services') clauses.push('c.is_active = true')
+    if (mobile && kind === 'services') clauses.push('c.is_active = true AND c.deleted_at IS NULL')
     if (kind === 'models') {
       if (filters.brandId) clauses.push(`r.brand_id = ${bind(filters.brandId)}`)
       if (filters.acType) clauses.push(`r.ac_type = ${bind(filters.acType)}`)
       if (filters.capacityBtu !== undefined)
         clauses.push(`r.capacity_btu = ${bind(filters.capacityBtu)}`)
       if (filters.inverter !== undefined) clauses.push(`r.inverter = ${bind(filters.inverter)}`)
-      if (mobile) clauses.push('b.is_active = true')
+      if (mobile) clauses.push('b.is_active = true AND b.deleted_at IS NULL')
     }
     const join =
       kind === 'services'
@@ -67,15 +71,45 @@ export class CatalogRepository {
     })
   }
 
-  async mutate(kind, id, data, action) {
+  async mutate(kind, id, data, action, actorId) {
     const { table } = resources[kind]
     try {
-      return await this.transaction(async (client) => {
+      let before
+      const result = await this.transaction(async (client) => {
         let existing
         if (id) {
           existing = (await client.query(`SELECT * FROM ${table} WHERE id=$1 FOR UPDATE`, [id]))
             .rows[0]
           if (!existing) throw new AppError(404, 'NOT_FOUND', 'Không tìm thấy dữ liệu.')
+          if (action === 'TRASH' || action === 'RESTORE' || action === 'DELETE') {
+            const restoring = action === 'RESTORE'
+            if (restoring && !existing.deleted_at || !restoring && existing.deleted_at) return existing
+            if (restoring) {
+              const parent = kind === 'services' ? ['service_categories', existing.category_id] : kind === 'models' ? ['ac_brands', existing.brand_id] : kind === 'skills' ? ['services', existing.service_id] : null
+              if (parent && !(await client.query(`SELECT id FROM ${parent[0]} WHERE id=$1 AND deleted_at IS NULL FOR SHARE`, [parent[1]])).rowCount)
+                throw new AppError(409, 'PARENT_IN_TRASH', 'Restore the related category, brand or service first.')
+            }
+            const row = (await client.query(`UPDATE ${table} SET deleted_at=${restoring ? 'NULL' : 'CURRENT_TIMESTAMP'},updated_at=CURRENT_TIMESTAMP WHERE id=$1 RETURNING *`, [id])).rows[0]
+            return row
+          }
+          if (existing.deleted_at) throw new AppError(409, 'RESOURCE_IN_TRASH', 'Restore this item before editing it.')
+        }
+        if (kind === 'skills') {
+          if (action === 'DELETE') {
+            data = { is_active: false }
+            action = 'DEACTIVATE'
+          }
+          before = existing
+          if (data.service_id) {
+            const service = await client.query(
+              'SELECT id FROM services WHERE id=$1 AND deleted_at IS NULL AND (is_active OR id=$2::uuid) FOR SHARE',
+              [data.service_id, existing?.service_id ?? null]
+            )
+            if (!service.rowCount)
+              throw new AppError(422, 'VALIDATION_ERROR', 'Choose an active service.', {
+                service_id: 'Service is unavailable.',
+              })
+          }
         }
         if (kind === 'models') {
           if (action === 'DELETE')
@@ -85,7 +119,7 @@ export class CatalogRepository {
               'Model chỉ được vô hiệu hóa, không được xóa.'
             )
           if (data.brand_id) {
-            const brand = await client.query('SELECT id FROM ac_brands WHERE id=$1 FOR KEY SHARE', [
+            const brand = await client.query('SELECT id FROM ac_brands WHERE id=$1 AND deleted_at IS NULL FOR SHARE', [
               data.brand_id,
             ])
             if (!brand.rowCount)
@@ -109,7 +143,7 @@ export class CatalogRepository {
         }
         if (kind === 'services' && data.category_id) {
           const category = await client.query(
-            'SELECT id FROM service_categories WHERE id=$1 FOR KEY SHARE',
+            'SELECT id FROM service_categories WHERE id=$1 AND deleted_at IS NULL FOR SHARE',
             [data.category_id]
           )
           if (!category.rowCount)
@@ -132,9 +166,7 @@ export class CatalogRepository {
             })
         }
         let after = null
-        if (action === 'DELETE') {
-          await client.query(`DELETE FROM ${table} WHERE id=$1`, [id])
-        } else {
+        {
           const fields = Object.keys(data)
           const values = Object.values(data)
           if (!id) {
@@ -156,6 +188,16 @@ export class CatalogRepository {
         }
         return after
       })
+      if (kind === 'skills')
+        this.audit({
+          actorId,
+          action,
+          entityType: 'SKILL',
+          entityId: result.id,
+          before,
+          after: result,
+        })
+      return result
     } catch (error) {
       if (error.code === '23503' && action === 'DELETE' && kind === 'categories')
         throw new AppError(

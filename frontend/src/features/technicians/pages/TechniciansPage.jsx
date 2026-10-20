@@ -10,7 +10,8 @@ import {
   EyeIcon,
   TableState,
 } from '../../management/components/ManagementShared.jsx'
-import { TechnicianBadge, label } from '../components/TechnicianShared.jsx'
+import { TechnicianBadge } from '../components/TechnicianShared.jsx'
+import { label } from '../components/technicianFormat.js'
 import '../../management/pages/management.css'
 import './technicians.css'
 
@@ -21,6 +22,7 @@ const initialFilters = {
   availability: 'ALL',
   area: '',
   skill: '',
+  sort: 'NAME',
 }
 
 export function TechniciansPage() {
@@ -55,7 +57,13 @@ export function TechniciansPage() {
   }, [token, logout, refresh])
   useEffect(() => {
     const controller = new AbortController()
-    const query = new URLSearchParams({ ...filters, verification: 'VERIFIED', search: keyword, page, limit })
+    const query = new URLSearchParams({
+      ...filters,
+      verification: 'VERIFIED',
+      search: keyword,
+      page,
+      limit,
+    })
     adminRequest(`/technicians?${query}`, token, { signal: controller.signal })
       .then((result) => {
         setData(result)
@@ -135,6 +143,20 @@ export function TechniciansPage() {
           </div>
           {expandedFilters && (
             <div className="technician-extra-filters" id="technician-extra-filters">
+              <label className="technician-filter">
+                <span>Sort</span>
+                <select
+                  value={filters.sort}
+                  onChange={(e) => {
+                    setLoading(true)
+                    setPage(1)
+                    setFilters((current) => ({ ...current, sort: e.target.value }))
+                  }}
+                >
+                  <option value="NAME">Name</option>
+                  <option value="PRIORITY">Job priority</option>
+                </select>
+              </label>
               {select('availability', 'Availability', ['ONLINE', 'OFFLINE', 'BUSY'])}
               <button
                 className="technician-reset"
@@ -195,10 +217,7 @@ export function TechniciansPage() {
                     <tr key={row.id}>
                       <td>{(page - 1) * limit + index + 1}</td>
                       <td>
-                        <Link
-                          className="technician-list-name"
-                          to={`/admin/technicians/${row.id}`}
-                        >
+                        <Link className="technician-list-name" to={`/admin/technicians/${row.id}`}>
                           <strong>{row.full_name}</strong>
                         </Link>
                       </td>

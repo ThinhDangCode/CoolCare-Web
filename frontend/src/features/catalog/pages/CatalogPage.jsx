@@ -2,10 +2,13 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../../../context/AuthContext.jsx'
 import { useAutoDismiss } from '../../../hooks/useAutoDismiss.js'
+import { uploadProfilePhoto } from '../../../services/cloudinaryApi.js'
 import { catalogRequest } from '../api/catalogApi.js'
 import { CatalogLayout } from '../components/CatalogLayout.jsx'
 import { Modal } from '../components/Modal.jsx'
+import { CatalogTrash, CatalogTrashButton } from '../components/CatalogTrash.jsx'
 import './catalog.css'
+import { nameError, numberError } from '../catalogValidation.js'
 
 const catalogConfig = {
   categories: {
@@ -135,7 +138,22 @@ export function CatalogPage() {
   }
   const totalPages = Math.max(1, Math.ceil(result.total / 10))
   return (
-    <CatalogLayout>
+    <CatalogLayout
+      onRefresh={() => {
+        setLoading(true)
+        setRefresh(value => value + 1)
+      }}
+      refreshing={loading}
+      actions={
+        <CatalogTrash
+          kind={kind}
+          onChanged={() => {
+            setLoading(true)
+            setRefresh((n) => n + 1)
+          }}
+        />
+      }
+    >
       <section className="catalog-content">
         <div className="catalog-breadcrumb">
           Catalog <span>/</span> {config.title}
@@ -278,9 +296,11 @@ export function CatalogPage() {
                       </td>
                       <td>
                         <div className="catalog-name">
-                          <span className={`catalog-row-icon tone-${index % 4}`}>
-                            {config.icon}
-                          </span>
+                          {kind === 'categories' && (
+                            <span className={`catalog-row-icon tone-${index % 4}`}>
+                              {config.icon}
+                            </span>
+                          )}
                           <strong>{row.name}</strong>
                         </div>
                       </td>
@@ -336,31 +356,14 @@ export function CatalogPage() {
                           >
                             ◷
                           </button>
-                          {kind === 'categories' && (
-                            <button
-                              className="danger-text"
-                              title="Delete category"
-                              aria-label={`Delete ${row.name}`}
-                              onClick={() => {
-                                setError('')
-                                setDialog({ type: 'delete', row })
-                              }}
-                            >
-                              ⌫
-                            </button>
-                          )}
-                          {kind === 'services' && (
-                            <button
-                              title={row.is_active ? 'Deactivate' : 'Activate'}
-                              aria-label={`Change status of ${row.name}`}
-                              onClick={() => {
-                                setError('')
-                                setDialog({ type: 'toggle', row })
-                              }}
-                            >
-                              ⏻
-                            </button>
-                          )}
+                          <CatalogTrashButton
+                            kind={kind}
+                            row={row}
+                            onChanged={() => {
+                              setLoading(true)
+                              setRefresh((n) => n + 1)
+                            }}
+                          />
                         </div>
                       </td>
                     </tr>
@@ -501,11 +504,18 @@ export function CatalogForm({ kind, row, token, onCancel, onSaved, onBusyChange 
   }))
   const [categories, setCategories] = useState([])
   const [errors, setErrors] = useState({})
+  const [imageFile, setImageFile] = useState(null)
+  const [imagePreview, setImagePreview] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [categoryLoading, setCategoryLoading] = useState(kind === 'services')
   const [retry, setRetry] = useState(0)
   const { logout } = useAuth()
+  useEffect(() => {
+    return () => {
+      if (imagePreview) URL.revokeObjectURL(imagePreview)
+    }
+  }, [imagePreview])
   useEffect(() => {
     if (kind !== 'services') return
     const controller = new AbortController()
@@ -536,6 +546,10 @@ export function CatalogForm({ kind, row, token, onCancel, onSaved, onBusyChange 
     return () => controller.abort()
   }, [kind, token, retry, logout])
   const change = (key, value) => {
+    if (key === 'name' && /\p{N}/u.test(value)) {
+      setErrors((current) => ({ ...current, name: 'Names cannot contain numbers.' }))
+      return
+    }
     setValues((current) => ({ ...current, [key]: value }))
     setErrors((current) => ({ ...current, [key]: undefined }))
   }
@@ -572,6 +586,19 @@ export function CatalogForm({ kind, row, token, onCancel, onSaved, onBusyChange 
   }
   async function submit(event) {
     event.preventDefault()
+    if (busy || errors.image_url) return
+    const validation = { name: nameError(values.name, kind === 'services' ? 150 : 100) }
+    if (kind === 'services') {
+      if (categoryLoading || !categories.some((category) => category.id === values.category_id))
+        validation.category_id = 'Choose a valid category.'
+      validation.base_price = numberError(values.base_price, { max: 9999999999.99, integer: false })
+      for (const key of ['estimated_duration', 'maintenance_interval_days'])
+        validation[key] = numberError(values[key], { optional: true, max: 2147483647 })
+    }
+    if (Object.values(validation).some(Boolean)) {
+      setErrors(validation)
+      return
+    }
     const body = {
       name: values.name.trim(),
       description: values.description.trim() || null,
@@ -592,6 +619,12 @@ export function CatalogForm({ kind, row, token, onCancel, onSaved, onBusyChange 
     setError('')
     setErrors({})
     try {
+      if (kind === 'categories' && imageFile) {
+        body.image_url = await uploadProfilePhoto(imageFile, 'coolcare/service-categories')
+        change('image_url', body.image_url)
+        setImageFile(null)
+        setImagePreview('')
+      }
       await catalogRequest(`/${kind}${row ? `/${row.id}` : ''}`, token, {
         method: row ? 'PATCH' : 'POST',
         body,
@@ -631,7 +664,9 @@ export function CatalogForm({ kind, row, token, onCancel, onSaved, onBusyChange 
           </div>
         )}
         <div className="catalog-form-section-label">GENERAL INFORMATION</div>
-        <div className="catalog-form-icon">{config.icon}</div>
+        {!['services', 'brands'].includes(kind) && (
+          <div className="catalog-form-icon">{config.icon}</div>
+        )}
         {field('name', `${config.singular} name`)}
         <label className="catalog-field">
           <span>Description</span>
@@ -647,7 +682,64 @@ export function CatalogForm({ kind, row, token, onCancel, onSaved, onBusyChange 
             <small className="catalog-field-error">{errors.description}</small>
           )}
         </label>
-        {kind === 'categories' && field('image_url', 'Image URL', 'url', true)}
+        {kind === 'categories' && (
+          <div className="catalog-field catalog-image-field">
+            <label htmlFor="category-image">Category image</label>
+            {(imagePreview || values.image_url) && (
+              <img
+                className="catalog-image-preview"
+                src={imagePreview || values.image_url}
+                alt="Category preview"
+              />
+            )}
+            <input
+              id="category-image"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              disabled={busy}
+              aria-invalid={Boolean(errors.image_url)}
+              aria-describedby={errors.image_url ? 'category-image-error' : 'category-image-help'}
+              onChange={(event) => {
+                const file = event.target.files?.[0]
+                event.target.value = ''
+                if (!file) return
+                const message = !['image/jpeg', 'image/png', 'image/webp'].includes(file.type)
+                  ? 'Choose a JPG, PNG or WEBP image.'
+                  : file.size > 5 * 1024 * 1024
+                    ? 'Category image must not exceed 5 MB.'
+                    : ''
+                setErrors((current) => ({ ...current, image_url: message || undefined }))
+                if (!message) {
+                  setImageFile(file)
+                  setImagePreview(URL.createObjectURL(file))
+                }
+              }}
+            />
+            <small id="category-image-help">
+              Choose an image from your device. JPG, PNG or WEBP, up to 5 MB.
+            </small>
+            {imageFile && <small>{imageFile.name}</small>}
+            {(imageFile || values.image_url) && (
+              <button
+                type="button"
+                className="catalog-button"
+                disabled={busy}
+                onClick={() => {
+                  setImageFile(null)
+                  setImagePreview('')
+                  change('image_url', '')
+                }}
+              >
+                Remove image
+              </button>
+            )}
+            {errors.image_url && (
+              <small id="category-image-error" className="catalog-field-error" role="alert">
+                {errors.image_url}
+              </small>
+            )}
+          </div>
+        )}
         {kind === 'services' && (
           <>
             <label className="catalog-field">

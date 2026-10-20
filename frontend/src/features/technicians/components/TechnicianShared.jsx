@@ -1,3 +1,4 @@
+import { label, formatDate, safeDocumentUrl } from './technicianFormat.js'
 import { useState } from 'react'
 import { useAutoDismiss } from '../../../hooks/useAutoDismiss.js'
 import { CheckIcon, CloseIcon } from '../../management/components/ManagementShared.jsx'
@@ -6,41 +7,26 @@ export function TechnicianNotification({ message, onDismiss, danger = false }) {
   const hover = useAutoDismiss(danger ? '' : message, onDismiss)
   if (!message) return null
   return (
-    <div className={`figma-toast${danger ? ' danger' : ''}`} role={danger ? 'alert' : 'status'} {...hover}>
-      {danger ? <span className="toast-symbol" aria-hidden="true">!</span> : <CheckIcon />}
+    <div
+      className={`figma-toast${danger ? ' danger' : ''}`}
+      role={danger ? 'alert' : 'status'}
+      {...hover}
+    >
+      {danger ? (
+        <span className="toast-symbol" aria-hidden="true">
+          !
+        </span>
+      ) : (
+        <CheckIcon />
+      )}
       <span>{message}</span>
-      <button type="button" aria-label="Dismiss notification" onClick={() => onDismiss('')}><CloseIcon /></button>
+      <button type="button" aria-label="Dismiss notification" onClick={() => onDismiss('')}>
+        <CloseIcon />
+      </button>
     </div>
   )
 }
 
-const labels = {
-  BEGINNER: 'Beginner',
-  INTERMEDIATE: 'Intermediate',
-  ADVANCED: 'Advanced',
-  EXPERT: 'Expert',
-  PENDING: 'Pending review',
-  VERIFIED: 'Verified',
-  REJECTED: 'Rejected',
-  EXPIRED: 'Expired',
-  EXPIRING: 'Expiring soon',
-  ACTIVE: 'Active',
-  INACTIVE: 'Inactive',
-  LOCKED: 'Blocked',
-  ONLINE: 'Online',
-  OFFLINE: 'Offline',
-  BUSY: 'Busy',
-}
-export const label = (value) => labels[value] ?? value ?? '—'
-export const formatDate = (value) => (value ? new Date(value).toLocaleDateString('en-GB') : '—')
-export function safeDocumentUrl(value) {
-  try {
-    const url = new URL(value)
-    return ['https:', 'http:'].includes(url.protocol) ? url.href : null
-  } catch {
-    return null
-  }
-}
 export function TechnicianBadge({ value }) {
   const tone = ['ACTIVE', 'VERIFIED', 'ONLINE'].includes(value)
     ? 'active'

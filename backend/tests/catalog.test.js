@@ -14,13 +14,13 @@ import { errorHandler, notFoundHandler } from '../src/middleware/error-handler.j
 const id = '12345678-1234-1234-1234-123456789012'
 test('AC models require valid brand, name, AC type, positive BTU and explicit inverter', () => {
   const model = {
-    model_name: '  Model 12  ',
+    model_name: '  Model Standard  ',
     brand_id: id,
     ac_type: 'WALL_MOUNTED',
     capacity_btu: 12000,
     inverter: false,
   }
-  assert.equal(validateInput('models', model).model_name, 'Model 12')
+  assert.equal(validateInput('models', model).model_name, 'Model Standard')
   assert.equal(validateInput('models', model).inverter, false)
   for (const key of ['model_name', 'brand_id', 'ac_type', 'capacity_btu', 'inverter']) {
     const missing = { ...model }
@@ -87,6 +87,23 @@ test('catalog validates names, writable fields, prices and optional intervals', 
   )
   assert.throws(() => validateId('invalid'), { status: 422 })
 })
+test('all catalog names reject numbers and symbols on create and edit', () => {
+  for (const kind of ['categories', 'services', 'brands', 'models', 'skills']) {
+    const key = kind === 'models' ? 'model_name' : 'name'
+    const required = kind === 'services'
+      ? { category_id: id, base_price: 0 }
+      : kind === 'models'
+        ? { brand_id: id, ac_type: 'WALL_MOUNTED', capacity_btu: 12000, inverter: false }
+        : kind === 'skills' ? { service_id: id } : {}
+    for (const partial of [false, true]) {
+      for (const name of ['123', 'Name 12', 'Tên １２', 'Tên ٢', '---', '😀', '<script>', '   '])
+        assert.throws(() => validateInput(kind, { ...required, [key]: name }, partial), { status: 422 })
+      for (const name of ['Vệ sinh máy lạnh', 'Điều hoà', 'Diagnostic & Repair', 'Máy lạnh (Inverter)'])
+        assert.equal(validateInput(kind, { ...required, [key]: ` ${name} ` }, partial)[key], name)
+    }
+  }
+})
+
 test('catalog bounds pagination and validates filters', () => {
   assert.deepEqual(validateQuery({}), {
     page: 1,
@@ -177,8 +194,39 @@ test('catalog routes enforce Admin access and mobile read-only requests', async 
       (await request('/mobile/services', customer, 'POST', { name: 'Denied' })).status,
       404
     )
-    assert.equal((await request(`/admin/brands/${id}`, admin, 'DELETE')).status, 404)
+    assert.equal((await request(`/admin/brands/${id}`, admin, 'DELETE')).status, 204)
+    for (const kind of ['categories', 'services', 'brands', 'models', 'skills']) {
+      assert.equal((await request(`/admin/${kind}/${id}/restore`, admin, 'PATCH')).status, 200)
+      assert.equal(calls.at(-1)[4], 'RESTORE')
+      assert.equal((await request(`/admin/${kind}?trash=true`, customer)).status, 403)
+      assert.equal((await request(`/mobile/${kind}/${id}/restore`, customer, 'PATCH')).status, 404)
+    }
     assert.equal((await request(`/admin/categories/${id}/audit`, admin)).status, 404)
+    assert.equal((await request('/admin/skills', customer)).status, 403)
+    assert.equal(
+      (await request('/admin/skills', admin, 'POST', { name: 'Skill', service_id: id })).status,
+      201
+    )
+    assert.equal(calls.at(-1)[5], id)
+    assert.equal((await request('/admin/skills', admin, 'POST', { name: 'Skill' })).status, 422)
+    assert.equal(
+      (await request('/admin/skills?service_id=' + id + '&status=inactive&sort=name', admin))
+        .status,
+      200
+    )
+    assert.equal(calls.at(-1)[2].serviceId, id)
+    assert.equal(
+      (await request('/admin/skills/' + id, admin, 'PATCH', { name: 'Updated skill' })).status,
+      200
+    )
+    assert.equal((await request('/admin/skills/' + id, admin, 'DELETE')).status, 204)
+    assert.deepEqual(calls.at(-1).slice(1), ['skills', id, {}, 'TRASH', id])
+    assert.equal(
+      (await request('/admin/skills/' + id + '/status', admin, 'PATCH', { is_active: true }))
+        .status,
+      200
+    )
+    assert.equal((await request('/mobile/skills/' + id, customer, 'DELETE')).status, 404)
     assert.equal((await request('/admin/models', customer)).status, 403)
     assert.equal(
       (
@@ -202,7 +250,7 @@ test('catalog routes enforce Admin access and mobile read-only requests', async 
       200
     )
     assert.equal(calls.at(-1)[4], 'TOGGLE')
-    assert.equal((await request(`/admin/models/${id}`, admin, 'DELETE')).status, 404)
+    assert.equal((await request(`/admin/models/${id}`, admin, 'DELETE')).status, 204)
     assert.equal(
       (await request('/mobile/models', customer, 'POST', { model_name: 'Denied' })).status,
       404

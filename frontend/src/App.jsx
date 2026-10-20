@@ -4,6 +4,7 @@ import { LoginPage } from './pages/LoginPage.jsx'
 import { DashboardPage } from './pages/DashboardPage.jsx'
 import { ProfilePage } from './pages/ProfilePage.jsx'
 import { CatalogPage, CreateCatalogPage } from './features/catalog/pages/CatalogPage.jsx'
+import { SkillsPage, CreateSkillPage } from './features/catalog/pages/SkillsPage.jsx'
 import { AcModelsPage, CreateAcModelPage } from './features/catalog/pages/AcModelsPage.jsx'
 import { AdminLayout } from './shared/components/AdminLayout.jsx'
 import { UsersPage } from './features/management/pages/UsersPage.jsx'
@@ -36,7 +37,10 @@ function App() {
 
         <Route element={<AdminLayout />}>
           <Route path="/admin/bookings" element={<BookingsPage />} />
-          <Route path="/admin/bookings/:id" element={<BookingDetailPage key={location.pathname} />} />
+          <Route
+            path="/admin/bookings/:id"
+            element={<BookingDetailPage key={location.pathname} />}
+          />
           <Route path="/admin/technicians" element={<TechniciansPage />} />
           <Route path="/admin/technicians/certifications" element={<CertificationsPage />} />
           <Route path="/admin/technicians/verification" element={<VerificationPage />} />
@@ -45,6 +49,8 @@ function App() {
             path="/admin/technicians/:id"
             element={<TechnicianDetailPage key={location.pathname} />}
           />
+          <Route path="/catalog/skills" element={<SkillsPage />} />
+          <Route path="/catalog/skills/new" element={<CreateSkillPage />} />
           <Route path="/catalog/models" element={<AcModelsPage />} />
           <Route path="/catalog/models/new" element={<CreateAcModelPage />} />
           <Route path="/catalog/:kind" element={<CatalogPage key={location.pathname} />} />

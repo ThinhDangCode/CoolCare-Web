@@ -137,6 +137,7 @@ export function AdminSidebar() {
                   <NavLink to="/catalog/services">Services</NavLink>
                   <NavLink to="/catalog/brands">AC Brands</NavLink>
                   <NavLink to="/catalog/models">AC Models</NavLink>
+                  <NavLink to="/catalog/skills">Skill Management</NavLink>
                 </div>
               </div>
             ) : (

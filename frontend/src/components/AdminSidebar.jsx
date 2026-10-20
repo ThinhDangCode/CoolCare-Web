@@ -114,7 +114,9 @@ export function AdminSidebar({
       sessionStorage.getItem('admin-sidebar-technician') === 'true'
   )
   const [serviceOpen, setServiceOpen] = useState(
-    () => sessionStorage.getItem('admin-sidebar-service') === 'true'
+    () =>
+      location.pathname.startsWith('/catalog/') ||
+      sessionStorage.getItem('admin-sidebar-service') === 'true'
   )
   const [marketingOpen, setMarketingOpen] = useState(
     () => sessionStorage.getItem('admin-sidebar-marketing') === 'true'
@@ -237,6 +239,7 @@ export function AdminSidebar({
                   <NavLink to="/catalog/services">Services</NavLink>
                   <NavLink to="/catalog/brands">AC Brands</NavLink>
                   <NavLink to="/catalog/models">AC Models</NavLink>
+                  <NavLink to="/catalog/skills">Skill Management</NavLink>
                 </div>
               )}
             </div>
