@@ -120,7 +120,18 @@ export class MyBookingsRepository {
           selected.technician_name,
           selected.technician_avatar_url,
           selected.technician_rating,
-          selected.request_status
+          selected.request_status,
+          EXISTS (
+            SELECT 1 FROM reviews r
+            WHERE r.booking_id = b.id AND r.customer_id = b.customer_id
+          ) AS reviewed,
+          (
+            SELECT string_agg(DISTINCT s.name, ', ' ORDER BY s.name)
+            FROM booking_units bu
+            JOIN booking_unit_services bus ON bus.booking_unit_id = bu.id
+            JOIN services s ON s.id = bus.service_id
+            WHERE bu.booking_id = b.id
+          ) AS service_names
 
         FROM bookings b
 

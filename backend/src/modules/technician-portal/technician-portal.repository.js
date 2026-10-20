@@ -91,6 +91,46 @@ export class TechnicianPortalRepository {
     }
   }
 
+  async ratings(userId, limit = 20) {
+    const technician = await this.profile(userId)
+    const [summary, reviews] = await Promise.all([
+      this.queryable.query(
+        `SELECT COALESCE(round(avg(rating),1),0)::float AS average_rating,
+                count(*)::int AS total_reviews,
+                count(*) FILTER (WHERE rating=1)::int AS one_star_count,
+                count(*) FILTER (WHERE rating=2)::int AS two_star_count,
+                count(*) FILTER (WHERE rating=3)::int AS three_star_count,
+                count(*) FILTER (WHERE rating=4)::int AS four_star_count,
+                count(*) FILTER (WHERE rating=5)::int AS five_star_count
+           FROM reviews WHERE technician_id=$1 AND status='PUBLISHED'`,
+        [technician.id],
+      ),
+      this.queryable.query(
+        `SELECT r.id,r.rating,r.comment,r.created_at,
+                COALESCE(NULLIF(trim(u.full_name),''),'Khách hàng') AS customer_name
+           FROM reviews r
+           JOIN customer_profiles cp ON cp.id=r.customer_id
+           JOIN users u ON u.id=cp.user_id
+          WHERE r.technician_id=$1 AND r.status='PUBLISHED'
+          ORDER BY r.created_at DESC,r.id DESC LIMIT $2`,
+        [technician.id, limit],
+      ),
+    ])
+    const row = summary.rows[0]
+    return {
+      average_rating: row.average_rating,
+      total_reviews: row.total_reviews,
+      distribution: {
+        1: row.one_star_count,
+        2: row.two_star_count,
+        3: row.three_star_count,
+        4: row.four_star_count,
+        5: row.five_star_count,
+      },
+      recent_reviews: reviews.rows,
+    }
+  }
+
   async availability(userId) {
     const technician = await this.profile(userId)
     return {
