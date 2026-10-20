@@ -55,6 +55,7 @@ export class ViewJobRequestsService {
       declineReason: row.decline_reason ?? null,
       cancelledAt: row.request_cancelled_at ?? null,
       cancellationReason: row.request_cancellation_reason ?? null,
+      historyAt: this.historyAt(row),
       canRespond: row.request_status === 'SELECTED' && row.booking_status === 'TECHNICIAN_SELECTED',
       canComplete: row.request_status === 'ACCEPTED' && row.booking_status === 'ACCEPTED',
       canCancelAcceptedJob: row.request_status === 'ACCEPTED' && row.booking_status === 'ACCEPTED',
@@ -91,6 +92,16 @@ export class ViewJobRequestsService {
         name: row.customer_name,
         avatarUrl: row.customer_avatar_url ?? null,
       },
+    }
+  }
+
+  historyAt(row) {
+    switch (row.request_status) {
+      case 'COMPLETED': return row.booking_completed_at ?? row.booking_updated_at
+      case 'CANCELLED': return row.request_cancelled_at ?? row.booking_cancelled_at ?? row.booking_updated_at
+      case 'DECLINED': return row.responded_at ?? row.requested_at
+      case 'EXPIRED': return row.expires_at ?? row.requested_at
+      default: return row.requested_at
     }
   }
 }

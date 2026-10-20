@@ -34,15 +34,12 @@ function fixture({ requestStatus = 'ACCEPTED', bookingStatus = 'ACCEPTED' } = {}
           id: requestId, booking_id: 'booking-id', status: requestStatus,
           booking_status: bookingStatus, booking_code: 'BK-001', customer_user_id: 'customer-id',
         }] }
-        if (sql.includes('FROM booking_unit_services')) return { rows: [{
-          booking_unit_service_id: 'booking-service-id', service_id: 'service-id',
-          name: 'Cleaning', unit_price: 100000,
-        }] }
-        if (sql.includes('INSERT INTO quotations')) return { rows: [{
-          id: 'quotation-id', status: 'ACCEPTED',
+        if (sql.startsWith('SELECT id, status, total_amount FROM quotations')) return { rows: [{
+          id: 'initial-quotation-id', status: 'ACCEPTED', total_amount: '200000.00',
         }] }
         if (sql.includes('UPDATE bookings')) return { rows: [{
           id: 'booking-id', booking_code: 'BK-001', status: 'WAITING_CONFIRMATION',
+          subtotal: '200000.00', discount_amount: '0.00', total_amount: '200000.00',
           completed_at: null, updated_at: '2026-10-15T09:00:00.000Z',
         }] }
         return { rows: [] }
@@ -60,6 +57,9 @@ test('technician completion waits for the customer and keeps the assignment acti
   assert.ok(calls.some(({ sql }) => sql.includes('technician_completed_at=CURRENT_TIMESTAMP')))
   assert.ok(calls.some(({ sql }) => sql.includes('booking_status_history') && sql.includes("'WAITING_CONFIRMATION'")))
   assert.ok(calls.some(({ sql, params }) => sql.includes('INSERT INTO notifications') && params[0] === 'customer-id'))
+  assert.ok(calls.some(({ sql, params }) =>
+    sql.includes('INSERT INTO notifications') && params[1].includes('200.000đ')))
+  assert.equal(result.initial_quotation.id, 'initial-quotation-id')
 })
 
 test('only an active accepted job can be completed', async () => {

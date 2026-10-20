@@ -55,7 +55,11 @@ export class UpdateJobStatusRepository {
         throw new AppError(409, 'OUTSTANDING_QUOTATION', 'Cần xử lý báo giá đang chờ trước khi KTV hoàn thành.')
       }
 
-      await ensureDefaultQuotation(client, job.booking_id, technician.id)
+      const initialQuotation = await ensureDefaultQuotation(
+        client,
+        job.booking_id,
+        technician.id,
+      )
 
       const bookingResult = await client.query(
         `UPDATE bookings
@@ -64,7 +68,7 @@ export class UpdateJobStatusRepository {
              status='WAITING_CONFIRMATION',
              updated_at=CURRENT_TIMESTAMP
          WHERE id=$1 AND status='ACCEPTED'
-         RETURNING id,booking_code,status,completed_at,updated_at`,
+         RETURNING id,booking_code,status,subtotal,discount_amount,total_amount,completed_at,updated_at`,
         [job.booking_id, technician.user_id],
       )
       const booking = bookingResult.rows[0]
@@ -77,8 +81,12 @@ export class UpdateJobStatusRepository {
       )
       await client.query(
         `INSERT INTO notifications(user_id,type,title,message,reference_type,reference_id)
-         VALUES($1,'BOOKING','Xác nhận hoàn thành công việc',$2,'BOOKING',$3)`,
-        [job.customer_user_id, `Kỹ thuật viên đã hoàn thành booking ${job.booking_code}. Vui lòng xác nhận hoàn thành.`, job.booking_id],
+         VALUES($1,'BOOKING','Hóa đơn dịch vụ và xác nhận hoàn thành',$2,'BOOKING',$3)`,
+        [
+          job.customer_user_id,
+          `Kỹ thuật viên đã hoàn thành booking ${job.booking_code}. Tổng tiền dịch vụ: ${Number(booking.total_amount).toLocaleString('vi-VN')}đ. Vui lòng kiểm tra hóa đơn và xác nhận hoàn thành.`,
+          job.booking_id,
+        ],
       )
 
       return {
@@ -86,6 +94,7 @@ export class UpdateJobStatusRepository {
         booking_id: job.booking_id,
         status: job.status,
         booking,
+        initial_quotation: initialQuotation,
       }
     })
   }

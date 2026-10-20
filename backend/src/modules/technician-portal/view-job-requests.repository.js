@@ -1,12 +1,20 @@
 import { pool } from '../../config/database.js'
 
 const effectiveStatus = `CASE
+  WHEN b.status='COMPLETED' AND bt.status='ACCEPTED' THEN 'COMPLETED'
+  WHEN b.status='CANCELLED' AND bt.status IN ('SELECTED','ACCEPTED') THEN 'CANCELLED'
   WHEN bt.status='SELECTED' AND bt.expires_at IS NOT NULL AND bt.expires_at<=CURRENT_TIMESTAMP
     THEN 'EXPIRED'
   ELSE bt.status
 END`
 
 const visibleStatuses = `('SELECTED','ACCEPTED','DECLINED','EXPIRED','COMPLETED','CANCELLED')`
+const historyStatuses = `('DECLINED','EXPIRED','COMPLETED','CANCELLED')`
+const statusFilter = `(
+  $2::varchar IS NULL
+  OR ($2='HISTORY' AND ${effectiveStatus} IN ${historyStatuses})
+  OR ($2<>'HISTORY' AND ${effectiveStatus}=$2)
+)`
 
 export class ViewJobRequestsRepository {
   constructor({ queryable = pool } = {}) {
@@ -29,9 +37,10 @@ export class ViewJobRequestsRepository {
     const result = await this.queryable.query(
       `SELECT count(*)::int AS total
        FROM booking_technicians bt
+       JOIN bookings b ON b.id=bt.booking_id
        WHERE bt.technician_id=$1
          AND bt.status IN ${visibleStatuses}
-         AND ($2::varchar IS NULL OR ${effectiveStatus}=$2)`,
+         AND ${statusFilter}`,
       [technicianId, status],
     )
     return result.rows[0]?.total ?? 0
@@ -66,6 +75,7 @@ export class ViewJobRequestsRepository {
          b.subtotal,
          b.discount_amount,
          b.total_amount,
+         b.completed_at AS booking_completed_at,
          b.created_at AS booking_created_at,
          b.updated_at AS booking_updated_at,
          b.cancelled_at AS booking_cancelled_at,
@@ -110,8 +120,16 @@ export class ViewJobRequestsRepository {
        ) units ON TRUE
        WHERE bt.technician_id=$1
          AND bt.status IN ${visibleStatuses}
-         AND ($2::varchar IS NULL OR ${effectiveStatus}=$2)
+         AND ${statusFilter}
        ORDER BY
+         CASE WHEN $2='HISTORY' THEN
+           CASE ${effectiveStatus}
+             WHEN 'COMPLETED' THEN COALESCE(b.completed_at,b.updated_at)
+             WHEN 'CANCELLED' THEN COALESCE(bt.cancelled_at,b.cancelled_at,b.updated_at)
+             WHEN 'DECLINED' THEN COALESCE(bt.responded_at,bt.requested_at)
+             WHEN 'EXPIRED' THEN COALESCE(bt.expires_at,bt.requested_at)
+           END
+         END DESC NULLS LAST,
          CASE ${effectiveStatus}
            WHEN 'SELECTED' THEN 1
            WHEN 'ACCEPTED' THEN 2
