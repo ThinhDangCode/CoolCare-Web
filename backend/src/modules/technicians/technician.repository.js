@@ -1,8 +1,10 @@
 import { pool } from '../../config/database.js'
 import { AppError } from '../../utils.js'
+import { remainingPointsSql, activePointsSql } from './technician.points.js'
 
 const profileColumns = `t.id, t.user_id, u.full_name, u.email, u.phone, u.avatar_url,
   u.status AS account_status, t.is_active, t.qualification_level, t.years_experience,
+  ${remainingPointsSql('t.id')} AS remaining_points, ${activePointsSql('t.id')} AS active_penalty_points,
   t.rating_average, t.total_reviews, t.verification_status, t.availability_status, t.submitted_at,
   CASE WHEN u.status = 'LOCKED' THEN 'LOCKED'
        WHEN NOT t.is_active OR u.status <> 'ACTIVE' THEN 'INACTIVE' ELSE 'ACTIVE' END AS status`
@@ -13,7 +15,7 @@ const jobsColumn = `(SELECT count(DISTINCT bt.booking_id)::int FROM booking_tech
 const certificateColumns = `c.id,c.technician_id,c.certificate_name,c.certificate_number,c.issued_by,
   to_char(c.issued_date,'YYYY-MM-DD') AS issued_date,
   to_char(c.expiry_date,'YYYY-MM-DD') AS expiry_date,c.document_url,c.verification_status,
-  c.reviewed_at,c.rejection_reason,c.updated_at,
+  c.reviewed_at,c.rejection_reason,c.updated_at,c.verification_evidence,
   CASE WHEN c.verification_status <> 'VERIFIED' THEN c.verification_status
        WHEN c.expiry_date < CURRENT_DATE THEN 'EXPIRED'
        WHEN c.expiry_date <= CURRENT_DATE + 30 THEN 'EXPIRING'
@@ -24,12 +26,17 @@ export class TechnicianRepository {
   async penalties(query) {
     const values = []
     const clauses = []
-    const source = `SELECT p.id,p.technician_id,p.penalty_type,p.penalty_points,p.reason,
+    const source = `SELECT p.id,p.technician_id,p.penalty_type,p.penalty_points,
+      CASE WHEN c.id IS NOT NULL THEN substr(p.reason,position('] ' in p.reason)+2) ELSE p.reason END AS reason,
+      c.id AS complaint_id,c.complaint_code,c.complaint_number,
+      ${remainingPointsSql('t.id')} AS remaining_points, ${activePointsSql('t.id')} AS active_penalty_points,
       p.applied_at,p.expires_at,p.status AS recorded_status,u.full_name,u.phone,u.email,u.avatar_url,
       b.booking_code,CASE WHEN p.status='ACTIVE' AND p.expires_at <= CURRENT_TIMESTAMP
       THEN 'EXPIRED' ELSE p.status END AS status
       FROM technician_penalties p JOIN technician_profiles t ON t.id=p.technician_id
-      JOIN users u ON u.id=t.user_id LEFT JOIN bookings b ON b.id=p.booking_id`
+      JOIN users u ON u.id=t.user_id LEFT JOIN bookings b ON b.id=p.booking_id
+      LEFT JOIN (SELECT complaints.*,ROW_NUMBER() OVER (ORDER BY created_at,id)::int AS complaint_number FROM complaints) c
+        ON split_part(p.reason, ' ', 1) = '[COMPLAINT:' || c.id::text || ']'`
     if (query.search) { values.push(likeValue(query.search)); clauses.push(`(full_name ILIKE $1 OR phone ILIKE $1 OR email ILIKE $1 OR booking_code ILIKE $1 OR reason ILIKE $1)`) }
     if (query.status !== 'ALL') { values.push(query.status); clauses.push(`status=$${values.length}`) }
     if (query.type !== 'ALL') { values.push(query.type); clauses.push(`penalty_type=$${values.length}`) }
@@ -67,7 +74,7 @@ export class TechnicianRepository {
     if (query.skill) add('EXISTS (SELECT 1 FROM technician_skills ts JOIN skills s ON s.id=ts.skill_id WHERE ts.technician_id=t.id AND s.name=?)', query.skill)
     const from = `FROM technician_profiles t JOIN users u ON u.id=t.user_id ${clauses.length ? 'WHERE '+clauses.join(' AND ') : ''}`
     const count = await pool.query(`SELECT count(*)::int AS total ${from}`, values)
-    const order = query.sort === 'LATEST' ? 't.submitted_at DESC NULLS LAST,t.id' : query.sort === 'OLDEST' ? 't.submitted_at ASC NULLS LAST,t.id' : 'u.full_name,t.id'
+    const order = query.sort === 'PRIORITY' ? `(u.status='ACTIVE' AND t.is_active AND ${remainingPointsSql('t.id')}>0) DESC,active_penalty_points ASC,t.rating_average DESC,t.id` : query.sort === 'LATEST' ? 't.submitted_at DESC NULLS LAST,t.id' : query.sort === 'OLDEST' ? 't.submitted_at ASC NULLS LAST,t.id' : 'u.full_name,t.id'
     const rows = await pool.query(`SELECT ${profileColumns},${areasColumn},${jobsColumn} ${from}
       ORDER BY ${order} LIMIT $${values.length+1} OFFSET $${values.length+2}`, [...values,query.limit,(query.page-1)*query.limit])
     return { items: rows.rows, total: count.rows[0].total, page: query.page, limit: query.limit }

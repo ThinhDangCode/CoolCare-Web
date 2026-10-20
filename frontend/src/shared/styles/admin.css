@@ -1621,6 +1621,8 @@
   font-weight: 700;
 }
 .complaint-resolution-dialog select,
+.complaint-resolution-dialog input[type='number'],
+.complaint-resolution-dialog input[type='datetime-local'],
 .complaint-resolution-dialog textarea {
   width: 100%;
   box-sizing: border-box;

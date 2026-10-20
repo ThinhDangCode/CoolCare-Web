@@ -34,6 +34,13 @@ function fixture({ requestStatus = 'ACCEPTED', bookingStatus = 'ACCEPTED' } = {}
           id: requestId, booking_id: 'booking-id', status: requestStatus,
           booking_status: bookingStatus, booking_code: 'BK-001', customer_user_id: 'customer-id',
         }] }
+        if (sql.includes('FROM booking_unit_services')) return { rows: [{
+          booking_unit_service_id: 'booking-service-id', service_id: 'service-id',
+          name: 'Cleaning', unit_price: 100000,
+        }] }
+        if (sql.includes('INSERT INTO quotations')) return { rows: [{
+          id: 'quotation-id', status: 'ACCEPTED',
+        }] }
         if (sql.includes('UPDATE bookings')) return { rows: [{
           id: 'booking-id', booking_code: 'BK-001', status: 'WAITING_CONFIRMATION',
           completed_at: null, updated_at: '2026-10-15T09:00:00.000Z',

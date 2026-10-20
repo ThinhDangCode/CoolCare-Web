@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken'
 import { env } from '../config/env.js'
 import { AppError } from '../utils.js'
+import { pool } from '../config/database.js'
 
 function verifyAccessToken(token) {
   try {
@@ -14,7 +15,7 @@ function verifyAccessToken(token) {
   }
 }
 
-export function authenticate(request, _response, next) {
+export async function authenticate(request, _response, next) {
   const [scheme, token] = request.get('authorization')?.split(' ') ?? []
   if (scheme !== 'Bearer' || !token) {
     return next(new AppError(401, 'UNAUTHENTICATED', 'Bạn cần đăng nhập để tiếp tục.'))
@@ -30,10 +31,16 @@ export function authenticate(request, _response, next) {
       role: payload.role,
       tokenId: payload.jti,
     }
-    next()
   } catch {
-    next(new AppError(401, 'INVALID_TOKEN', 'Phiên đăng nhập không hợp lệ hoặc đã hết hạn.'))
+    return next(new AppError(401, 'INVALID_TOKEN', 'Phiên đăng nhập không hợp lệ hoặc đã hết hạn.'))
   }
+  if (request.auth.role === 'TECHNICIAN') {
+    try {
+      const user = (await pool.query('SELECT status FROM users WHERE id=$1', [request.auth.userId])).rows[0]
+      if (!user || user.status !== 'ACTIVE') return next(new AppError(403, 'ACCOUNT_UNAVAILABLE', 'This technician account is locked or inactive.'))
+    } catch (error) { return next(error) }
+  }
+  next()
 }
 
 export function requireRole(...allowedRoles) {

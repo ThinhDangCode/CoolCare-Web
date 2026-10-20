@@ -53,7 +53,15 @@ export function validateComplaintResolution(body) {
   if (
     !body ||
     Object.keys(body).some(
-      (key) => !['status', 'resolution', 'notify_customer', 'is_draft'].includes(key)
+        (key) =>
+          ![
+            'status',
+            'resolution',
+            'notify_customer',
+            'is_draft',
+            'penalty_points',
+            'penalty_expires_at',
+          ].includes(key)
     )
   )
     errors.body = 'Dữ liệu không hợp lệ.'
@@ -61,12 +69,36 @@ export function validateComplaintResolution(body) {
     errors.notify_customer = 'Tùy chọn thông báo khách hàng không hợp lệ.'
   if (body?.is_draft !== undefined && typeof body.is_draft !== 'boolean')
     errors.is_draft = 'Trạng thái bản nháp không hợp lệ.'
+    if (
+      body?.penalty_points !== undefined &&
+      (!Number.isInteger(body.penalty_points) || body.penalty_points < 1 || body.penalty_points > 12)
+    )
+      errors.penalty_points = 'Penalty points must be a whole number from 1 to 12.'
+    if (body?.penalty_points !== undefined && (status !== 'RESOLVED' || isDraft))
+      errors.penalty_points = 'Penalty points are only allowed when accepting a complaint.'
+    if (
+      body?.penalty_expires_at !== undefined &&
+      (typeof body.penalty_expires_at !== 'string' ||
+        !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?(?:Z|[+-]\d{2}:\d{2})$/.test(
+          body.penalty_expires_at
+        ) ||
+        !Number.isFinite(Date.parse(body.penalty_expires_at)) ||
+        Date.parse(body.penalty_expires_at) <= Date.now() ||
+        status !== 'RESOLVED' ||
+        isDraft)
+    )
+      errors.penalty_expires_at =
+        'Choose a future penalty expiry date and time when accepting a complaint.'
   requireValidBody(errors)
   return {
     status,
     resolution,
     ...(body.notify_customer !== undefined ? { notify_customer: body.notify_customer } : {}),
     ...(body.is_draft !== undefined ? { is_draft: body.is_draft } : {}),
+      ...(body.penalty_points !== undefined ? { penalty_points: body.penalty_points } : {}),
+      ...(body.penalty_expires_at !== undefined
+        ? { penalty_expires_at: body.penalty_expires_at }
+        : {}),
   }
 }
 
