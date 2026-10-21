@@ -45,7 +45,7 @@ const sources = {
     ('a17','b14','t1','ACCEPTED','2026-11-01 00:00:00+07'::timestamptz,NULL)
   ) a(id,booking_id,technician_id,status,requested_at,responded_at)`,
   bookings: `SELECT * FROM (VALUES ('b1','COMPLETED',NULL::text),('b2','IN_PROGRESS',NULL),
-    ('b3','TECHNICIAN_SELECTED',NULL),('b4','CANCELLED','customer'),('b5','CANCELLED','u1'),
+    ('b3','CANCELLED','u1'),('b4','CANCELLED','customer'),('b5','CANCELLED','u1'),
     ('b6','PENDING',NULL),('b7','PENDING',NULL),('b8','PENDING',NULL),('b9','PENDING',NULL),
     ('b10','COMPLETED',NULL),('b11','COMPLETED',NULL),('b12','PENDING',NULL),('b13','IN_PROGRESS',NULL),
     ('b14','ACCEPTED',NULL)) b(id,status,cancelled_by_id)`,
@@ -137,6 +137,31 @@ test('request cohort excludes recommendations, deduplicates retries, preserves r
     assert.equal(activity.trend[0].completedRequests, 1)
     assert.equal(activity.trend[6].totalRequests, 1) // Expired request only; retry's old row is gone.
     assert.equal(activity.trend[9].acceptedRequests, 1) // Newer request in November excludes the older pair.
+  })
+
+test('declining a selected request cancels the booking without becoming a cancellation of accepted work',
+  { skip: !enabled }, async () => {
+    const { activity } = await fixtureReport(range, {
+      assignments: `SELECT * FROM (VALUES
+        ('decline','declined-job','t1','DECLINED','2026-10-03 00:00:00+07'::timestamptz,'2026-10-03 00:10:00+07'::timestamptz),
+        ('cancel','cancelled-job','t1','CANCELLED','2026-10-04 00:00:00+07'::timestamptz,'2026-10-04 00:10:00+07'::timestamptz),
+        ('customer','customer-job','t2','CANCELLED','2026-10-05 00:00:00+07'::timestamptz,NULL::timestamptz)
+      ) a(id,booking_id,technician_id,status,requested_at,responded_at)`,
+      bookings: `SELECT * FROM (VALUES
+        ('declined-job','CANCELLED','u1'),('cancelled-job','CANCELLED','u1'),('customer-job','CANCELLED','customer')
+      ) b(id,status,cancelled_by_id)`,
+      history: `SELECT 'cancelled-job'::text AS booking_id,'ACCEPTED'::text AS status,'u1'::text AS changed_by_id,
+        '2026-10-04 00:10:00+07'::timestamptz AS created_at`,
+    })
+    assert.equal(activity.totalRequests, 3)
+    assert.equal(activity.declinedRequests, 1)
+    assert.equal(activity.technicianCancelledRequests, 1)
+    assert.equal(activity.otherCancelledRequests, 1)
+    assert.equal(activity.acceptedRequests, 1) // History preserves acceptance before cancellation.
+    const declinedDay = activity.trend.find((row) => row.date === '2026-10-03')
+    assert.equal(declinedDay.declinedRequests, 1)
+    assert.equal(declinedDay.technicianCancelledRequests, 0)
+    assert.equal(activity.trend.find((row) => row.date === '2026-10-04').technicianCancelledRequests, 1)
   })
 
 test('settled entitlement is exact, independent of multi-valued joins and uses eligible technicians including zero earners',

@@ -3,6 +3,7 @@ import test from 'node:test'
 import express from 'express'
 import jwt from 'jsonwebtoken'
 import { env } from '../src/config/env.js'
+import { pool } from '../src/config/database.js'
 import { errorHandler, notFoundHandler } from '../src/middleware/error-handler.js'
 import { validateTechnicianStatisticsQuery } from '../src/modules/technician-statistics/technician-statistics.validation.js'
 import { TechnicianStatisticsRepository, TECHNICIAN_STATISTICS_SQL } from '../src/modules/technician-statistics/technician-statistics.repository.js'
@@ -169,7 +170,9 @@ test('report audit contains only aggregate metadata and is emitted only after a 
   assert.equal(events.length, 1)
 })
 
-test('endpoint is Admin-only, non-cacheable, rejects malformed filters and exposes read-only GET behavior', async () => {
+test('endpoint is Admin-only, non-cacheable, rejects malformed filters and exposes read-only GET behavior', async (context) => {
+  // Exercise the shared technician status gate; the test context restores this mock automatically.
+  context.mock.method(pool, 'query', async () => ({ rows: [{ status: 'ACTIVE' }] }))
   const calls = []
   const app = express()
   app.use('/api/admin/technician-statistics', createTechnicianStatisticsRouter({ readTechnicianStatistics: async (validated) => {

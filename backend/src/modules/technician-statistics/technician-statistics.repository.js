@@ -86,7 +86,7 @@ export function buildTechnicianStatisticsSql(sources = {}) {
           SELECT 1 FROM source_history h WHERE h.booking_id=a.booking_id AND h.status='ACCEPTED'
             AND h.changed_by_id=t.user_id AND h.created_at>=a.requested_at) AS accepted,
         a.status='COMPLETED' AND b.status='COMPLETED' AS completed,
-        b.status='CANCELLED' AND b.cancelled_by_id=t.user_id AS technician_cancelled,
+        a.status='CANCELLED' AND b.status='CANCELLED' AND b.cancelled_by_id=t.user_id AS technician_cancelled,
         a.status='CANCELLED' AND NOT COALESCE(b.status='CANCELLED' AND b.cancelled_by_id=t.user_id,false) AS other_cancelled
       FROM latest_assignments a JOIN technicians t ON t.id=a.technician_id
       JOIN source_bookings b ON b.id=a.booking_id CROSS JOIN bounds

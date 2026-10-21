@@ -3,6 +3,7 @@ import test from 'node:test'
 import express from 'express'
 import jwt from 'jsonwebtoken'
 import { env } from '../src/config/env.js'
+import { pool } from '../src/config/database.js'
 import { errorHandler, notFoundHandler } from '../src/middleware/error-handler.js'
 import { validateReportsQuery } from '../src/modules/reports/reports.validation.js'
 import { ReportsRepository, REPORTS_AGGREGATION_SQL } from '../src/modules/reports/reports.repository.js'
@@ -115,7 +116,10 @@ test('successful reads audit only range and aggregate metadata, while validation
   assert.equal(events.length, 1)
 })
 
-test('reports endpoint is Admin-only, validates repeated/unsupported parameters, has no write routes and never caches', async () => {
+test('reports endpoint is Admin-only, validates repeated/unsupported parameters, has no write routes and never caches', async (context) => {
+  // The shared technician status gate reads the account before this router's Admin guard.
+  // Keep this HTTP unit test independent of PostgreSQL; context restores the mock afterwards.
+  context.mock.method(pool, 'query', async () => ({ rows: [{ status: 'ACTIVE' }] }))
   const requests = []
   const app = express()
   app.use('/api/admin/reports', createReportsRouter({ readReports: async (period) => {

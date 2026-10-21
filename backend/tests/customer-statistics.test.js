@@ -3,6 +3,7 @@ import test from 'node:test'
 import express from 'express'
 import jwt from 'jsonwebtoken'
 import { env } from '../src/config/env.js'
+import { pool } from '../src/config/database.js'
 import { errorHandler, notFoundHandler } from '../src/middleware/error-handler.js'
 import { validateCustomerStatisticsQuery } from '../src/modules/customer-statistics/customer-statistics.validation.js'
 import { CustomerStatisticsRepository, CUSTOMER_STATISTICS_SQL } from '../src/modules/customer-statistics/customer-statistics.repository.js'
@@ -113,7 +114,9 @@ test('successful report reads audit aggregates only without customer fields or s
   assert.equal(events.length, 1)
 })
 
-test('customer statistics endpoint requires Admin, rejects malformed queries and has GET reporting only', async () => {
+test('customer statistics endpoint requires Admin, rejects malformed queries and has GET reporting only', async (context) => {
+  // Exercise the shared technician status gate without a real database connection.
+  context.mock.method(pool, 'query', async () => ({ rows: [{ status: 'ACTIVE' }] }))
   const calls = []
   const app = express()
   app.use('/api/admin/customer-statistics', createCustomerStatisticsRouter({ readCustomerStatistics: async (q) => {
