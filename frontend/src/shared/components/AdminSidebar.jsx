@@ -122,6 +122,10 @@ export function AdminSidebar({
   const [marketingOpen, setMarketingOpen] = useState(
     () => sessionStorage.getItem('admin-sidebar-marketing') === 'true'
   )
+  const analyticsActive = location.pathname.startsWith('/admin/analytics/')
+  const [analyticsOpen, setAnalyticsOpen] = useState(
+    () => analyticsActive || sessionStorage.getItem('admin-sidebar-analytics') === 'true'
+  )
   const walletActive =
     location.pathname.startsWith('/admin/withdrawals') ||
     location.pathname.startsWith('/admin/topups')
@@ -341,6 +345,36 @@ export function AdminSidebar({
                   </NavLink>
                   <NavLink to="/admin/voucher-usages" onClick={rememberScroll}>
                     {t('Usage History')}
+                  </NavLink>
+                </div>
+              )}
+            </div>
+          ) : icon === 'analytics' ? (
+            <div key={label} className="sidebar-accordion">
+              <button
+                className={`sidebar-trigger ${analyticsActive ? 'section-active' : ''}`}
+                type="button"
+                aria-expanded={analyticsOpen}
+                aria-controls="admin-analytics-navigation"
+                onClick={() => toggleGroup('analytics', setAnalyticsOpen)}
+              >
+                <DashboardIcon name={icon} />
+                <span>{t(label)}</span>
+                <b className={`nav-chevron ${analyticsOpen ? 'open' : ''}`}>⌄</b>
+              </button>
+              {analyticsOpen && (
+                <div
+                  id="admin-analytics-navigation"
+                  className="dashboard-subnav dashboard-catalog-subnav analytics-subnav"
+                >
+                  <NavLink to="/admin/analytics/customers" onClick={rememberScroll}>
+                    {t('Customer Analytics')}
+                  </NavLink>
+                  <NavLink to="/admin/analytics/technicians" onClick={rememberScroll}>
+                    {t('Technician Analytics')}
+                  </NavLink>
+                  <NavLink to="/admin/analytics/reports" onClick={rememberScroll}>
+                    {t('Reports')}
                   </NavLink>
                 </div>
               )}

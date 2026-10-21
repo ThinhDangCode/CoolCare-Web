@@ -1,5 +1,7 @@
 .dashboard-sidebar nav .finance-subnav a.active,
-.dashboard-sidebar nav .finance-subnav a.active:hover {
+.dashboard-sidebar nav .finance-subnav a.active:hover,
+.dashboard-sidebar nav .analytics-subnav a.active,
+.dashboard-sidebar nav .analytics-subnav a.active:hover {
   color: #fff;
   background: #ff7415;
   box-shadow: 0 6px 16px rgba(255, 116, 21, 0.17);

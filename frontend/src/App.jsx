@@ -25,6 +25,9 @@ import { VoucherUsagePage } from './features/vouchers/pages/VoucherUsagePage.jsx
 import PaymentsPage from './features/payments/pages/PaymentsPage.jsx'
 import PaymentDetailPage from './features/payments/pages/PaymentDetailPage.jsx'
 import RevenuePage from './features/revenue/pages/RevenuePage.jsx'
+import ReportsPage from './features/reports/pages/ReportsPage.jsx'
+import CustomerStatisticsPage from './features/customer-statistics/pages/CustomerStatisticsPage.jsx'
+import TechnicianStatisticsPage from './features/technician-statistics/pages/TechnicianStatisticsPage.jsx'
 import WithdrawalsPage from './features/withdrawals/pages/WithdrawalsPage.jsx'
 import WithdrawalDetailPage from './features/withdrawals/pages/WithdrawalDetailPage.jsx'
 import TopupsPage from './features/topups/pages/TopupsPage.jsx'
@@ -42,8 +45,14 @@ function App() {
         <Route path="/profile" element={<ProfilePage />} />
 
         <Route element={<AdminLayout />}>
+          <Route path="/admin/analytics/reports" element={<ReportsPage />} />
+          <Route path="/admin/analytics/customers" element={<CustomerStatisticsPage />} />
+          <Route path="/admin/analytics/technicians" element={<TechnicianStatisticsPage />} />
           <Route path="/admin/bookings" element={<BookingsPage />} />
-          <Route path="/admin/bookings/:id" element={<BookingDetailPage key={location.pathname} />} />
+          <Route
+            path="/admin/bookings/:id"
+            element={<BookingDetailPage key={location.pathname} />}
+          />
           <Route path="/admin/technicians" element={<TechniciansPage />} />
           <Route path="/admin/technicians/certifications" element={<CertificationsPage />} />
           <Route path="/admin/technicians/verification" element={<VerificationPage />} />
