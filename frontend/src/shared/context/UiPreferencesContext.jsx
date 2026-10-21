@@ -30,10 +30,8 @@ const messages = {
     'Your email has not been verified. Please verify it before signing in.':
       'Email chưa được xác thực. Vui lòng xác thực email trước khi đăng nhập.',
     'This account uses Google sign-in.': 'Tài khoản này sử dụng đăng nhập Google.',
-    'This portal is only available to administrators.':
-      'Cổng này chỉ dành cho quản trị viên.',
-    'The system is busy. Please try again later.':
-      'Hệ thống đang bận. Vui lòng thử lại sau.',
+    'This portal is only available to administrators.': 'Cổng này chỉ dành cho quản trị viên.',
+    'The system is busy. Please try again later.': 'Hệ thống đang bận. Vui lòng thử lại sau.',
     'Request failed. Please try again.': 'Yêu cầu không thành công. Vui lòng thử lại.',
     logoutTitle: 'Bạn có chắc muốn đăng xuất?',
     logoutCopy: 'Phiên đăng nhập quản trị hiện tại sẽ kết thúc.',
@@ -760,7 +758,8 @@ const messages = {
     'Related Service': 'Dịch vụ liên quan',
     'Loading services…': 'Đang tải dịch vụ…',
     'Select related service': 'Chọn dịch vụ liên quan',
-    'Create an active service before adding a skill.': 'Hãy tạo dịch vụ đang hoạt động trước khi thêm kỹ năng.',
+    'Create an active service before adding a skill.':
+      'Hãy tạo dịch vụ đang hoạt động trước khi thêm kỹ năng.',
     'Create service': 'Tạo dịch vụ',
     Suggestions: 'Gợi ý',
     Linked: 'Đã liên kết',
@@ -797,9 +796,12 @@ const messages = {
     'Back to skills': 'Quay lại kỹ năng',
     'Skill Information': 'Thông tin kỹ năng',
     'Configure skill identity and mapped service': 'Thiết lập kỹ năng và dịch vụ liên quan',
-    'Existing assignments and history will be preserved.': 'Các phân công và lịch sử hiện có sẽ được giữ nguyên.',
-    'This skill will no longer be available for new technician assignments.': 'Kỹ năng này sẽ không còn dùng cho phân công kỹ thuật viên mới.',
-    'This skill will be available for new technician assignments.': 'Kỹ năng này sẽ được dùng cho phân công kỹ thuật viên mới.',
+    'Existing assignments and history will be preserved.':
+      'Các phân công và lịch sử hiện có sẽ được giữ nguyên.',
+    'This skill will no longer be available for new technician assignments.':
+      'Kỹ năng này sẽ không còn dùng cho phân công kỹ thuật viên mới.',
+    'This skill will be available for new technician assignments.':
+      'Kỹ năng này sẽ được dùng cho phân công kỹ thuật viên mới.',
     'Service Areas': 'Khu vực phục vụ',
     Levels: 'Trình độ',
     Availability: 'Tình trạng làm việc',
@@ -1249,27 +1251,446 @@ const messages = {
     'You can restore this item from Trash. Existing bookings and history are preserved.':
       'Bạn có thể khôi phục mục này từ thùng rác. Lịch đặt và lịch sử vẫn được giữ nguyên.',
     'Moving...': 'Đang chuyển...',
-    'Trash': 'Thùng rác',
+    Trash: 'Thùng rác',
     'Deleted items can be restored with their previous Active or Inactive status.':
       'Có thể khôi phục mục đã xóa với trạng thái hoạt động trước đó.',
     'Loading trash...': 'Đang tải thùng rác...',
     'Trash is empty.': 'Thùng rác trống.',
-    'Restore': 'Khôi phục',
+    Restore: 'Khôi phục',
     'restored.': 'đã được khôi phục.',
     'Points deducted (active)': 'Điểm bị trừ (đang hiệu lực)',
     'VIOLATION & REASON': 'VI PHẠM & LÝ DO',
-    'REFERENCE': 'THAM CHIẾU',
-    'DEDUCTION': 'ĐIỂM TRỪ',
+    REFERENCE: 'THAM CHIẾU',
+    DEDUCTION: 'ĐIỂM TRỪ',
     'APPLIED / EXPIRES': 'ÁP DỤNG / HẾT HẠN',
     'No complaint': 'Không có khiếu nại',
-    'left': 'còn lại',
-    'Until': 'Đến',
+    left: 'còn lại',
+    Until: 'Đến',
     'View technician profile': 'Xem hồ sơ kỹ thuật viên',
     'Issuer verification evidence': 'Bằng chứng xác minh đơn vị cấp',
-    'Method': 'Phương thức',
-    'Reference': 'Tham chiếu',
+    Method: 'Phương thức',
+    Reference: 'Tham chiếu',
     'Official issuer website': 'Trang chính thức của đơn vị cấp',
     'Confirmation from issuer': 'Xác nhận từ đơn vị cấp',
+
+    '— means unavailable. All dates and times use Vietnam time (UTC+7). Updated {time} (UTC+7).':
+      '— nghĩa là chưa có dữ liệu. Tất cả ngày giờ theo giờ Việt Nam (UTC+7). Cập nhật {time} (UTC+7).',
+    'Technician Analytics': 'Phân tích kỹ thuật viên',
+    'Technician Overview': 'Tổng quan kỹ thuật viên',
+    'Technician activity, earnings, coverage, and service quality':
+      'Hoạt động, thu nhập, khu vực phục vụ và chất lượng dịch vụ của kỹ thuật viên',
+    'Technician Earnings': 'Thu nhập kỹ thuật viên',
+    'Area Distribution': 'Phân bố khu vực',
+    'Service Performance': 'Hiệu suất dịch vụ',
+    'Technician Issues': 'Vấn đề kỹ thuật viên',
+    'Locked Technicians': 'Kỹ thuật viên bị khóa',
+    'Technician statistics filters': 'Bộ lọc thống kê kỹ thuật viên',
+    'Technician statistics sections': 'Các mục thống kê kỹ thuật viên',
+    'Monitor technician profiles, verification, and current account status.':
+      'Theo dõi hồ sơ, xác minh và trạng thái tài khoản hiện tại của kỹ thuật viên.',
+    'Review technician earnings from successful, settled payments.':
+      'Theo dõi tiền kỹ thuật viên được hưởng từ thanh toán thành công đã đối soát.',
+    'Explore current registered technician coverage by city and ward.':
+      'Xem khu vực phục vụ hiện tại của kỹ thuật viên theo thành phố và phường.',
+    'Review assignment outcomes and published customer ratings.':
+      'Xem kết quả phân công và đánh giá công khai của khách hàng.',
+    'Track complaints linked to technicians and applied penalties.':
+      'Theo dõi khiếu nại liên quan đến kỹ thuật viên và hình phạt đã áp dụng.',
+    'Search technician accounts that are currently locked.':
+      'Tìm tài khoản kỹ thuật viên hiện đang bị khóa.',
+    'The technician statistics link contains unsupported or repeated filters.':
+      'Liên kết thống kê kỹ thuật viên chứa bộ lọc không hỗ trợ hoặc bị lặp.',
+    'Choose a valid technician statistics tab.': 'Chọn mục thống kê kỹ thuật viên hợp lệ.',
+    'You do not have permission to view technician statistics.':
+      'Bạn không có quyền xem thống kê kỹ thuật viên.',
+    'Check the technician statistics filters and try again.':
+      'Kiểm tra bộ lọc thống kê kỹ thuật viên rồi thử lại.',
+    'Unable to load technician statistics. Please try again.':
+      'Không thể tải thống kê kỹ thuật viên. Vui lòng thử lại.',
+    'Check the technician statistics filters': 'Kiểm tra bộ lọc thống kê kỹ thuật viên',
+    'Loading technician statistics…': 'Đang tải thống kê kỹ thuật viên…',
+    'Unable to load technician statistics': 'Không thể tải thống kê kỹ thuật viên',
+    'Active Technicians': 'Kỹ thuật viên đang hoạt động',
+    'Inactive Technicians': 'Kỹ thuật viên ngừng hoạt động',
+    'Verified Technicians': 'Kỹ thuật viên đã xác minh',
+    'All current technician profiles, including applications':
+      'Tất cả hồ sơ kỹ thuật viên hiện tại, gồm cả hồ sơ đăng ký',
+    'Active account and enabled technician profile':
+      'Tài khoản đang hoạt động và hồ sơ kỹ thuật viên được bật',
+    'Profiles with VERIFIED verification status': 'Hồ sơ hiện có trạng thái Đã xác minh',
+    'Technician Status Overview': 'Tổng quan trạng thái kỹ thuật viên',
+    'Current account and profile states. This is a snapshot, not a history of online availability.':
+      'Trạng thái tài khoản và hồ sơ hiện tại. Đây là số liệu tại thời điểm xem, không phải lịch sử trực tuyến.',
+    'Pending verification': 'Đang chờ xác minh',
+    'Rejected applications': 'Hồ sơ bị từ chối',
+    'Verified is a separate qualification and can overlap with account states. Technicians can also be customers. Current profile totals are not filtered by the report period.':
+      'Xác minh được tính riêng và có thể trùng với các nhóm trạng thái tài khoản. Kỹ thuật viên vẫn có thể là khách hàng. Tổng hồ sơ hiện tại không thay đổi theo kỳ báo cáo.',
+    'Total Technician Earnings': 'Tổng tiền kỹ thuật viên được hưởng',
+    'Successful payments settled in the selected period':
+      'Thanh toán thành công được đối soát trong kỳ đã chọn',
+    'Known portion: {amount}': 'Phần đã xác định: {amount}',
+    'Average Earnings per Technician': 'Thu nhập bình quân mỗi kỹ thuật viên',
+    'Average over technicians with settled payments':
+      'Bình quân trên kỹ thuật viên có thanh toán đã đối soát',
+    'Top Technician Earnings': 'Thu nhập kỹ thuật viên cao nhất',
+    'Completed Settled Bookings': 'Đơn hoàn thành đã đối soát',
+    'Distinct completed bookings represented by settled payments':
+      'Đếm riêng các đơn hoàn thành có thanh toán đã đối soát',
+    'Technician entitlement includes parts reimbursement where applicable. It is not profit, platform commission, a wallet top-up, or a withdrawal.':
+      'Tiền kỹ thuật viên được hưởng bao gồm phần hoàn trả vật tư nếu có. Khoản này không phải lợi nhuận, hoa hồng nền tảng, tiền nạp ví hay tiền rút ví.',
+    '{payments} settled payments across {technicians} technicians.':
+      '{payments} thanh toán đã đối soát của {technicians} kỹ thuật viên.',
+    '{count} payment snapshots have unavailable earnings. Totals and rankings remain unavailable until the snapshots are complete.':
+      '{count} thanh toán chưa có số tiền kỹ thuật viên được hưởng. Tổng và xếp hạng chưa xác định được khi dữ liệu còn thiếu.',
+    'Technician Earnings Trend': 'Xu hướng thu nhập kỹ thuật viên',
+    'Successful payments by settlement date. Amounts are the recorded technician entitlement.':
+      'Thanh toán thành công theo ngày đối soát. Số tiền là phần kỹ thuật viên được hưởng đã ghi nhận.',
+    'Settled technician earnings': 'Tiền kỹ thuật viên được hưởng đã đối soát',
+    'Known partial earnings': 'Phần thu nhập đã xác định',
+    'Total Service Areas': 'Tổng khu vực phục vụ',
+    'Distinct registered city and ward combinations':
+      'Các cặp thành phố và phường đã đăng ký, không trùng lặp',
+    'Current technician profile snapshot': 'Tổng hồ sơ kỹ thuật viên tại thời điểm xem',
+    'Highest Coverage Area': 'Khu vực có nhiều kỹ thuật viên nhất',
+    'Average Technicians per Area': 'Kỹ thuật viên bình quân mỗi khu vực',
+    'Coverage assignments divided by valid areas':
+      'Tổng lượt đăng ký phục vụ chia cho số khu vực hợp lệ',
+    'Technician Distribution by Area': 'Phân bố kỹ thuật viên theo khu vực',
+    'Unique technicians registered to serve each city and ward. A technician may cover several areas.':
+      'Đếm riêng kỹ thuật viên đăng ký phục vụ từng thành phố và phường. Một kỹ thuật viên có thể phục vụ nhiều khu vực.',
+    'Showing the {count} areas with the most technicians.':
+      'Hiển thị {count} khu vực có nhiều kỹ thuật viên nhất.',
+    'No valid service areas have been registered.': 'Chưa có khu vực phục vụ hợp lệ được đăng ký.',
+    'Area shares divide by all technician profiles and may overlap. They do not have to add up to 100%.':
+      'Tỷ lệ khu vực tính trên tổng hồ sơ kỹ thuật viên và có thể trùng nhau. Tổng tỷ lệ không nhất thiết bằng 100%.',
+    'View all service areas': 'Xem tất cả khu vực phục vụ',
+    'Share of all technicians': 'Tỷ lệ trên tổng kỹ thuật viên',
+    '{covered} profiles have valid coverage; {unassigned} have no valid service area.':
+      '{covered} hồ sơ có khu vực phục vụ hợp lệ; {unassigned} hồ sơ chưa có khu vực hợp lệ.',
+    'Average per area counts coverage assignments, not unique people across all areas.':
+      'Bình quân mỗi khu vực tính theo lượt đăng ký phục vụ; một người có thể được tính ở nhiều khu vực.',
+    'Total Assignment Requests': 'Tổng yêu cầu phân công',
+    'Actual requests sent in the selected period': 'Yêu cầu thực tế được gửi trong kỳ đã chọn',
+    'Completed Assignments': 'Phân công đã hoàn thành',
+    'Completed outcomes of the selected request cohort':
+      'Kết quả hoàn thành của các yêu cầu gửi trong kỳ',
+    'Request Completion Rate': 'Tỷ lệ hoàn thành yêu cầu',
+    'Completed assignments divided by actual requests':
+      'Phân công hoàn thành chia cho tổng yêu cầu thực tế',
+    'Average Customer Rating': 'Đánh giá khách hàng bình quân',
+    'Published reviews created in the selected period':
+      'Đánh giá công khai được tạo trong kỳ đã chọn',
+    'Accepted Requests': 'Yêu cầu đã nhận',
+    'Declined Requests': 'Yêu cầu đã từ chối',
+    'Cancelled by Technician': 'Kỹ thuật viên hủy',
+    'Other Assignment Cancellations': 'Phân công hủy do bên khác',
+    'Pending Requests': 'Yêu cầu đang chờ',
+    'Expired Requests': 'Yêu cầu hết hạn',
+    'Requests are counted once per booking and technician, using the latest assignment. Recommendations are excluded. Accepted requests include completed assignments and evidenced prior acceptances, so these figures overlap.':
+      'Mỗi cặp đơn và kỹ thuật viên được đếm một lần theo phân công mới nhất, không tính bản ghi chỉ được đề xuất. Yêu cầu đã nhận gồm phân công hoàn thành và những lần nhận có bằng chứng trước đó, nên các chỉ số có thể trùng nhau.',
+    'Customer or administrator cancellations are not counted as cancellations by a technician. Published reviews are counted individually, not averaged from profile averages.':
+      'Khách hàng hoặc quản trị viên hủy không được tính là kỹ thuật viên hủy. Điểm bình quân tính từ từng đánh giá công khai, không lấy trung bình các điểm hồ sơ.',
+    '{count} published reviews.': '{count} đánh giá công khai.',
+    'Service Performance Trend': 'Xu hướng hiệu suất dịch vụ',
+    'Completion uses requests sent in each bucket. Ratings use published reviews created in each bucket.':
+      'Tỷ lệ hoàn thành tính từ yêu cầu gửi trong từng mốc. Điểm đánh giá tính từ đánh giá công khai được tạo tại từng mốc.',
+    'Request completion rate': 'Tỷ lệ hoàn thành yêu cầu',
+    'Customer rating (×20%)': 'Điểm khách hàng (×20%)',
+    'Ratings are shown on a 0–100 scale (rating ×20). Missing ratings or empty request buckets appear as gaps.':
+      'Điểm đánh giá hiển thị trên thang 0–100 (điểm ×20). Mốc chưa có đánh giá hoặc chưa có yêu cầu được để trống.',
+    'Published reviews': 'Đánh giá công khai',
+    'Total Issue Records': 'Tổng bản ghi vấn đề',
+    'Complaint records plus penalty records': 'Tổng bản ghi khiếu nại và hình phạt',
+    'Technician Complaints': 'Khiếu nại liên quan kỹ thuật viên',
+    'Complaints explicitly linked to a technician':
+      'Khiếu nại có liên kết trực tiếp đến kỹ thuật viên',
+    'Penalties Applied': 'Hình phạt đã áp dụng',
+    'Penalty records applied in the selected period':
+      'Bản ghi hình phạt được áp dụng trong kỳ đã chọn',
+    'Pending Complaints': 'Khiếu nại đang xử lý',
+    'Current OPEN or IN_PROGRESS complaint status':
+      'Khiếu nại hiện ở trạng thái Mới hoặc Đang xử lý',
+    'Technician Issues Trend': 'Xu hướng vấn đề kỹ thuật viên',
+    'Complaints by creation date and penalties by application date. Resolved complaints use their current status.':
+      'Khiếu nại theo ngày tạo và hình phạt theo ngày áp dụng. Khiếu nại đã giải quyết tính theo trạng thái hiện tại.',
+    'Complaints linked to technicians': 'Khiếu nại liên quan kỹ thuật viên',
+    'Penalty records': 'Bản ghi hình phạt',
+    'Resolved complaints': 'Khiếu nại đã giải quyết',
+    'Closed complaints': 'Khiếu nại đã đóng',
+    'Rejected complaints': 'Khiếu nại bị từ chối',
+    'Technicians with issue records': 'Kỹ thuật viên có bản ghi vấn đề',
+    'A complaint and its resulting penalty are separate records and may describe the same incident. These counts do not establish technician fault or unique incident totals.':
+      'Khiếu nại và hình phạt liên quan là các bản ghi riêng, có thể thuộc cùng một sự việc. Các số đếm này không kết luận lỗi của kỹ thuật viên hoặc số sự việc riêng biệt.',
+    'Non-locked accounts or profiles not enabled for work':
+      'Tài khoản không bị khóa nhưng tài khoản hoặc hồ sơ không hoạt động',
+    'Locked technician accounts': 'Các tài khoản kỹ thuật viên bị khóa',
+    'Locked Technician Accounts': 'Tài khoản kỹ thuật viên bị khóa',
+    'Current locked accounts. The selected report period does not filter this list.':
+      'Tài khoản đang bị khóa tại thời điểm xem. Kỳ báo cáo không lọc danh sách này.',
+    'Search locked technicians': 'Tìm kỹ thuật viên bị khóa',
+    'Profile registration date': 'Ngày tạo hồ sơ',
+    'Unnamed technician': 'Kỹ thuật viên chưa có tên',
+    'Profile registration date is not the date an account was locked. Account status is read-only here; account management remains on the Users page.':
+      'Ngày tạo hồ sơ không phải ngày khóa tài khoản. Trang này chỉ xem trạng thái; việc quản lý tài khoản thực hiện tại trang Người dùng.',
+    Reports: 'Báo cáo',
+    'Business activity overview': 'Tổng quan hoạt động kinh doanh',
+    'CoolCare Admin': 'Quản trị CoolCare',
+    'Bookings, platform commission and service usage at a glance.':
+      'Tổng quan lịch đặt, hoa hồng nền tảng và lượt sử dụng dịch vụ.',
+    '7 days': '7 ngày',
+    '30 days': '30 ngày',
+    '90 days': '90 ngày',
+    'This year': 'Năm nay',
+    Custom: 'Tùy chọn',
+    'Report filters': 'Bộ lọc báo cáo',
+    'Custom report period': 'Kỳ báo cáo tùy chọn',
+    From: 'Từ ngày',
+    To: 'Đến ngày',
+    'Choose dates': 'Chọn ngày',
+    'Inclusive dates · Vietnam time (UTC+7)':
+      'Tính cả ngày đầu và ngày cuối · Giờ Việt Nam (UTC+7)',
+    'Inclusive dates · Maximum 366 days · Vietnam time (UTC+7)':
+      'Tính cả hai ngày · Tối đa 366 ngày · Giờ Việt Nam (UTC+7)',
+    'Choose valid start and end dates between 1900 and 9999.':
+      'Chọn ngày bắt đầu và kết thúc hợp lệ, từ năm 1900 đến 9999.',
+    'The start date must be on or before the end date.':
+      'Ngày bắt đầu phải trước hoặc trùng ngày kết thúc.',
+    'Choose a report period of 366 days or fewer.': 'Chọn kỳ báo cáo tối đa 366 ngày.',
+    'Loading reports…': 'Đang tải báo cáo…',
+    'Unable to load reports': 'Không thể tải báo cáo',
+    'Unable to connect to the server. Please try again.':
+      'Không thể kết nối máy chủ. Vui lòng thử lại.',
+    'You do not have permission to view reports.': 'Bạn không có quyền xem báo cáo.',
+    'Check the report period and try again.': 'Vui lòng kiểm tra kỳ báo cáo và thử lại.',
+    'Unable to load reports. Please try again.': 'Không thể tải báo cáo. Vui lòng thử lại.',
+    'Created in the selected period': 'Được tạo trong kỳ đã chọn',
+    'Platform Commission': 'Hoa hồng nền tảng',
+    'Successful payments settled in this period': 'Thanh toán thành công, đã đối soát trong kỳ',
+    'Total Customers': 'Tổng khách hàng',
+    'Total Technicians': 'Tổng kỹ thuật viên',
+    'Current total · All registered customer profiles':
+      'Tổng hiện tại · Tất cả hồ sơ khách hàng đã đăng ký',
+    'Current total · All registered technician profiles':
+      'Tổng hiện tại · Tất cả hồ sơ kỹ thuật viên đã đăng ký',
+    'Bookings: {count}': 'Lịch đặt: {count}',
+    'Current status of bookings created in this period.':
+      'Trạng thái hiện tại của các lịch đặt được tạo trong kỳ.',
+    'Pending / in progress': 'Chờ / đang xử lý',
+    'No bookings were created in this period.': 'Không có lịch đặt được tạo trong kỳ này.',
+    Commission: 'Hoa hồng',
+    'Average per settled payment': 'Trung bình mỗi thanh toán đã đối soát',
+    'Successful payments settled in this period: {count}.':
+      'Số thanh toán thành công, đã đối soát trong kỳ: {count}.',
+    'Commission trend · Selected period': 'Xu hướng hoa hồng · Kỳ đã chọn',
+    'Service Overview': 'Tổng quan dịch vụ',
+    'Service uses: {count}': 'Lượt dùng: {count}',
+    'Services on bookings created in this period. Each service selected for one AC unit counts as one use.':
+      'Dịch vụ của các lịch đặt được tạo trong kỳ. Mỗi dịch vụ được chọn cho một máy lạnh được tính là một lượt dùng.',
+    'Other services': 'Dịch vụ khác',
+    'Unclassified service': 'Dịch vụ chưa phân loại',
+    'No service usage was recorded for these bookings.':
+      'Chưa ghi nhận lượt sử dụng dịch vụ cho các lịch đặt này.',
+    'Payments with unavailable commission: {count}. Known partial amounts are shown separately; unavailable totals use —.':
+      'Số thanh toán chưa có thông tin hoa hồng: {count}. Phần tiền đã xác định được hiển thị riêng; tổng chưa xác định hiển thị —.',
+    'Customer and technician cards are current totals and do not change with the report period. A technician can also have a customer profile.':
+      'Thẻ khách hàng và kỹ thuật viên hiển thị tổng số hiện tại, không phụ thuộc kỳ báo cáo. Kỹ thuật viên cũng có thể có hồ sơ khách hàng.',
+    'Updated {time} (UTC+7).': 'Cập nhật {time} (UTC+7).',
+    'Platform Performance Trend': 'Xu hướng hoạt động nền tảng',
+    'Monthly totals': 'Tổng theo tháng',
+    'Daily totals': 'Tổng theo ngày',
+    '{frequency} · {basis}': '{frequency} · {basis}',
+    'Commission in VND, by settlement date': 'Hoa hồng (VNĐ), theo ngày đối soát',
+    'Bookings by creation date': 'Lịch đặt theo ngày tạo',
+    'Chart metric': 'Chỉ số biểu đồ',
+    'Choose a metric to view bookings or commission on its own axis. Focus a point for exact values, or open the chart data table. Unavailable commission leaves a gap.':
+      'Chọn chỉ số để xem lịch đặt hoặc hoa hồng trên trục tương ứng. Di chuyển đến một điểm hoặc mở bảng số liệu để xem giá trị chính xác. Hoa hồng chưa xác định được thể hiện bằng khoảng trống.',
+    '{date}: {count} bookings; commission {amount}': '{date}: {count} lịch đặt; hoa hồng {amount}',
+    '{date}: {count} bookings; commission unavailable; known partial amount {amount}':
+      '{date}: {count} lịch đặt; hoa hồng chưa xác định; phần tiền đã xác định {amount}',
+    'Hover or focus a point to view exact values.':
+      'Di chuột hoặc dùng bàn phím chọn một điểm để xem giá trị chính xác.',
+    'Axis labels are rounded; amounts below remain exact.':
+      'Nhãn trục được làm tròn; số tiền bên dưới vẫn giữ nguyên độ chính xác.',
+    '{from} – {to} · Vietnam time (UTC+7). Bookings use creation date; commission uses settlement date.':
+      '{from} – {to} · Giờ Việt Nam (UTC+7). Lịch đặt theo ngày tạo; hoa hồng theo ngày đối soát.',
+    Date: 'Ngày',
+    'Known partial commission': 'Phần hoa hồng đã xác định',
+    'Settled payments': 'Thanh toán đã đối soát',
+    'Customer Analytics': 'Phân tích khách hàng',
+    'Customer registrations, service demand, and account overview':
+      'Tổng quan đăng ký khách hàng, nhu cầu dịch vụ và trạng thái tài khoản',
+    'Customer Overview': 'Tổng quan khách hàng',
+    'Customer statistics filters': 'Bộ lọc thống kê khách hàng',
+    'Customer statistics sections': 'Các mục thống kê khách hàng',
+    'New Customers': 'Khách hàng mới',
+    'Customers by Area': 'Khách hàng theo khu vực',
+    'Customer Service Usage': 'Mức sử dụng dịch vụ',
+    'Cancellation / Rejection': 'Hủy / Từ chối',
+    'Locked Customers': 'Khách hàng bị khóa',
+    'Monitor customer registrations, booking history, service usage, and account status.':
+      'Theo dõi đăng ký khách hàng, lịch sử đặt lịch, mức sử dụng dịch vụ và trạng thái tài khoản.',
+    'Track new customer registrations and compare them with the preceding period.':
+      'Theo dõi khách hàng mới đăng ký và so sánh với kỳ liền trước.',
+    'Explore customer distribution using each profile’s current default address.':
+      'Xem phân bố khách hàng theo địa chỉ mặc định hiện tại của từng hồ sơ.',
+    'Understand service demand and repeat bookings among completed appointments.':
+      'Phân tích nhu cầu dịch vụ và khách đặt lại trong các lịch đặt đã hoàn thành.',
+    'Review customer cancellations and quotation rejections for bookings created in this period.':
+      'Xem các trường hợp khách hủy lịch và từ chối báo giá trong các lịch đặt được tạo ở kỳ này.',
+    'View currently locked customer accounts and search their contact information.':
+      'Xem các tài khoản khách hàng hiện bị khóa và tìm theo thông tin liên hệ.',
+    'Customer cancellations': 'Khách hủy lịch',
+    'Quote rejections': 'Từ chối báo giá',
+    'Cancellation & Rejection Trend': 'Xu hướng hủy lịch và từ chối báo giá',
+    'Customer Growth Trend': 'Xu hướng khách hàng mới',
+    'Counts by booking creation date. One booking can appear in both series.':
+      'Số lượt được nhóm theo ngày tạo lịch đặt. Một lịch đặt có thể xuất hiện ở cả hai đường biểu đồ.',
+    'New customer profiles by registration date, within the selected period.':
+      'Hồ sơ khách hàng mới theo ngày đăng ký trong kỳ đã chọn.',
+    '{date}: {cancelled} customer cancellations; {rejected} quote rejections; {total} bookings created.':
+      '{date}: {cancelled} lịch do khách hủy; {rejected} lịch có báo giá bị từ chối; {total} lịch đặt được tạo.',
+    '{date}: {count} new customers.': '{date}: {count} khách hàng mới.',
+    'Hover or focus a point to view exact values. All chart values are counts.':
+      'Di chuột hoặc dùng bàn phím chọn điểm để xem số liệu chính xác. Tất cả giá trị trên biểu đồ là số lượt.',
+    'No customer cancellations or quote rejections were recorded for these bookings.':
+      'Không ghi nhận lịch do khách hủy hoặc báo giá bị từ chối trong các lịch đặt này.',
+    'No customer profiles were registered in this period.':
+      'Không có hồ sơ khách hàng đăng ký mới trong kỳ này.',
+    '{frequency} · {from} – {to} · Vietnam time (UTC+7)':
+      '{frequency} · {from} – {to} · Giờ Việt Nam (UTC+7)',
+    'Unknown address': 'Chưa rõ địa chỉ',
+    'Other areas': 'Khu vực khác',
+    'Customer Distribution by Area': 'Phân bố khách hàng theo khu vực',
+    'Current default address · Top 8 areas, with remaining areas grouped together.':
+      'Địa chỉ mặc định hiện tại · 8 khu vực nhiều khách nhất và nhóm các khu vực còn lại.',
+    'Unit: Customers': 'Đơn vị: Khách hàng',
+    'Each customer profile is counted once. Missing default addresses are included as Unknown address.':
+      'Mỗi hồ sơ khách hàng được tính một lần. Địa chỉ mặc định thiếu thông tin được tính vào nhóm Chưa rõ địa chỉ.',
+    '{area}: {count} customers ({percentage}).': '{area}: {count} khách hàng ({percentage}).',
+    '{total} customer profiles · {unknown} with no complete default address':
+      '{total} hồ sơ khách hàng · {unknown} hồ sơ chưa có địa chỉ mặc định đầy đủ',
+    'View all areas': 'Xem tất cả khu vực',
+    'Current address distribution. New registrations and growth use the selected period and current address.':
+      'Phân bố theo địa chỉ hiện tại. Khách mới và tăng trưởng được tính theo kỳ đã chọn và địa chỉ hiện tại.',
+    Area: 'Khu vực',
+    Customers: 'Khách hàng',
+    Share: 'Tỷ trọng',
+    'Growth rate': 'Tỷ lệ tăng trưởng',
+    'No customer profiles are available.': 'Chưa có hồ sơ khách hàng.',
+    'Unclassified category': 'Danh mục chưa phân loại',
+    'Service Category Split': 'Tỷ trọng nhóm dịch vụ',
+    'Share of service uses on completed bookings created in the selected period.':
+      'Tỷ trọng lượt dùng dịch vụ trên các lịch đặt hiện đã hoàn thành và được tạo trong kỳ đã chọn.',
+    '{count} service uses across {categories} categories.':
+      '{count} lượt dùng dịch vụ thuộc {categories} danh mục.',
+    'Total service uses': 'Tổng lượt dùng dịch vụ',
+    '{count} uses': '{count} lượt dùng',
+    'No service usage was recorded for these completed bookings.':
+      'Không ghi nhận lượt dùng dịch vụ trong các lịch đặt đã hoàn thành này.',
+    'Each service selected for one AC unit counts as one use. Category percentages use all service uses as the denominator.':
+      'Mỗi dịch vụ được chọn cho một máy lạnh được tính là một lượt dùng. Tỷ trọng danh mục tính trên tổng lượt dùng dịch vụ.',
+    'Customers with bookings': 'Khách hàng có lịch đặt',
+    'Has at least one booking, including pending or cancelled bookings.':
+      'Có ít nhất một lịch đặt, bao gồm lịch đang chờ hoặc đã hủy.',
+    'Segment 01': 'Nhóm 01',
+    'Customers without bookings': 'Khách hàng chưa có lịch đặt',
+    'No booking has been recorded for this customer profile.':
+      'Chưa ghi nhận lịch đặt nào cho hồ sơ khách hàng này.',
+    'Segment 02': 'Nhóm 02',
+    'Registered in the selected period': 'Đăng ký trong kỳ đã chọn',
+    'Active Customers': 'Khách hàng đang hoạt động',
+    'Current accounts with ACTIVE status': 'Tài khoản hiện có trạng thái Đang hoạt động',
+    'Current accounts with LOCKED status': 'Tài khoản hiện có trạng thái Bị khóa',
+    'Customer Segment Analysis': 'Phân tích nhóm khách hàng',
+    'Current customer profiles grouped by their complete booking history.':
+      'Phân nhóm hồ sơ khách hàng hiện tại theo toàn bộ lịch sử đặt lịch.',
+    'Share of all customer profiles': 'Tỷ trọng trong tổng hồ sơ khách hàng',
+    'Booking-history segments include every booking status and all dates. Current account totals and segments do not change with the report period. A technician can also have a customer profile.':
+      'Nhóm lịch sử đặt lịch bao gồm mọi trạng thái và toàn bộ thời gian. Tổng tài khoản hiện tại và các nhóm này không thay đổi theo kỳ báo cáo. Kỹ thuật viên cũng có thể có hồ sơ khách hàng.',
+    'Total New Customers': 'Tổng khách hàng mới',
+    'Previous equal-length period: {count}': 'Kỳ liền trước có cùng số ngày: {count}',
+    'Selected month to date': 'Lũy kế tháng theo ngày kết thúc',
+    'From {from} through {to}': 'Từ {from} đến hết {to}',
+    'Selected year to date': 'Lũy kế năm theo ngày kết thúc',
+    'Growth is unavailable when the previous equal-length period has no registrations.':
+      'Không tính được tăng trưởng khi kỳ liền trước có cùng số ngày không có khách đăng ký.',
+    'Total known areas': 'Tổng khu vực đã xác định',
+    'Distinct current default-address areas':
+      'Các khu vực khác nhau theo địa chỉ mặc định hiện tại',
+    'Top area by customer count': 'Khu vực nhiều khách nhất',
+    '{count} customers · {percentage} of all profiles':
+      '{count} khách hàng · {percentage} tổng hồ sơ',
+    'No known default-address areas': 'Chưa xác định được khu vực địa chỉ mặc định',
+    'Average customers / area': 'Khách hàng trung bình / khu vực',
+    'Known-address customers / known areas': 'Khách có địa chỉ xác định / số khu vực đã xác định',
+    'Fastest-growing area': 'Khu vực tăng trưởng nhanh nhất',
+    '{percentage} registration growth versus the previous period':
+      'Tăng trưởng đăng ký {percentage} so với kỳ liền trước',
+    'No positive registration growth with a comparable previous period':
+      'Chưa có khu vực tăng trưởng dương với dữ liệu kỳ trước để so sánh',
+    'Area totals use current default addresses, not booking locations. Each profile appears once, including profiles with unknown addresses. Growth uses new registrations and their current address.':
+      'Tổng khách theo khu vực dùng địa chỉ mặc định hiện tại, không dùng địa điểm thực hiện lịch đặt. Mỗi hồ sơ được tính một lần, kể cả hồ sơ chưa rõ địa chỉ. Tăng trưởng dùng khách đăng ký mới và địa chỉ hiện tại.',
+    'Created in the selected period · Currently COMPLETED':
+      'Được tạo trong kỳ đã chọn · Hiện đã hoàn thành',
+    'Average bookings / customer': 'Lịch đặt trung bình / khách hàng',
+    'Completed bookings / customers with those bookings':
+      'Lịch đã hoàn thành / số khách có các lịch này',
+    'Top service': 'Dịch vụ được dùng nhiều nhất',
+    '{count} service uses': '{count} lượt dùng dịch vụ',
+    'No completed service usage': 'Chưa có lượt dùng dịch vụ đã hoàn thành',
+    'Repeat customer ratio': 'Tỷ lệ khách đặt lại',
+    '{count} customers with at least 2 completed bookings in this period':
+      '{count} khách có ít nhất 2 lịch đặt đã hoàn thành trong kỳ này',
+    'Service Usage Breakdown': 'Chi tiết mức sử dụng dịch vụ',
+    'Completed bookings created in the selected period. Customers can use more than one service, so customer counts overlap across rows.':
+      'Các lịch đặt đã hoàn thành và được tạo trong kỳ đã chọn. Một khách có thể dùng nhiều dịch vụ, nên số khách giữa các dòng có thể trùng nhau.',
+    'Service uses': 'Lượt dùng dịch vụ',
+    'Share of service uses': 'Tỷ trọng lượt dùng',
+    'Customer cancellation rate': 'Tỷ lệ khách hủy lịch',
+    'Customer-cancelled bookings / all bookings in this period':
+      'Lịch do khách hủy / tổng lịch đặt trong kỳ này',
+    'Quote rejection rate': 'Tỷ lệ từ chối báo giá',
+    'Bookings with a rejected quotation / all bookings in this period':
+      'Lịch có báo giá bị từ chối / tổng lịch đặt trong kỳ này',
+    'Total customer cancellations': 'Tổng lịch do khách hủy',
+    'Cancelled by the customer who created the booking': 'Được hủy bởi khách hàng tạo lịch đặt đó',
+    'Total quote rejections': 'Tổng lịch có báo giá bị từ chối',
+    'Each booking is counted once, even with multiple rejected quotes':
+      'Mỗi lịch đặt chỉ tính một lần, dù có nhiều báo giá bị từ chối',
+    'Of {total} bookings created in this period, {affected} had a customer cancellation or quote rejection. A booking can have both; the two counts must not be added together. Technician assignment declines are excluded.':
+      'Trong {total} lịch đặt được tạo ở kỳ này, {affected} lịch có khách hủy hoặc từ chối báo giá. Một lịch có thể thuộc cả hai nhóm; không cộng hai số lượt này với nhau. Không tính trường hợp kỹ thuật viên từ chối nhận lịch.',
+    'Inactive Customers': 'Khách hàng không hoạt động',
+    'Current accounts with INACTIVE status': 'Tài khoản hiện có trạng thái Không hoạt động',
+    'This list is a current account snapshot. The report period does not filter locked accounts. Registration date is not the date an account was locked.':
+      'Danh sách phản ánh trạng thái tài khoản hiện tại. Kỳ báo cáo không lọc danh sách bị khóa. Ngày đăng ký không phải ngày tài khoản bị khóa.',
+    'Locked customer accounts': 'Tài khoản khách hàng bị khóa',
+    'Search locked customers': 'Tìm khách hàng bị khóa',
+    '{count} matching accounts': '{count} tài khoản phù hợp',
+    'Account status': 'Trạng thái tài khoản',
+    'Registration date': 'Ngày đăng ký',
+    'Unnamed customer': 'Khách hàng chưa có tên',
+    Locked: 'Bị khóa',
+    'Go to first page': 'Về trang đầu',
+    'Account status is read-only here. Account management remains on the Users page.':
+      'Chỉ xem trạng thái tài khoản tại đây. Quản lý tài khoản ở trang Người dùng.',
+    'The customer statistics link contains unsupported or repeated filters.':
+      'Liên kết thống kê khách hàng có bộ lọc không được hỗ trợ hoặc bị lặp.',
+    'Choose a valid customer statistics tab.': 'Hãy chọn một mục thống kê khách hàng hợp lệ.',
+    'Use a search term of 150 characters or fewer, without control characters.':
+      'Nhập từ khóa tối đa 150 ký tự và không chứa ký tự điều khiển.',
+    'Choose a valid page between 1 and 1,000,000.': 'Chọn số trang hợp lệ từ 1 đến 1.000.000.',
+    'Choose 10, 20, or 50 rows per page.': 'Chọn 10, 20 hoặc 50 dòng mỗi trang.',
+    'You do not have permission to view customer statistics.':
+      'Bạn không có quyền xem thống kê khách hàng.',
+    'Check the customer statistics filters and try again.':
+      'Kiểm tra bộ lọc thống kê khách hàng rồi thử lại.',
+    'Unable to load customer statistics. Please try again.':
+      'Không thể tải thống kê khách hàng. Vui lòng thử lại.',
+    'Check the customer statistics filters': 'Kiểm tra bộ lọc thống kê khách hàng',
+    'Loading customer statistics…': 'Đang tải thống kê khách hàng…',
+    'Unable to load customer statistics': 'Không thể tải thống kê khách hàng',
+    '— means unavailable. All dates use Vietnam time (UTC+7).':
+      '— nghĩa là chưa có dữ liệu. Tất cả ngày giờ đều theo giờ Việt Nam (UTC+7).',
   },
   en: {
     language: 'Language',

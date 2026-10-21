@@ -7,6 +7,41 @@ export function validateComplaintId(value) {
   return value
 }
 
+export function validateCustomerComplaintQuery(query = {}) {
+  const page = query.page === undefined ? 1 : Number(query.page)
+  const limit = query.limit === undefined ? 20 : Number(query.limit)
+  const status = query.status ?? 'ALL'
+  const errors = {}
+  if (Object.keys(query).some((key) => !['page', 'limit', 'status'].includes(key)))
+    errors.query = 'Tham số lọc không hợp lệ.'
+  if (!Number.isInteger(page) || page < 1 || page > 1_000_000) errors.page = 'Trang không hợp lệ.'
+  if (!Number.isInteger(limit) || limit < 1 || limit > 50)
+    errors.limit = 'Số dòng phải từ 1 đến 50.'
+  if (!['ALL', 'OPEN', 'IN_PROGRESS', 'RESOLVED', 'REJECTED', 'CLOSED'].includes(status))
+    errors.status = 'Trạng thái không hợp lệ.'
+  requireValidBody(errors)
+  return { page, limit, status }
+}
+
+export function validateComplaintSubmission(body) {
+  const bookingId = body?.booking_id
+  const type = body?.type
+  const subject = typeof body?.subject === 'string' ? body.subject.trim().replace(/\s+/g, ' ') : ''
+  const description = typeof body?.description === 'string' ? body.description.trim() : ''
+  const errors = {}
+  if (!body || Object.keys(body).some((key) => !['booking_id', 'type', 'subject', 'description'].includes(key)))
+    errors.body = 'Dữ liệu không hợp lệ.'
+  if (!uuidPattern.test(bookingId ?? '')) errors.booking_id = 'Vui lòng chọn đơn dịch vụ hợp lệ.'
+  if (!['SERVICE', 'TECHNICIAN', 'PAYMENT', 'OTHER'].includes(type))
+    errors.type = 'Vui lòng chọn loại khiếu nại.'
+  if (subject.length < 5 || subject.length > 150)
+    errors.subject = 'Tiêu đề phải từ 5 đến 150 ký tự.'
+  if (description.length < 20 || description.length > 5000)
+    errors.description = 'Nội dung phải từ 20 đến 5.000 ký tự.'
+  requireValidBody(errors)
+  return { booking_id: bookingId, type, subject, description }
+}
+
 export function validateComplaintListQuery(query) {
   const page = query.page === undefined ? 1 : Number(query.page)
   const limit = query.limit === undefined ? 10 : Number(query.limit)

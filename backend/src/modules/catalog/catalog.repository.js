@@ -93,12 +93,19 @@ export class CatalogRepository {
           : kind === 'skills'
             ? ' JOIN services s ON s.id = r.service_id JOIN service_categories c ON c.id = s.category_id'
             : ''
+    const columns = kind === 'services'
+      ? 'r.*, c.name AS category_name'
+      : kind === 'models'
+        ? 'r.*, b.name AS brand_name'
+        : kind === 'skills'
+          ? "r.*, 'SK-' || upper(left(r.id::text, 8)) AS code, s.name AS service_name, s.is_active AS service_is_active"
+          : 'r.*'
     const active = mobile
       ? ` AND r.is_active = true${kind === 'services' ? ' AND c.is_active = true AND c.deleted_at IS NULL' : kind === 'models' ? ' AND b.is_active = true AND b.deleted_at IS NULL' : kind === 'skills' ? ' AND s.is_active = true AND s.deleted_at IS NULL AND c.is_active = true AND c.deleted_at IS NULL' : ''}`
       : ''
     return this.transaction(async (client) => {
       const result = await client.query(
-        `SELECT r.* FROM ${table} r${join} WHERE r.id=$1 AND r.deleted_at IS NULL${active} LIMIT 1`,
+        `SELECT ${columns} FROM ${table} r${join} WHERE r.id=$1 AND r.deleted_at IS NULL${active} LIMIT 1`,
         [id]
       )
       if (!result.rows[0]) throw new AppError(404, 'NOT_FOUND', 'Không tìm thấy dữ liệu.')
@@ -167,7 +174,7 @@ export class CatalogRepository {
         }
         if (kind === 'services' && data.category_id) {
           const category = await client.query(
-          'SELECT id FROM service_categories WHERE id=$1 AND deleted_at IS NULL FOR SHARE',
+            'SELECT id FROM service_categories WHERE id=$1 AND deleted_at IS NULL FOR SHARE',
             [data.category_id]
           )
           if (!category.rowCount)

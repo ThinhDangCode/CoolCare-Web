@@ -51,7 +51,7 @@ export class ReviewRepository {
         const customerId = await this.getCustomerId(client, userId)
         const booking = (
           await client.query(
-            `SELECT b.id,b.status,bt.technician_id FROM bookings b
+            `SELECT b.id,b.booking_code,b.status,bt.technician_id FROM bookings b
                JOIN LATERAL (
                     SELECT technician_id FROM booking_technicians
                      WHERE booking_id=b.id AND status='COMPLETED'
@@ -79,6 +79,16 @@ export class ReviewRepository {
                      FROM reviews WHERE technician_id=$1 AND status='PUBLISHED') summary
             WHERE tp.id=$1`,
           [booking.technician_id]
+        )
+        const reviewMessage = data.comment
+          ? `Bạn nhận được đánh giá ${data.rating}/5 sao cho booking ${booking.booking_code}: ${data.comment}`
+          : `Bạn nhận được đánh giá ${data.rating}/5 sao cho booking ${booking.booking_code}.`
+        await client.query(
+          `INSERT INTO notifications(user_id,type,title,message,reference_type,reference_id)
+           SELECT tp.user_id,'BOOKING','Bạn nhận được đánh giá mới',$2,'BOOKING',$3
+             FROM technician_profiles tp
+            WHERE tp.id=$1`,
+          [booking.technician_id, reviewMessage, booking.id]
         )
         return review
       })

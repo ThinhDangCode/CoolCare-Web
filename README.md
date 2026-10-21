@@ -21,6 +21,29 @@ STT120 (ThanhNT, Sprint 2): Admin xem lịch sử nạp tiền của kỹ thuậ
 Chi tiết hiển thị thời gian thanh toán, đối soát và bút toán tăng số dư nếu có.
 Chức năng chỉ đọc dữ liệu; API được mô tả tại [Top-ups](backend/src/modules/topups/README.md).
 
+STT121 (ThanhNT, Sprint 3): Admin xem báo cáo tổng quan tại
+`/admin/analytics/reports` (Analytics → Reports). Lọc 7/30/90 ngày, từ đầu năm
+hoặc khoảng tùy chọn tối đa 366 ngày theo UTC+7. Lịch đặt và lượt dùng dịch vụ
+tính theo ngày tạo lịch; hoa hồng tính theo ngày đối soát thanh toán thành công.
+Tổng khách hàng/kỹ thuật viên là số hồ sơ hiện tại. Chức năng chỉ đọc dữ liệu,
+không cần migration/seed; quy tắc và API tại [Reports](backend/src/modules/reports/README.md).
+
+STT122 (ThanhNT, Sprint 3): Phân tích khách hàng tại `/admin/analytics/customers`,
+gồm tổng quan, khách mới, khu vực, dịch vụ, hủy/từ chối và tài khoản bị khóa.
+Tổng tài khoản/trạng thái/địa chỉ là dữ liệu hiện tại; khách mới theo ngày tạo hồ sơ,
+dịch vụ theo lịch đặt hoàn thành thuộc nhóm ngày tạo lịch đã chọn, tỷ lệ hủy/từ chối
+theo cùng nhóm lịch đặt. Hỗ trợ Việt/Anh; chỉ đọc dữ liệu, không migration/seed.
+Quy tắc và API tại [Customer statistics](backend/src/modules/customer-statistics/README.md).
+
+STT123 (ThanhNT, Sprint 3): Phân tích kỹ thuật viên tại `/admin/analytics/technicians`,
+gồm tổng quan, thu nhập, khu vực phục vụ, hiệu suất, vấn đề và tài khoản bị khóa.
+Tổng hồ sơ, trạng thái và khu vực là dữ liệu hiện tại; hoạt động theo nhóm yêu cầu
+phân công gửi trong kỳ, thu nhập theo thanh toán thành công đã đối soát, đánh giá
+theo ngày tạo, khiếu nại theo ngày tạo và hình phạt theo ngày áp dụng (UTC+7).
+Tiền kỹ thuật viên được hưởng bao gồm hoàn trả vật tư nếu có, không phải lợi nhuận.
+Hỗ trợ Việt/Anh; chỉ đọc dữ liệu, không migration/seed. Quy tắc chi tiết và API tại
+[Technician statistics](backend/src/modules/technician-statistics/README.md).
+
 Chạy backend:
 
 ```text

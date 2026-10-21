@@ -32,17 +32,22 @@ import { createUserRouter } from './modules/users/user.routes.js'
 import { UserService } from './modules/users/user.service.js'
 import { ComplaintController } from './modules/complaints/complaint.controller.js'
 import { ComplaintRepository } from './modules/complaints/complaint.repository.js'
-import { createComplaintRouter } from './modules/complaints/complaint.routes.js'
+import { createComplaintRouter, createCustomerComplaintRouter } from './modules/complaints/complaint.routes.js'
 import { ComplaintService } from './modules/complaints/complaint.service.js'
 import { createQuotationRouter } from './modules/quotations/quotation.routes.js'
 import { createPaymentsRouter } from './modules/payments/payments.routes.js'
 import { createCustomerPaymentRouter } from './modules/payments/customer-payment.routes.js'
 import { createRevenueRouter } from './modules/revenue/revenue.routes.js'
+import { createReportsRouter } from './modules/reports/reports.routes.js'
+import { createCustomerStatisticsRouter } from './modules/customer-statistics/customer-statistics.routes.js'
+import { createTechnicianStatisticsRouter } from './modules/technician-statistics/technician-statistics.routes.js'
 import { createWithdrawalsRouter } from './modules/withdrawals/withdrawals.routes.js'
 import { createTopupsRouter } from './modules/topups/topups.routes.js'
 import { createTechnicianApplicationRouter } from './modules/technician-applications/technician-application.routes.js'
 import { createTechnicianPortalRouter } from './modules/technician-portal/technician-portal.routes.js'
 import { createServiceCategoryRouter } from './modules/services/service-category.routes.js'
+import { createCustomerNotificationsRouter } from './modules/notifications/customer-notifications.routes.js'
+import { createTechnicianNotificationsRouter } from './modules/notifications/technician-notifications.routes.js'
 
 import { AddressRepository } from './modules/address/address.repository.js'
 import { AddressService } from './modules/address/address.service.js'
@@ -147,10 +152,16 @@ app.use('/api/admin/catalog', createCatalogRouter())
 app.use('/api/admin/users', createUserRouter(userController))
 app.use('/api/admin/blogs', createAdminBlogRouter(blogController))
 app.use('/api/admin/complaints', createComplaintRouter(complaintController))
+app.use('/api/customer/complaints', createCustomerComplaintRouter(complaintController))
+app.use('/api/customer/notifications', createCustomerNotificationsRouter())
+app.use('/api/technician/notifications', createTechnicianNotificationsRouter())
 app.use('/api/admin', createAdminVoucherRouter(voucherController))
 app.use('/api/admin/payments', createPaymentsRouter())
 app.use('/api/payments', createCustomerPaymentRouter())
 app.use('/api/admin/revenue', createRevenueRouter())
+app.use('/api/admin/reports', createReportsRouter())
+app.use('/api/admin/customer-statistics', createCustomerStatisticsRouter())
+app.use('/api/admin/technician-statistics', createTechnicianStatisticsRouter())
 app.use('/api/admin/withdrawals', createWithdrawalsRouter())
 app.use('/api/admin/topups', createTopupsRouter())
 app.use('/api/admin/technicians', createTechnicianRouter())
