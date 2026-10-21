@@ -55,6 +55,22 @@
 .verification-content {
   padding: 30px;
 }
+.verification-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 24px;
+  color: #94a3b8;
+  font-size: 11px;
+}
+.verification-breadcrumb a {
+  color: #64748b;
+  text-decoration: none;
+}
+.verification-breadcrumb strong {
+  color: #f97316;
+  font-weight: 500;
+}
 .verification-heading {
   display: flex;
   align-items: center;

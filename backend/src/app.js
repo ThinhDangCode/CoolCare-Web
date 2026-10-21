@@ -34,7 +34,9 @@ import { ComplaintController } from './modules/complaints/complaint.controller.j
 import { ComplaintRepository } from './modules/complaints/complaint.repository.js'
 import { createComplaintRouter } from './modules/complaints/complaint.routes.js'
 import { ComplaintService } from './modules/complaints/complaint.service.js'
+import { createQuotationRouter } from './modules/quotations/quotation.routes.js'
 import { createPaymentsRouter } from './modules/payments/payments.routes.js'
+import { createCustomerPaymentRouter } from './modules/payments/customer-payment.routes.js'
 import { createRevenueRouter } from './modules/revenue/revenue.routes.js'
 import { createReportsRouter } from './modules/reports/reports.routes.js'
 import { createCustomerStatisticsRouter } from './modules/customer-statistics/customer-statistics.routes.js'
@@ -127,6 +129,21 @@ app.get(
   })
 )
 
+// Public, aggregate-only figures for the sign-in screen. No booking or user details.
+app.get('/api/public/overview', asyncHandler(async (_request, response) => {
+  const [bookings, technicians] = await Promise.all([
+    pool.query(`SELECT
+      count(*) FILTER (WHERE (scheduled_at AT TIME ZONE 'Asia/Ho_Chi_Minh')::date = (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Ho_Chi_Minh')::date)::int AS today_appointments,
+      count(*) FILTER (WHERE (completed_at AT TIME ZONE 'Asia/Ho_Chi_Minh')::date = (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Ho_Chi_Minh')::date)::int AS completed_today
+      FROM bookings`),
+    pool.query(`SELECT count(*)::int AS online_technicians FROM technician_profiles
+      WHERE is_active = true AND verification_status = 'VERIFIED' AND availability_status = 'ONLINE'`),
+  ])
+  response.set('Cache-Control', 'public, max-age=60').json({ data: {
+    ...bookings.rows[0], ...technicians.rows[0], updated_at: new Date().toISOString(),
+  } })
+}))
+
 // AUTH
 app.use('/api/auth', createAuthRouter(authController))
 app.use('/api/admin/catalog', createCatalogRouter())
@@ -135,6 +152,7 @@ app.use('/api/admin/blogs', createAdminBlogRouter(blogController))
 app.use('/api/admin/complaints', createComplaintRouter(complaintController))
 app.use('/api/admin', createAdminVoucherRouter(voucherController))
 app.use('/api/admin/payments', createPaymentsRouter())
+app.use('/api/payments', createCustomerPaymentRouter())
 app.use('/api/admin/revenue', createRevenueRouter())
 app.use('/api/admin/reports', createReportsRouter())
 app.use('/api/admin/customer-statistics', createCustomerStatisticsRouter())
@@ -149,6 +167,7 @@ app.use('/api/customer', createReviewRouter(reviewController))
 app.use('/api/customer', createVoucherRouter(voucherController))
 app.use('/api/technician-applications', createTechnicianApplicationRouter())
 app.use('/api/technician-portal', createTechnicianPortalRouter())
+app.use('/api/quotations', createQuotationRouter())
 
 // ADDRESS
 app.use('/api/addresses', createAddressRouter(addressController))

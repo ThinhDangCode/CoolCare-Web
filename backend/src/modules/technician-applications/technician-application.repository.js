@@ -107,12 +107,19 @@ export class TechnicianApplicationRepository {
             [technicianId, userId, input.identity_number, input.identity_front_url, input.identity_back_url,
               input.qualification_level, input.years_experience, input.bio]
           )
-          await client.query(
-            `INSERT INTO technician_accounts(id,technician_id,settlement_balance,is_receiving_jobs_allowed,created_at,updated_at)
-             VALUES($1,$2,0,true,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)`,
-            [randomUUID(), technicianId]
-          )
         }
+
+        // A legacy/rejected profile may exist without its settlement account.
+        // Matching uses an inner join to this table, so make the invariant true
+        // for both first submissions and resubmissions without resetting an
+        // existing account's wallet/debt restriction.
+        await client.query(
+          `INSERT INTO technician_accounts
+             (id,technician_id,settlement_balance,is_receiving_jobs_allowed,created_at,updated_at)
+           VALUES($1,$2,0,true,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)
+           ON CONFLICT (technician_id) DO NOTHING`,
+          [randomUUID(), technicianId]
+        )
 
         for (const area of input.areas) {
           await client.query(

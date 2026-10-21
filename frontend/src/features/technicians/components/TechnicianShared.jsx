@@ -1,11 +1,10 @@
-/* eslint-disable react-refresh/only-export-components -- shared technician UI helpers are intentionally colocated */
+import { label, formatDate, safeDocumentUrl } from './technicianFormat.js'
 import { useState } from 'react'
 import { useAutoDismiss } from '../../../shared/hooks/useAutoDismiss.js'
 import { CheckIcon, CloseIcon } from '../../../shared/components/AdminUi.jsx'
 import { useUiPreferences } from '../../../shared/context/UiPreferencesContext.jsx'
 
 export function TechnicianNotification({ message, onDismiss, danger = false }) {
-  const { t } = useUiPreferences()
   const hover = useAutoDismiss(danger ? '' : message, onDismiss)
   if (!message) return null
   return (
@@ -22,40 +21,13 @@ export function TechnicianNotification({ message, onDismiss, danger = false }) {
         <CheckIcon />
       )}
       <span>{message}</span>
-      <button type="button" aria-label={t('Dismiss notification')} onClick={() => onDismiss('')}>
+      <button type="button" aria-label="Dismiss notification" onClick={() => onDismiss('')}>
         <CloseIcon />
       </button>
     </div>
   )
 }
 
-const labels = {
-  BEGINNER: 'Beginner',
-  INTERMEDIATE: 'Intermediate',
-  ADVANCED: 'Advanced',
-  EXPERT: 'Expert',
-  PENDING: 'Pending review',
-  VERIFIED: 'Verified',
-  REJECTED: 'Rejected',
-  EXPIRED: 'Expired',
-  EXPIRING: 'Expiring soon',
-  ACTIVE: 'Active',
-  INACTIVE: 'Inactive',
-  LOCKED: 'Blocked',
-  ONLINE: 'Online',
-  OFFLINE: 'Offline',
-  BUSY: 'Busy',
-}
-export const label = (value) => labels[value] ?? value ?? '—'
-export const formatDate = (value) => (value ? new Date(value).toLocaleDateString('en-GB') : '—')
-export function safeDocumentUrl(value) {
-  try {
-    const url = new URL(value)
-    return ['https:', 'http:'].includes(url.protocol) ? url.href : null
-  } catch {
-    return null
-  }
-}
 export function TechnicianBadge({ value }) {
   const { t } = useUiPreferences()
   const tone = ['ACTIVE', 'VERIFIED', 'ONLINE'].includes(value)

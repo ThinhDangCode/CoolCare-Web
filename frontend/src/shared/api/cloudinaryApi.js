@@ -1,7 +1,7 @@
 const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME?.trim()
 const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET?.trim()
 
-export async function uploadProfilePhoto(file) {
+export async function uploadProfilePhoto(file, folder = 'coolcare/profile-photos') {
   if (!cloudName || !uploadPreset) {
     throw new Error(
       'Cloudinary chưa được cấu hình. Cần VITE_CLOUDINARY_CLOUD_NAME và VITE_CLOUDINARY_UPLOAD_PRESET.'
@@ -15,7 +15,7 @@ export async function uploadProfilePhoto(file) {
   const body = new FormData()
   body.append('file', file)
   body.append('upload_preset', uploadPreset)
-  body.append('folder', 'coolcare/profile-photos')
+  body.append('folder', folder)
 
   let response
   try {

@@ -7,5 +7,7 @@ export function createReviewRouter(controller) {
   router.use(authenticate, requireRole('CUSTOMER'))
   router.get('/bookings', asyncHandler(controller.listBookings))
   router.post('/reviews', asyncHandler(controller.create))
+  router.patch('/reviews/:id', asyncHandler(controller.update))
+  router.delete('/reviews/:id', asyncHandler(controller.remove))
   return router
 }

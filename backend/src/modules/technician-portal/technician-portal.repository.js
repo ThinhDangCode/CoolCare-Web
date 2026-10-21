@@ -28,7 +28,7 @@ export class TechnicianPortalRepository {
 
   async dashboard(userId) {
     const technician = await this.profile(userId)
-    const [nextJob, stats, pending] = await Promise.all([
+    const [nextJob, stats, pending, wallet, transactions] = await Promise.all([
       this.queryable.query(
         `SELECT b.id, b.booking_code, b.scheduled_at, b.service_address, b.ward, b.city,
                 b.status, bt.status AS assignment_status,
@@ -40,7 +40,8 @@ export class TechnicianPortalRepository {
          FROM booking_technicians bt
          JOIN bookings b ON b.id=bt.booking_id
          WHERE bt.technician_id=$1
-           AND bt.status IN ('SELECTED','ACCEPTED')
+           AND bt.status='SELECTED'
+           AND (bt.expires_at IS NULL OR bt.expires_at>CURRENT_TIMESTAMP)
            AND b.status NOT IN ('COMPLETED','CANCELLED')
          ORDER BY b.scheduled_at ASC, b.id
          LIMIT 1`,
@@ -51,23 +52,82 @@ export class TechnicianPortalRepository {
            (SELECT count(*)::int FROM booking_technicians bt JOIN bookings b ON b.id=bt.booking_id
             WHERE bt.technician_id=$1 AND b.scheduled_at::date=CURRENT_DATE
               AND bt.status IN ('SELECTED','ACCEPTED','COMPLETED')) AS jobs_today,
-           (SELECT COALESCE(sum(p.amount),0) FROM payments p
+           (SELECT COALESCE(sum(p.technician_earning),0) FROM payments p
             WHERE p.technician_id=$1 AND p.payment_status='SUCCESS'
               AND p.paid_at::date=CURRENT_DATE) AS earnings_today`,
         [technician.id],
       ),
       this.queryable.query(
-        `SELECT count(DISTINCT b.id)::int AS count
-         FROM bookings b
-         JOIN technician_areas ta ON ta.technician_id=$1 AND ta.city=b.city AND ta.ward=b.ward
-         WHERE b.status='PENDING' AND $2='ONLINE'`,
-        [technician.id, technician.availability_status],
+        `SELECT count(*)::int AS count
+         FROM booking_technicians bt
+         JOIN bookings b ON b.id=bt.booking_id
+         WHERE bt.technician_id=$1
+           AND bt.status='SELECTED'
+           AND (bt.expires_at IS NULL OR bt.expires_at>CURRENT_TIMESTAMP)
+           AND b.status NOT IN ('COMPLETED','CANCELLED')`,
+        [technician.id],
+      ),
+      this.queryable.query(
+        `SELECT settlement_balance, reserved_amount, available_balance
+         FROM technician_account_balances WHERE technician_id=$1 LIMIT 1`,
+        [technician.id],
+      ),
+      this.queryable.query(
+        `SELECT st.id, st.transaction_type, st.amount, st.balance_after,
+                st.description, st.created_at
+         FROM settlement_transactions st
+         JOIN technician_accounts a ON a.id=st.technician_account_id
+         WHERE a.technician_id=$1
+         ORDER BY st.created_at DESC, st.id DESC LIMIT 30`,
+        [technician.id],
       ),
     ])
     return {
       technician,
       next_job: nextJob.rows[0] ?? null,
       stats: { ...stats.rows[0], pending_requests: pending.rows[0].count },
+      wallet: wallet.rows[0] ?? { settlement_balance: 0, reserved_amount: 0, available_balance: 0 },
+      wallet_transactions: transactions.rows,
+    }
+  }
+
+  async ratings(userId, limit = 20) {
+    const technician = await this.profile(userId)
+    const [summary, reviews] = await Promise.all([
+      this.queryable.query(
+        `SELECT COALESCE(round(avg(rating),1),0)::float AS average_rating,
+                count(*)::int AS total_reviews,
+                count(*) FILTER (WHERE rating=1)::int AS one_star_count,
+                count(*) FILTER (WHERE rating=2)::int AS two_star_count,
+                count(*) FILTER (WHERE rating=3)::int AS three_star_count,
+                count(*) FILTER (WHERE rating=4)::int AS four_star_count,
+                count(*) FILTER (WHERE rating=5)::int AS five_star_count
+           FROM reviews WHERE technician_id=$1 AND status='PUBLISHED'`,
+        [technician.id],
+      ),
+      this.queryable.query(
+        `SELECT r.id,r.rating,r.comment,r.created_at,
+                COALESCE(NULLIF(trim(u.full_name),''),'Khách hàng') AS customer_name
+           FROM reviews r
+           JOIN customer_profiles cp ON cp.id=r.customer_id
+           JOIN users u ON u.id=cp.user_id
+          WHERE r.technician_id=$1 AND r.status='PUBLISHED'
+          ORDER BY r.created_at DESC,r.id DESC LIMIT $2`,
+        [technician.id, limit],
+      ),
+    ])
+    const row = summary.rows[0]
+    return {
+      average_rating: row.average_rating,
+      total_reviews: row.total_reviews,
+      distribution: {
+        1: row.one_star_count,
+        2: row.two_star_count,
+        3: row.three_star_count,
+        4: row.four_star_count,
+        5: row.five_star_count,
+      },
+      recent_reviews: reviews.rows,
     }
   }
 
@@ -95,6 +155,15 @@ export class TechnicianPortalRepository {
       if (!technician.is_active || technician.account_status !== 'ACTIVE') {
         throw new AppError(409, 'TECHNICIAN_INACTIVE', 'Hồ sơ kỹ thuật viên hiện không hoạt động.')
       }
+      // Self-heal legacy verified profiles that have no technician account.
+      // Existing account restrictions are never overwritten.
+      await client.query(
+        `INSERT INTO technician_accounts
+           (id,technician_id,settlement_balance,is_receiving_jobs_allowed,created_at,updated_at)
+         VALUES($1,$2,0,true,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)
+         ON CONFLICT (technician_id) DO NOTHING`,
+        [randomUUID(), technician.id],
+      )
       const updated = await client.query(
         `UPDATE technician_profiles
          SET availability_status=$2, updated_at=CURRENT_TIMESTAMP
@@ -102,9 +171,13 @@ export class TechnicianPortalRepository {
          RETURNING availability_status, updated_at`,
         [technician.id, status],
       )
+      const eligibility = await client.query(
+        'SELECT can_recommend_technician($1) AS allowed',
+        [technician.id],
+      )
       return {
         ...updated.rows[0],
-        can_receive_jobs: status === 'ONLINE',
+        can_receive_jobs: status === 'ONLINE' && eligibility.rows[0].allowed,
       }
     })
   }

@@ -12,12 +12,8 @@ import {
   CloseIcon,
   TableState,
 } from '../../../shared/components/AdminUi.jsx'
-import {
-  DocumentLink,
-  TechnicianNotification,
-  formatDate,
-  safeDocumentUrl,
-} from '../components/TechnicianShared.jsx'
+import { DocumentLink, TechnicianNotification } from '../components/TechnicianShared.jsx'
+import { formatDate, safeDocumentUrl } from '../components/technicianFormat.js'
 import '../../../shared/styles/admin.css'
 import './technicians.css'
 import './certifications.css'
@@ -60,7 +56,7 @@ function CertificateDialog({ certificate, onClose }) {
           <small>{t('CERTIFICATION DETAILS')}</small>
           <h2 id="certificate-title">{certificate.certificate_name}</h2>
         </div>
-        <button autoFocus aria-label={t('Close details')} onClick={onClose}>
+        <button autoFocus aria-label="Close details" onClick={onClose}>
           <CloseIcon />
         </button>
       </header>
@@ -166,21 +162,20 @@ export function CertificationsPage() {
       className={`figma-admin-main technician-main certification-page ${compact ? 'is-compact' : ''}`}
     >
       <PageHeader
-        title="Technician Certifications"
+        title={t('Technician Certifications')}
         subtitle={t('{count} professional certifications', { count: data.total })}
         onRefresh={retry}
         refreshing={loading}
       />
       <section className="certification-content">
         <TechnicianNotification message={notice} onDismiss={setNotice} />
-        <div className="certification-section-label">{t('TECHNICIAN OPERATIONS')}</div>
         <div className="certification-card">
           <div className="certification-toolbar">
             <label className="certification-search">
               <SearchIcon />
               <input
                 maxLength={150}
-                aria-label={t('Search certifications')}
+                aria-label="Search certifications"
                 placeholder={t('Search certificate name, code, technician name')}
                 value={search}
                 onChange={(e) => {
@@ -190,8 +185,8 @@ export function CertificationsPage() {
               />
             </label>
             <select
-              aria-label={t('Document type')}
-              title={t('Filter by certificate document format')}
+              aria-label="Document type"
+              title="Filter by certificate document format"
               value={type}
               onChange={(e) => filter(setType, e.target.value)}
             >
@@ -201,7 +196,7 @@ export function CertificationsPage() {
               <option value="OTHER">{t('Other / No document')}</option>
             </select>
             <select
-              aria-label={t('Certification status')}
+              aria-label="Certification status"
               value={status}
               onChange={(e) => filter(setStatus, e.target.value)}
             >
@@ -213,7 +208,7 @@ export function CertificationsPage() {
               ))}
             </select>
             <select
-              aria-label={t('Issuer')}
+              aria-label="Issuer"
               value={issuer}
               onChange={(e) => filter(setIssuer, e.target.value)}
             >
@@ -225,16 +220,16 @@ export function CertificationsPage() {
             <button
               className="certification-tool"
               disabled={loading}
-              aria-label={t('Refresh certifications')}
-              title={t('Refresh certifications')}
+              aria-label="Refresh certifications"
+              title="Refresh certifications"
               onClick={retry}
             >
               ↻
             </button>
             <button
               className={`certification-tool ${compact ? 'active' : ''}`}
-              aria-label={t('Compact table')}
-              title={t('Toggle compact rows')}
+              aria-label="Compact table"
+              title="Toggle compact rows"
               aria-pressed={compact}
               onClick={() => setCompact((value) => !value)}
             >
@@ -292,8 +287,8 @@ export function CertificationsPage() {
                         <div className="certification-actions">
                           <button
                             className="certification-action view"
-                            aria-label={`${t('View')} ${c.certificate_name} — ${c.full_name}`}
-                            title={t('View certificate details')}
+                            aria-label={`View ${c.certificate_name} — ${c.full_name}`}
+                            title="View certificate details"
                             onClick={() => setSelected(c)}
                           >
                             <EyeIcon />
@@ -302,12 +297,13 @@ export function CertificationsPage() {
                             <>
                               <button
                                 className="certification-action document"
-                                aria-label={`${t('Approve')} ${c.certificate_name}`}
-                                title={t('Approve certification')}
+                                aria-label={`Approve ${c.certificate_name}`}
+                                title="Approve certification"
                                 onClick={() =>
                                   setReview({
                                     path: `/technicians/certifications/${c.id}/review`,
                                     status: 'VERIFIED',
+                                    certificate: c,
                                     name: `${c.certificate_name} — ${c.full_name}`,
                                     kind: 'certification',
                                     updatedAt: c.updated_at,
@@ -318,8 +314,8 @@ export function CertificationsPage() {
                               </button>
                               <button
                                 className="certification-action reject"
-                                aria-label={`${t('Reject')} ${c.certificate_name}`}
-                                title={t('Reject certification')}
+                                aria-label={`Reject ${c.certificate_name}`}
+                                title="Reject certification"
                                 onClick={() =>
                                   setReview({
                                     path: `/technicians/certifications/${c.id}/review`,
@@ -340,8 +336,8 @@ export function CertificationsPage() {
                               href={safeDocumentUrl(c.document_url)}
                               target="_blank"
                               rel="noopener noreferrer"
-                              aria-label={`${t('Open document')} — ${c.full_name}`}
-                              title={t('Open certificate document')}
+                              aria-label={`Open document — ${c.full_name}`}
+                              title="Open certificate document"
                             >
                               <svg viewBox="0 0 24 24" aria-hidden="true">
                                 <path d="M14 3h7v7m0-7L10 14M10 4H4v16h16v-6" />
@@ -351,8 +347,8 @@ export function CertificationsPage() {
                             <button
                               className="certification-action document"
                               disabled
-                              title={t('No document available')}
-                              aria-label={t('No document available')}
+                              title="No document available"
+                              aria-label="No document available"
                             >
                               <svg viewBox="0 0 24 24" aria-hidden="true">
                                 <path d="M6 3h8l4 4v14H6V3Zm8 0v5h4" />
@@ -368,15 +364,11 @@ export function CertificationsPage() {
           </div>
           <div className="certification-footer">
             <div>
-              {t('Showing {first}–{last} of {total} certifications', {
-                first,
-                last,
-                total: data.total,
-              })}{' '}
+              {t('Showing {first}–{last} of {total} certifications', { first, last, total: data.total })}{' '}
               <label>
                 {t('Rows')}:{' '}
                 <select
-                  aria-label={t('Rows per page')}
+                  aria-label="Rows per page"
                   value={limit}
                   onChange={(e) => filter(setLimit, Number(e.target.value))}
                 >

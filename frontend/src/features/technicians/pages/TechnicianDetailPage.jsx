@@ -1,19 +1,17 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../../shared/context/AuthContext.jsx'
-import { useUiPreferences } from '../../../shared/context/UiPreferencesContext.jsx'
-import { PreferenceControls } from '../../../shared/components/PreferenceControls.jsx'
-import { BellIcon } from '../../../shared/components/AdminUi.jsx'
 import { adminRequest } from '../../../shared/api/adminApi.js'
+import { PageHeader } from '../../../shared/components/AdminUi.jsx'
+import { useUiPreferences } from '../../../shared/context/UiPreferencesContext.jsx'
 import {
   CertificateTable,
   TechnicianNotification,
   DocumentLink,
   TechnicianAvatar,
   TechnicianBadge,
-  formatDate,
-  label,
 } from '../components/TechnicianShared.jsx'
+import { formatDate, label } from '../components/technicianFormat.js'
 import '../../../shared/styles/admin.css'
 import './technicians.css'
 import './technicianDetail.css'
@@ -25,18 +23,17 @@ const tabs = {
   qualification: 'Skills & Certifications',
 }
 function Field({ title, children }) {
-  const { t } = useUiPreferences()
   return (
     <div className="technician-field">
-      <dt>{t(title)}</dt>
-      <dd>{typeof children === 'string' ? t(children) : children || '—'}</dd>
+      <dt>{title}</dt>
+      <dd>{children || '—'}</dd>
     </div>
   )
 }
 
 export function TechnicianDetailPage() {
   const { id } = useParams()
-  const { token, user, logout } = useAuth()
+  const { token, logout } = useAuth()
   const { t } = useUiPreferences()
   const [params, setParams] = useSearchParams()
   const requestedTab = params.get('tab')
@@ -77,7 +74,13 @@ export function TechnicianDetailPage() {
   }
   return (
     <main className="figma-admin-main technician-main technician-detail-page">
-      <header className="technician-detail-topbar">
+      <PageHeader
+        title="Technician Details"
+        subtitle="Manage technician profile, verification documents, and service status"
+        onRefresh={retry}
+        refreshing={loading}
+      />
+      <section className="technician-content">
         <nav className="technician-breadcrumb" aria-label={t('Breadcrumb')}>
           <span>{t('User Management')}</span>
           <span>›</span>
@@ -85,35 +88,7 @@ export function TechnicianDetailPage() {
           <span>›</span>
           <strong>{t('Technician Details')}</strong>
         </nav>
-        <div className="preference-controls">
-          <PreferenceControls compact />
-          <button
-            className="technician-detail-refresh"
-            onClick={retry}
-            disabled={loading}
-            aria-label={t('Refresh profile')}
-          >
-            ↻
-          </button>
-          <button className="figma-notification" aria-label={t('Notifications')}>
-            <BellIcon />
-            <i />
-          </button>
-          <Link className="technician-topbar-user" to="/profile">
-            <TechnicianAvatar name={user?.fullName} url={user?.avatarUrl} />
-            <span>
-              <strong>{user?.fullName || 'Admin'}</strong>
-              <small>{t('Admin')}</small>
-            </span>
-          </Link>
-        </div>
-      </header>
-      <section className="technician-content">
         <div className="technician-detail-heading">
-          <div>
-            <h1>{t('Technician Details')}</h1>
-            <p>{t('Manage technician profile, verification documents, and service status')}</p>
-          </div>
           <div className="technician-profile-actions">
             <Link className="technician-view" to="/admin/technicians">
               ← {t('Back to list')}
@@ -170,14 +145,26 @@ export function TechnicianDetailPage() {
                 </div>
                 <div className="technician-metrics">
                   <div>
+                    <small>{t('REMAINING POINTS')}</small>
+                    <strong>
+                      {data.remaining_points ?? 12}
+                      <span> / 12</span>
+                    </strong>
+                    <small>
+                      {data.remaining_points === 0
+                        ? t('Account locked: points exhausted')
+                        : data.active_penalty_points > 0
+                          ? t('Reduced job priority during penalty')
+                          : t('Normal job priority')}
+                    </small>
+                  </div>
+                  <div>
                     <small>{t('OVERALL RATING')}</small>
                     <strong>
                       {data.total_reviews ? Number(data.rating_average).toFixed(2) : '—'}{' '}
                       <span>/ 5</span>
                     </strong>
-                    <small>
-                      {data.total_reviews} {t('reviews')}
-                    </small>
+                    <small>{data.total_reviews} {t('reviews')}</small>
                   </div>
                   <div>
                     <small>{t('COMPLETED JOBS')}</small>
@@ -225,10 +212,10 @@ export function TechnicianDetailPage() {
                         <TechnicianBadge value={data.verification_status} />
                       </div>
                       <dl className="technician-fields">
-                        <Field title="FULL NAME">{data.full_name}</Field>
-                        <Field title="DATE OF BIRTH">Not provided</Field>
-                        <Field title="GENDER">Not provided</Field>
-                        <Field title="CONTACT PHONE">
+                        <Field title={t('FULL NAME')}>{data.full_name}</Field>
+                        <Field title={t('DATE OF BIRTH')}>{t('Not provided')}</Field>
+                        <Field title={t('GENDER')}>{t('Not provided')}</Field>
+                        <Field title={t('CONTACT PHONE')}>
                           {data.phone}
                           {data.phone_verified_at && (
                             <span className="technician-phone-check" title={t('Verified phone')}>
@@ -237,12 +224,12 @@ export function TechnicianDetailPage() {
                             </span>
                           )}
                         </Field>
-                        <Field title="PERSONAL EMAIL">{data.email}</Field>
+                        <Field title={t('PERSONAL EMAIL')}>{data.email}</Field>
                         <div className="technician-detail-wide">
-                          <Field title="PERMANENT ADDRESS">Not provided</Field>
+                          <Field title={t('PERMANENT ADDRESS')}>{t('Not provided')}</Field>
                         </div>
                         <div className="technician-detail-wide">
-                          <Field title="SERVICE AREAS">
+                          <Field title={t('SERVICE AREAS')}>
                             {data.areas.length
                               ? data.areas
                                   .map((a) => [a.ward, a.city].filter(Boolean).join(', '))
@@ -252,13 +239,12 @@ export function TechnicianDetailPage() {
                         </div>
                       </dl>
                       <div className="technician-detail-emergency">
-                        <Field title="EMERGENCY CONTACT">Not provided</Field>
+                        <Field title={t('EMERGENCY CONTACT')}>{t('Not provided')}</Field>
                       </div>
                       <div className="technician-detail-joined">
                         <span>▦</span>
                         <span>
-                          {t('Joined CoolCare Platform')}:{' '}
-                          <strong>{formatDate(data.created_at)}</strong>
+                          {t('Joined CoolCare Platform')}: <strong>{formatDate(data.created_at)}</strong>
                         </span>
                       </div>
                       {data.bio && (
@@ -277,23 +263,23 @@ export function TechnicianDetailPage() {
                       <TechnicianBadge value={data.verification_status} />
                     </div>
                     <dl className="technician-fields">
-                      <Field title="CITIZEN ID (CCCD)">{data.identity_number}</Field>
-                      <Field title="CONTACT NUMBER">{data.phone}</Field>
-                      <Field title="EMAIL VERIFIED">{formatDate(data.email_verified_at)}</Field>
-                      <Field title="PHONE VERIFIED">{formatDate(data.phone_verified_at)}</Field>
-                      <Field title="RESIDENTIAL ADDRESS">Not recorded in the current profile</Field>
-                      <Field title="SUBMITTED">{formatDate(data.submitted_at)}</Field>
-                      <Field title="REVIEWED BY">{data.reviewed_by}</Field>
-                      <Field title="REVIEWED AT">{formatDate(data.reviewed_at)}</Field>
+                      <Field title={t('CITIZEN ID (CCCD)')}>{data.identity_number}</Field>
+                      <Field title={t('CONTACT NUMBER')}>{data.phone}</Field>
+                      <Field title={t('EMAIL VERIFIED')}>{formatDate(data.email_verified_at)}</Field>
+                      <Field title={t('PHONE VERIFIED')}>{formatDate(data.phone_verified_at)}</Field>
+                      <Field title={t('RESIDENTIAL ADDRESS')}>{t('Not recorded in the current profile')}</Field>
+                      <Field title={t('SUBMITTED')}>{formatDate(data.submitted_at)}</Field>
+                      <Field title={t('REVIEWED BY')}>{data.reviewed_by}</Field>
+                      <Field title={t('REVIEWED AT')}>{formatDate(data.reviewed_at)}</Field>
                     </dl>
                     <div className="technician-document-grid">
                       <div>
                         <h4>{t('CCCD · Front side')}</h4>
-                        <DocumentLink url={data.identity_front_url}>Open front side</DocumentLink>
+                        <DocumentLink url={data.identity_front_url}>{t('Open front side')}</DocumentLink>
                       </div>
                       <div>
                         <h4>{t('CCCD · Back side')}</h4>
-                        <DocumentLink url={data.identity_back_url}>Open back side</DocumentLink>
+                        <DocumentLink url={data.identity_back_url}>{t('Open back side')}</DocumentLink>
                       </div>
                     </div>
                     {data.rejection_reason && (
@@ -309,24 +295,15 @@ export function TechnicianDetailPage() {
                     <section className="technician-card">
                       <div className="technician-card-heading">
                         <h3>{t('Skills & qualification')}</h3>
-                        {canManage && (
-                          <div className="technician-profile-actions">
-                            <button onClick={() => setAction('skills')}>
-                              {t('Update skills')}
-                            </button>
-                          </div>
-                        )}
                       </div>
                       <div className="technician-qualification">
                         <div>
                           <small>{t('QUALIFICATION LEVEL')}</small>
-                          <strong>{t(label(data.qualification_level))}</strong>
+                          <strong>{label(data.qualification_level)}</strong>
                         </div>
                         <div>
                           <small>{t('EXPERIENCE')}</small>
-                          <strong>
-                            {data.years_experience} {t('years')}
-                          </strong>
+                          <strong>{data.years_experience} {t('years')}</strong>
                         </div>
                       </div>
                       <div className="figma-users-table technician-table">
@@ -343,16 +320,14 @@ export function TechnicianDetailPage() {
                               data.skills.map((s) => (
                                 <tr key={s.id}>
                                   <td>{s.name}</td>
-                                  <td>{t(label(s.skill_level))}</td>
+                                  <td>{label(s.skill_level)}</td>
                                   <td>{s.brand || t('All brands')}</td>
                                 </tr>
                               ))
                             ) : (
                               <tr>
                                 <td colSpan={3}>
-                                  <div className="figma-table-state">
-                                    {t('No skills assigned.')}
-                                  </div>
+                                  <div className="figma-table-state">{t('No skills assigned.')}</div>
                                 </td>
                               </tr>
                             )}
@@ -382,7 +357,7 @@ export function TechnicianDetailPage() {
             onClose={() => setAction(null)}
             onSuccess={() => {
               setAction(null)
-              setNotice(t('Technician service areas updated.'))
+              setNotice('Technician service areas updated.')
               retry()
             }}
           />
@@ -394,9 +369,7 @@ export function TechnicianDetailPage() {
             onSuccess={() => {
               setAction(null)
               setNotice(
-                action === 'skills'
-                  ? t('Technician skills updated.')
-                  : t('Technician profile updated.')
+                action === 'skills' ? 'Technician skills updated.' : 'Technician profile updated.'
               )
               retry()
             }}
@@ -408,11 +381,7 @@ export function TechnicianDetailPage() {
             onClose={() => setAction(null)}
             onSuccess={() => {
               setAction(null)
-              setNotice(
-                action === 'activate'
-                  ? t('Technician activated.')
-                  : t('Technician deactivated.')
-              )
+              setNotice(action === 'activate' ? 'Technician activated.' : 'Technician deactivated.')
               retry()
             }}
           />

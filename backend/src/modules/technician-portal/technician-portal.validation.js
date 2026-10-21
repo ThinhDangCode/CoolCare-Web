@@ -12,9 +12,11 @@ const clean = (value, max) => {
   return result && result.length <= max ? result : null
 }
 
-const validDate = (value) =>
-  typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value) &&
-  !Number.isNaN(Date.parse(`${value}T00:00:00Z`))
+const validDate = (value) => {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
+  const date = new Date(`${value}T00:00:00.000Z`)
+  return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value
+}
 
 const validHttpsUrl = (value) => {
   if (typeof value !== 'string' || value.length > 2048) return false
@@ -40,6 +42,22 @@ export function validateSetAvailabilityStatus(body) {
     )
   }
   return { status: body.status }
+}
+
+export function validateMyRatingsQuery(query) {
+  const allowed = ['limit']
+  if (!query || Object.keys(query).some((key) => !allowed.includes(key))) {
+    throw new AppError(400, 'VALIDATION_ERROR', 'Tham số đánh giá chưa hợp lệ.')
+  }
+  if (query.limit === undefined) return 20
+  if (!/^\d+$/.test(String(query.limit))) {
+    throw new AppError(400, 'VALIDATION_ERROR', 'Số đánh giá cần tải không hợp lệ.')
+  }
+  const limit = Number(query.limit)
+  if (!Number.isSafeInteger(limit) || limit < 1 || limit > 50) {
+    throw new AppError(400, 'VALIDATION_ERROR', 'Số đánh giá cần tải phải từ 1 đến 50.')
+  }
+  return limit
 }
 
 export function validateCertificationId(value) {

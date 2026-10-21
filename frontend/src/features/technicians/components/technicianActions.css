@@ -1,3 +1,6 @@
+.certificate-verification-fields { display: grid; gap: 14px; margin: 16px 0; border: 1px solid #cbd5e1; border-radius: 8px; min-width: 0; }
+.technician-action-dialog .certificate-match-confirmation { display: flex; align-items: flex-start; gap: 10px; }
+.technician-action-dialog .certificate-match-confirmation input { width: 18px; flex: 0 0 18px; margin-top: 3px; }
 .technician-action-dialog {
   width: min(640px, calc(100vw - 40px));
   max-height: 85vh;
@@ -42,6 +45,43 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
+}
+.technician-edit-fields [aria-invalid='true'] {
+  border-color: #e11d48;
+  background: #fff8f9;
+}
+.technician-field-error {
+  color: #be123c;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+.technician-experience-input {
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+}
+.technician-experience-input input {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  appearance: textfield;
+}
+.technician-experience-input input::-webkit-inner-spin-button,
+.technician-experience-input input::-webkit-outer-spin-button {
+  appearance: none;
+  margin: 0;
+}
+.technician-action-dialog .technician-experience-input button {
+  width: 38px;
+  padding: 0;
+  flex: 0 0 auto;
+  font-size: 20px;
+}
+.technician-action-dialog .technician-experience-input button:hover:not(:disabled) {
+  background: #fff4ea;
+  border-color: #fb923c;
+  color: #ea580c;
 }
 .technician-skill-edit {
   display: grid;

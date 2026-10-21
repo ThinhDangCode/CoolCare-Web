@@ -18,6 +18,50 @@ export class VoucherRepository {
     this.audit = audit
   }
 
+  async available(userId, bookingId) {
+    return this.transaction(async (client) => {
+      const booking = (await client.query(`
+        SELECT b.id, b.status, b.subtotal, b.voucher_id, b.customer_id
+        FROM bookings b JOIN customer_profiles cp ON cp.id=b.customer_id
+        WHERE b.id=$1 AND cp.user_id=$2
+      `, [bookingId, userId])).rows[0]
+      if (!booking) throw new AppError(404, 'BOOKING_NOT_FOUND', 'Không tìm thấy đơn của bạn.')
+      if (!['QUOTATION_ACCEPTED', 'WAITING_CONFIRMATION'].includes(booking.status)) {
+        throw new AppError(409, 'BOOKING_NOT_ELIGIBLE', 'Đơn không còn ở giai đoạn áp dụng voucher.')
+      }
+      const accepted = await client.query(`
+        SELECT COALESCE(SUM(subtotal - parts_amount), 0) AS eligible_amount
+        FROM quotations WHERE booking_id=$1 AND status='ACCEPTED'
+      `, [bookingId])
+      const eligibleAmount = Number(accepted.rows[0]?.eligible_amount ?? 0)
+      if (eligibleAmount <= 0) throw new AppError(409, 'VOUCHER_REQUIRES_ACCEPTED_QUOTATION', 'Accepted quotation required.')
+      const result = await client.query(`
+        SELECT v.id, v.code, v.name, v.discount_type, v.discount_value,
+               v.minimum_order_amount, v.maximum_discount, v.start_at, v.end_at,
+               v.usage_limit, v.usage_count, v.usage_limit_per_customer,
+               (SELECT COUNT(*)::int FROM voucher_usages vu
+                WHERE vu.voucher_id=v.id AND vu.customer_id=$1
+                  AND vu.status IN ('RESERVED','USED')) AS customer_usage_count
+        FROM vouchers v
+        WHERE v.is_active=true AND v.start_at<=CURRENT_TIMESTAMP
+          AND v.end_at>CURRENT_TIMESTAMP
+        ORDER BY v.end_at ASC, v.id ASC
+      `, [booking.customer_id])
+      return result.rows
+        .filter((v) => !isComplaintCompensationCode(v.code))
+        .map((v) => ({
+          id: v.id, code: v.code, name: v.name,
+          discountType: v.discount_type, discountValue: Number(v.discount_value),
+          minimumOrderAmount: Number(v.minimum_order_amount),
+          maximumDiscount: v.maximum_discount == null ? null : Number(v.maximum_discount),
+          expiresAt: v.end_at,
+          eligible: eligibleAmount >= Number(v.minimum_order_amount)
+            && (v.usage_limit == null || Number(v.usage_count) < Number(v.usage_limit))
+            && (v.usage_limit_per_customer == null || v.customer_usage_count < Number(v.usage_limit_per_customer)),
+        }))
+    })
+  }
+
   async apply(userId, bookingId, code) {
     return this.transaction(async (client) => {
       const customer = (
@@ -27,13 +71,21 @@ export class VoucherRepository {
         throw new AppError(403, 'CUSTOMER_PROFILE_REQUIRED', 'Tài khoản chưa có hồ sơ khách hàng.')
 
       const booking = (
-        await client.query('SELECT id FROM bookings WHERE id=$1 AND customer_id=$2 FOR UPDATE', [
+        await client.query('SELECT id, status FROM bookings WHERE id=$1 AND customer_id=$2 FOR UPDATE', [
           bookingId,
           customer.id,
         ])
       ).rows[0]
       if (!booking)
         throw new AppError(404, 'BOOKING_NOT_FOUND', 'Không tìm thấy lịch dịch vụ của bạn.')
+
+      if (!['QUOTATION_ACCEPTED', 'WAITING_CONFIRMATION'].includes(booking.status)) {
+        throw new AppError(409, 'VOUCHER_REQUIRES_ACCEPTED_QUOTATION', 'Accepted quotation required.')
+      }
+      const accepted = await client.query(
+        "SELECT 1 FROM quotations WHERE booking_id=$1 AND status='ACCEPTED' LIMIT 1", [bookingId]
+      )
+      if (!accepted.rowCount) throw new AppError(409, 'VOUCHER_REQUIRES_ACCEPTED_QUOTATION', 'Accepted quotation required.')
 
       const voucher = (
         await client.query('SELECT * FROM vouchers WHERE upper(code)=$1 FOR UPDATE', [code])
@@ -56,7 +108,7 @@ export class VoucherRepository {
           await client.query('SELECT (refresh_booking_pricing($1,$2)).*', [bookingId, voucher.id])
         ).rows[0]
       } catch (error) {
-        throw new AppError(409, 'VOUCHER_CANNOT_BE_APPLIED', error.message)
+        throw new AppError(409, 'VOUCHER_CANNOT_BE_APPLIED', 'Voucher cannot be applied at this stage.')
       }
       if (priced.voucher_id !== voucher.id)
         throw new AppError(

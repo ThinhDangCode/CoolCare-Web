@@ -5,6 +5,7 @@ import { asyncHandler } from '../../utils.js'
 export function createVoucherRouter(controller) {
   const router = Router()
   router.use(authenticate, requireRole('CUSTOMER'))
+  router.get('/bookings/:id/available-vouchers', asyncHandler(controller.available))
   router.post('/bookings/:id/voucher', asyncHandler(controller.apply))
   return router
 }

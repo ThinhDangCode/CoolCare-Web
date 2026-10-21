@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../../shared/context/AuthContext.jsx'
-import { useUiPreferences } from '../../../shared/context/UiPreferencesContext.jsx'
 import { adminRequest } from '../../../shared/api/adminApi.js'
 import {
   PageHeader,
@@ -13,11 +12,9 @@ import {
   Pagination,
   TableState,
 } from '../../../shared/components/AdminUi.jsx'
-import {
-  TechnicianAvatar,
-  TechnicianNotification,
-  formatDate,
-} from '../components/TechnicianShared.jsx'
+import { TechnicianAvatar, TechnicianNotification } from '../components/TechnicianShared.jsx'
+import { useUiPreferences } from '../../../shared/context/UiPreferencesContext.jsx'
+import { formatDate } from '../components/technicianFormat.js'
 import '../../../shared/styles/admin.css'
 import './technicians.css'
 import './verification.css'
@@ -143,9 +140,7 @@ export function VerificationPage() {
               >
                 <option value="ALL">{t('All levels')}</option>
                 {['BEGINNER', 'INTERMEDIATE', 'ADVANCED', 'EXPERT'].map((value) => (
-                  <option key={value} value={value}>
-                    {t(value[0] + value.slice(1).toLowerCase())}
-                  </option>
+                  <option key={value}>{t(value)}</option>
                 ))}
               </select>
             </label>
@@ -173,10 +168,7 @@ export function VerificationPage() {
               {t('VERIFICATION REQUESTS')}
             </h2>
             <span>
-              {t('Showing {shown} of {total} Queue Items', {
-                shown: data.items.length,
-                total: data.total,
-              })}
+              {t('Showing {count} of {total} Queue Items', { count: data.items.length, total: data.total })}
             </span>
           </header>
           <div className="verification-table-scroll">
@@ -223,24 +215,25 @@ export function VerificationPage() {
                       </td>
                       <td>
                         <div className="verification-actions">
-                          <Link
+                          <button
                             className="view"
                             aria-label={`${t('View identity')} — ${row.full_name}`}
-                            title={t('View identity information')}
-                            to={`/admin/technicians/${row.id}?tab=overview`}
+                            title="Xem căn cước và kiểm tra AI trước khi duyệt"
+                            onClick={() => setReview({technicianId:row.id,path:`/technicians/${row.id}/verification`,status:'VERIFIED',name:row.full_name})}
                           >
                             <EyeIcon />
-                          </Link>
+                          </button>
                           {row.verification_status === 'PENDING' && (
                             <>
                               <button
                                 className="approve"
-                                aria-label={`${t('Approve')} ${row.full_name}`}
+                                aria-label={`${t('Approve profile')} ${row.full_name}`}
                                 title={t('Approve profile')}
                                 onClick={() =>
                                   setReview({
                                     path: `/technicians/${row.id}/verification`,
                                     status: 'VERIFIED',
+                                    technicianId: row.id,
                                     name: row.full_name,
                                   })
                                 }
@@ -249,12 +242,13 @@ export function VerificationPage() {
                               </button>
                               <button
                                 className="reject"
-                                aria-label={`${t('Reject')} ${row.full_name}`}
+                                aria-label={`${t('Reject profile')} ${row.full_name}`}
                                 title={t('Reject profile')}
                                 onClick={() =>
                                   setReview({
                                     path: `/technicians/${row.id}/verification`,
                                     status: 'REJECTED',
+                                    technicianId: row.id,
                                     name: row.full_name,
                                   })
                                 }
@@ -272,11 +266,7 @@ export function VerificationPage() {
           </div>
           <footer className="verification-footer">
             <div>
-              {t('Showing {first}–{last} of {total} requests', {
-                first: data.total ? (page - 1) * limit + 1 : 0,
-                last: Math.min(page * limit, data.total),
-                total: data.total,
-              })}{' '}
+              {t('Showing {first}–{last} of {total} requests', { first: data.total ? (page - 1) * limit + 1 : 0, last: Math.min(page * limit, data.total), total: data.total })}{' '}
               <label>
                 {t('Rows per page')}:{' '}
                 <select
@@ -304,9 +294,7 @@ export function VerificationPage() {
             target={review}
             onClose={() => setReview(null)}
             onSuccess={() => {
-              setNotice(
-                review.status === 'VERIFIED' ? t('Profile approved.') : t('Profile rejected.')
-              )
+              setNotice(review.status === 'VERIFIED' ? 'Profile approved.' : 'Profile rejected.')
               setReview(null)
               setPage(1)
               retry()

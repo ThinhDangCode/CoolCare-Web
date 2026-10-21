@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../../shared/context/AuthContext.jsx'
-import { useUiPreferences } from '../../../shared/context/UiPreferencesContext.jsx'
 import { adminRequest } from '../../../shared/api/adminApi.js'
 import {
   PageHeader,
@@ -11,7 +10,9 @@ import {
   EyeIcon,
   TableState,
 } from '../../../shared/components/AdminUi.jsx'
-import { TechnicianBadge, label } from '../components/TechnicianShared.jsx'
+import { TechnicianBadge } from '../components/TechnicianShared.jsx'
+import { label } from '../components/technicianFormat.js'
+import { useUiPreferences } from '../../../shared/context/UiPreferencesContext.jsx'
 import '../../../shared/styles/admin.css'
 import './technicians.css'
 
@@ -22,6 +23,7 @@ const initialFilters = {
   availability: 'ALL',
   area: '',
   skill: '',
+  sort: 'NAME',
 }
 
 export function TechniciansPage() {
@@ -92,11 +94,7 @@ export function TechniciansPage() {
   const select = (key, title, items, placeholder = `All ${title}`) => (
     <label className="technician-filter">
       <span>{t(title)}</span>
-      <select
-        aria-label={t(title)}
-        value={filters[key]}
-        onChange={(e) => change(key, e.target.value)}
-      >
+      <select aria-label={t(title)} value={filters[key]} onChange={(e) => change(key, e.target.value)}>
         <option value={key === 'skill' || key === 'area' ? '' : 'ALL'}>{t(placeholder)}</option>
         {items.map((item) => (
           <option key={item} value={item}>
@@ -110,9 +108,7 @@ export function TechniciansPage() {
     <main className="figma-admin-main technician-main technician-directory-page">
       <PageHeader
         title="Technicians"
-        subtitle={t('{count} technicians · Directory and account management', {
-          count: data.total,
-        })}
+        subtitle={t('{count} technicians · Directory and account management', { count: data.total })}
         onRefresh={retry}
         refreshing={loading}
       />
@@ -149,6 +145,20 @@ export function TechniciansPage() {
           </div>
           {expandedFilters && (
             <div className="technician-extra-filters" id="technician-extra-filters">
+              <label className="technician-filter">
+                <span>{t('Sort')}</span>
+                <select
+                  value={filters.sort}
+                  onChange={(e) => {
+                    setLoading(true)
+                    setPage(1)
+                    setFilters((current) => ({ ...current, sort: e.target.value }))
+                  }}
+                >
+                  <option value="NAME">{t('Name')}</option>
+                  <option value="PRIORITY">{t('Job priority')}</option>
+                </select>
+              </label>
               {select('availability', 'Availability', ['ONLINE', 'OFFLINE', 'BUSY'])}
               <button
                 className="technician-reset"
@@ -170,26 +180,26 @@ export function TechniciansPage() {
               <thead>
                 <tr>
                   <th>
-                    {t('TECH')}
+                    TECH
                     <br />
-                    {t('ID')}
+                    ID
                   </th>
                   <th>{t('TECHNICIAN')}</th>
                   <th>
-                    {t('PHONE')}
+                    PHONE
                     <br />
-                    {t('NUMBER')}
+                    NUMBER
                   </th>
                   <th>
-                    {t('ASSIGNED')}
+                    ASSIGNED
                     <br />
-                    {t('AREA')}
+                    AREA
                   </th>
                   <th>{t('RATING')}</th>
                   <th>
-                    {t('COMPLETED')}
+                    COMPLETED
                     <br />
-                    {t('JOBS')}
+                    JOBS
                   </th>
                   <th>{t('STATUS')}</th>
                   <th>{t('ACTION')}</th>

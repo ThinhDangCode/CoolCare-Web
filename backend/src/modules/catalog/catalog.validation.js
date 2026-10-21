@@ -11,6 +11,7 @@ export const acTypes = [
 ]
 
 export const resources = Object.freeze({
+  skills: { table: 'skills', fields: ['name', 'service_id', 'is_active'] },
   categories: {
     table: 'service_categories',
     fields: ['name', 'description', 'image_url', 'is_active'],
@@ -61,6 +62,7 @@ export function validateInput(kind, body, partial = false) {
         [
           'name',
           'category_id',
+          'service_id',
           'base_price',
           'model_name',
           'brand_id',
@@ -79,6 +81,8 @@ export function validateInput(kind, body, partial = false) {
         value.trim().length > (kind === 'services' ? 150 : 100)
       )
         errors[key] = 'Tên không được trống hoặc vượt quá độ dài cho phép.'
+      else if (!/\p{L}/u.test(value) || !/^[\p{L}\p{M} &'’()./-]+$/u.test(value.trim()))
+        errors[key] = 'Use letters and spaces; numbers and special symbols are not allowed.'
       else value = value.trim()
     } else if (key === 'description' || key === 'image_url') {
       if (
@@ -89,10 +93,14 @@ export function validateInput(kind, body, partial = false) {
       else value = value?.trim() || null
       if (key === 'image_url' && value && !/^https?:\/\//i.test(value))
         errors[key] = 'Nhập đường dẫn HTTP hoặc HTTPS.'
-    } else if (key === 'category_id' || key === 'brand_id') {
+    } else if (key === 'category_id' || key === 'brand_id' || key === 'service_id') {
       if (typeof value !== 'string' || !uuid.test(value))
         errors[key] =
-          key === 'brand_id' ? 'Vui lòng chọn hãng hợp lệ.' : 'Vui lòng chọn danh mục hợp lệ.'
+          key === 'brand_id'
+            ? 'Vui lòng chọn hãng hợp lệ.'
+            : key === 'service_id'
+              ? 'Vui lòng chọn dịch vụ hợp lệ.'
+              : 'Vui lòng chọn danh mục hợp lệ.'
     } else if (key === 'ac_type') {
       if (!acTypes.includes(value)) errors[key] = 'Vui lòng chọn loại máy hợp lệ.'
     } else if (key === 'capacity_btu') {
@@ -124,6 +132,7 @@ export function validateInput(kind, body, partial = false) {
 }
 export function validateQuery(query, kind) {
   const errors = {}
+  if (query.trash !== undefined && !['true', 'false'].includes(query.trash)) errors.trash = 'Invalid trash filter.'
   const page = query.page === undefined ? 1 : Number(query.page)
   const limit = query.limit === undefined ? 10 : Number(query.limit)
   if (!Number.isInteger(page) || page < 1 || page > 1000000) errors.page = 'Trang không hợp lệ.'
@@ -144,8 +153,20 @@ export function validateQuery(query, kind) {
     ...(kind === 'models' ? ['CAPACITY_ASC', 'CAPACITY_DESC'] : []),
   ]
   const sort = query.sort ?? 'NEWEST'
-  if (!sortable.includes(sort)) errors.sort = 'Kiểu sắp xếp không hợp lệ.'
+  if (kind !== 'skills' && !sortable.includes(sort))
+    errors.sort = 'Kiểu sắp xếp không hợp lệ.'
   const modelFilters = {}
+  if (kind === 'skills') {
+    if (
+      query.service_id !== undefined &&
+      (typeof query.service_id !== 'string' || !uuid.test(query.service_id))
+    )
+      errors.service_id = 'Choose a valid service.'
+    if (query.sort !== undefined && !['newest', 'oldest', 'name'].includes(query.sort))
+      errors.sort = 'Invalid sort order.'
+    modelFilters.serviceId = query.service_id
+    modelFilters.sort = query.sort ?? 'newest'
+  }
   if (kind === 'models') {
     if (query.brand_id !== undefined) {
       if (typeof query.brand_id !== 'string' || !uuid.test(query.brand_id))
@@ -179,6 +200,7 @@ export function validateQuery(query, kind) {
     limit,
     search: query.search?.trim() ?? '',
     status: query.status ?? 'all',
+    trash: query.trash === 'true',
     sort,
     categoryId: query.category_id,
     ...modelFilters,

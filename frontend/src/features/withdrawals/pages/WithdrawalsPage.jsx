@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Link, useLocation, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../../shared/context/AuthContext.jsx'
+import { useUiPreferences } from '../../../shared/context/UiPreferencesContext.jsx'
 import { PageHeader, TableState } from '../../../shared/components/AdminUi.jsx'
 import { listWithdrawals } from '../api/withdrawalsApi.js'
 import WithdrawalDateFilter from '../components/WithdrawalDateFilter.jsx'
@@ -21,6 +22,7 @@ import './withdrawals.css'
 
 export default function WithdrawalsPage() {
   const { token, clearSession } = useAuth()
+  const { t, locale } = useUiPreferences()
   const location = useLocation()
   const [params, setParams] = useSearchParams()
   const filters = readWithdrawalFilters(params)
@@ -101,43 +103,43 @@ export default function WithdrawalsPage() {
   const start = total ? (filters.page - 1) * filters.limit + 1 : 0
   const end = Math.min(filters.page * filters.limit, total)
   const subtitle = loading
-    ? 'Loading withdrawals…'
+    ? t('Loading withdrawals…')
     : error
-      ? 'Unable to load withdrawals'
-      : `${total.toLocaleString('en-US')} ${total === 1 ? 'withdrawal' : 'withdrawals'}`
+      ? t('Unable to load withdrawals')
+      : `${total.toLocaleString(locale === 'vi' ? 'vi-VN' : 'en-US')} ${t(total === 1 ? 'withdrawal' : 'withdrawals')}`
 
   return (
     <main className="withdrawals-page">
       <PageHeader
-        title="Technician wallet"
+        title={t('Technician wallet')}
         subtitle={subtitle}
         onRefresh={reload}
         refreshing={loading}
       />
-      <section className="withdrawals-content" aria-label="Withdrawal history">
-        <div className="withdrawals-tabs" aria-label="Wallet history">
+      <section className="withdrawals-content" aria-label={t('Withdrawal history')}>
+        <div className="withdrawals-tabs" aria-label={t('Wallet history')}>
           <span className="withdrawals-tab active" aria-current="page">
             <img src="/withdrawals/withdrawal-tab.svg" alt="" />
-            Withdrawal History
+            {t('Withdrawal history')}
             <strong
               aria-label={
-                loading ? 'Loading count' : error ? 'Count unavailable' : `${total} withdrawals`
+                loading ? t('Loading count') : error ? t('Count unavailable') : `${total} ${t('withdrawals')}`
               }
             >
-              {loading ? '…' : error ? '—' : total.toLocaleString('en-US')}
+              {loading ? '…' : error ? '—' : total.toLocaleString(locale === 'vi' ? 'vi-VN' : 'en-US')}
             </strong>
           </span>
           <Link to="/admin/topups" className="withdrawals-tab">
             <img src="/withdrawals/plus.svg" alt="" />
-            Top-up History
+            {t('Top-up history')}
           </Link>
         </div>
         <div className="withdrawals-toolbar">
           <label className="withdrawals-search">
             <img src="/withdrawals/search.svg" alt="" />
             <input
-              aria-label="Search withdrawals"
-              placeholder="Search transaction ID, tech name, phone…"
+              aria-label={t('Search withdrawals')}
+              placeholder={t('Search transaction ID, tech name, phone…')}
               maxLength={150}
               value={search}
               onChange={(event) =>
@@ -148,14 +150,14 @@ export default function WithdrawalsPage() {
           <div className="withdrawals-toolbar-filters">
             <span className="withdrawals-select withdrawals-status-select">
               <select
-                aria-label="Filter withdrawal status"
+                aria-label={t('Filter withdrawal status')}
                 value={filters.status}
                 onChange={(event) => updateFilters({ status: event.target.value })}
               >
-                <option value="ALL">Status: All</option>
+                <option value="ALL">{t('Status: All')}</option>
                 {Object.entries(withdrawalStatuses).map(([value, label]) => (
                   <option key={value} value={value}>
-                    {label}
+                    {t(label)}
                   </option>
                 ))}
               </select>
@@ -168,10 +170,10 @@ export default function WithdrawalsPage() {
           </div>
         </div>
         <div className="withdrawals-filter-summary">
-          <span>Initiated date · Vietnam time (UTC+7)</span>
+          <span>{t('Initiated date · Vietnam time (UTC+7)')}</span>
           {hasFilters && (
             <button type="button" onClick={reset}>
-              Clear filters
+              {t('Clear filters')}
             </button>
           )}
         </div>
@@ -180,12 +182,12 @@ export default function WithdrawalsPage() {
             <table>
               <thead>
                 <tr>
-                  <th scope="col">TRANSACTION ID</th>
-                  <th scope="col">TECHNICIAN</th>
-                  <th scope="col">WITHDRAWAL AMOUNT</th>
-                  <th scope="col">STATUS</th>
-                  <th scope="col">WITHDRAWAL DATE</th>
-                  <th scope="col">ACTION</th>
+                  <th scope="col">{t('TRANSACTION ID')}</th>
+                  <th scope="col">{t('TECHNICIAN')}</th>
+                  <th scope="col">{t('WITHDRAWAL AMOUNT')}</th>
+                  <th scope="col">{t('STATUS')}</th>
+                  <th scope="col">{t('WITHDRAWAL DATE')}</th>
+                  <th scope="col">{t('ACTION')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -214,7 +216,7 @@ export default function WithdrawalsPage() {
                       <td className="withdrawals-amount">{formatWithdrawalAmount(row.amount)}</td>
                       <td>
                         <span className={`withdrawals-status status-${row.status.toLowerCase()}`}>
-                          {withdrawalStatuses[row.status] ?? row.status}
+                          {t(withdrawalStatuses[row.status] ?? row.status)}
                         </span>
                       </td>
                       <td>{formatWithdrawalDate(row.initiatedAt)}</td>
@@ -222,8 +224,8 @@ export default function WithdrawalsPage() {
                         <Link
                           to={`/admin/withdrawals/${row.id}${query ? `?${query}` : ''}`}
                           className="withdrawals-eye"
-                          aria-label={`View withdrawal ${withdrawalReference(row)}`}
-                          title="View withdrawal details"
+                          aria-label={`${t('View withdrawal details')} ${withdrawalReference(row)}`}
+                          title={t('View withdrawal details')}
                         >
                           <img src="/withdrawals/eye.svg" alt="" />
                         </Link>
@@ -237,22 +239,22 @@ export default function WithdrawalsPage() {
             <div className="withdrawals-page-summary">
               <span aria-live="polite">
                 {loading
-                  ? 'Loading withdrawals…'
+                  ? t('Loading withdrawals…')
                   : error
-                    ? 'Count unavailable'
-                    : `Showing ${start}–${end} of ${total.toLocaleString('en-US')} withdrawal transactions`}
+                    ? t('Count unavailable')
+                    : t('Showing {start}–{end} of {total} withdrawal transactions', { start, end, total: total.toLocaleString(locale === 'vi' ? 'vi-VN' : 'en-US') })}
               </span>
               <label className="withdrawals-page-size">
-                Show
+                {t('Show')}
                 <span className="withdrawals-select">
                   <select
-                    aria-label="Withdrawals per page"
+                    aria-label={t('Withdrawals per page')}
                     value={filters.limit}
                     onChange={(event) => updateFilters({ limit: Number(event.target.value) })}
                   >
                     {[10, 25, 50, 100].map((limit) => (
                       <option key={limit} value={limit}>
-                        {limit} / page
+                        {t('{count} / page', { count: limit })}
                       </option>
                     ))}
                   </select>

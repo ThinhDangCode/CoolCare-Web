@@ -9,7 +9,8 @@ import {
   SearchIcon,
   TableState,
 } from '../../../shared/components/AdminUi.jsx'
-import { TechnicianAvatar, formatDate } from '../components/TechnicianShared.jsx'
+import { TechnicianAvatar } from '../components/TechnicianShared.jsx'
+import { formatDate } from '../components/technicianFormat.js'
 import '../../../shared/styles/admin.css'
 import './technicians.css'
 import './penalties.css'
@@ -82,7 +83,7 @@ export function PenaltiesPage() {
   return (
     <main className="figma-admin-main technician-main penalty-page">
       <PageHeader
-        title="Technician Penalties"
+        title={t('Technician Penalties')}
         subtitle={t('Track technician penalties and penalty points')}
         onRefresh={retry}
         refreshing={loading}
@@ -92,11 +93,17 @@ export function PenaltiesPage() {
           {[
             ['penalized_technicians', 'Penalized technicians'],
             ['active_penalties', 'Active penalties'],
-            ['active_points', 'Active penalty points'],
+            ['active_points', 'Points deducted (active)'],
           ].map(([key, title]) => (
             <div key={key}>
               <span>{t(title)}</span>
-              <strong>{loading || error ? '—' : data.summary[key]}</strong>
+              <strong>
+                {loading || error
+                  ? '—'
+                  : key === 'active_points' && data.summary[key] > 0
+                    ? `−${data.summary[key]}`
+                    : data.summary[key]}
+              </strong>
               <small>{t('System-wide')}</small>
             </div>
           ))}
@@ -142,13 +149,12 @@ export function PenaltiesPage() {
             <thead>
               <tr>
                 <th>{t('TECHNICIAN')}</th>
-                <th>{t('VIOLATION / BOOKING')}</th>
-                <th>{t('PENALTY POINTS')}</th>
-                <th>{t('REASON')}</th>
-                <th>{t('APPLIED DATE')}</th>
-                <th>{t('EXPIRES')}</th>
+                <th>{t('VIOLATION & REASON')}</th>
+                <th>{t('REFERENCE')}</th>
+                <th>{t('DEDUCTION')}</th>
+                <th>{t('APPLIED / EXPIRES')}</th>
                 <th>{t('STATUS')}</th>
-                <th>{t('PROFILE')}</th>
+                <th>{t('ACTION')}</th>
               </tr>
             </thead>
             <tbody>
@@ -156,7 +162,7 @@ export function PenaltiesPage() {
                 loading={loading}
                 error={error}
                 empty={!data.items.length}
-                colSpan={8}
+                colSpan={7}
                 retry={retry}
               />
               {!loading &&
@@ -175,18 +181,52 @@ export function PenaltiesPage() {
                         </span>
                       </Link>
                     </td>
-                    <td>
-                      {t(types[row.penalty_type])}
+                    <td className="penalty-violation">
+                      <strong>{t(types[row.penalty_type] || row.penalty_type)}</strong>
+                      <details className="penalty-reason">
+                        <summary title={row.reason}>
+                          {(row.reason || t('No reason provided')).replace(
+                            row.complaint_code ? row.complaint_code + ': ' : /^$/,
+                            ''
+                          )}
+                        </summary>
+                        <p>
+                          {(row.reason || t('No reason provided')).replace(
+                            row.complaint_code ? row.complaint_code + ': ' : /^$/,
+                            ''
+                          )}
+                        </p>
+                      </details>
+                    </td>
+                    <td className="penalty-reference">
+                      {row.complaint_id ? (
+                        <Link to={`/admin/complaints/${row.complaint_id}`}>
+                          {t('Complaint')} CP{String(row.complaint_number).padStart(3, '0')}
+                        </Link>
+                      ) : (
+                        <span className="technician-muted">{t('No complaint')}</span>
+                      )}
                       <small className="technician-muted">
                         {row.booking_code || t('No linked booking')}
                       </small>
                     </td>
                     <td>
-                      <span className="penalty-points">+{row.penalty_points}</span>
+                      <span
+                        className="penalty-points"
+                        aria-label={`${row.penalty_points} points deducted`}
+                      >
+                        −{row.penalty_points}
+                      </span>
+                      <small className="technician-muted">
+                        {row.remaining_points ?? 12} / 12 {t('left')}
+                      </small>
                     </td>
-                    <td className="penalty-reason">{row.reason || t('No reason provided')}</td>
-                    <td>{formatDate(row.applied_at)}</td>
-                    <td>{row.expires_at ? formatDate(row.expires_at) : t('No expiry')}</td>
+                    <td className="penalty-dates">
+                      <span>{formatDate(row.applied_at)}</span>
+                      <small className="technician-muted">
+                        {row.expires_at ? `${t('Until')} ${formatDate(row.expires_at)}` : t('No expiry')}
+                      </small>
+                    </td>
                     <td>
                       <span className={`penalty-status ${row.status.toLowerCase()}`}>
                         <i />
@@ -195,10 +235,21 @@ export function PenaltiesPage() {
                     </td>
                     <td>
                       <Link
-                        className="technician-view"
+                        className="penalty-profile-action"
+                        aria-label={`View profile of ${row.full_name}`}
+                        title={t('View technician profile')}
                         to={`/admin/technicians/${row.technician_id}`}
                       >
-                        {t('View profile')} →
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.6"
+                          aria-hidden="true"
+                        >
+                          <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" />
+                          <circle cx="12" cy="12" r="3" />
+                        </svg>
                       </Link>
                     </td>
                   </tr>
@@ -216,7 +267,7 @@ export function PenaltiesPage() {
             <label>
               {data.total} {t('penalties')} · {t('Rows per page')}{' '}
               <select
-                aria-label={t('Rows per page')}
+                aria-label="Rows per page"
                 value={limit}
                 onChange={(e) => filter(setLimit, Number(e.target.value))}
               >
@@ -230,7 +281,10 @@ export function PenaltiesPage() {
               total={data.total}
               limit={limit}
               loading={loading}
-              onPage={(n) => filter(setPage, n)}
+              onPage={(n) => {
+                setLoading(true)
+                setPage(n)
+              }}
             />
           </div>
         </div>

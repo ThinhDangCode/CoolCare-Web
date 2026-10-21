@@ -1,0 +1,100 @@
+.dashboard-main .figma-title-header .figma-header-actions > button.catalog-trash-top {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: auto;
+  min-width: 76px;
+  height: 36px;
+  min-height: 36px;
+  padding: 0 10px;
+  flex: 0 0 auto;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #64748b;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.catalog-toolbar button.catalog-trash-top,
+.skill-toolbar button.catalog-trash-top,
+.models-toolbar button.catalog-trash-top {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--app-border, #e4ebf4);
+  border-radius: 7px;
+  color: var(--app-text, #435675);
+  background: var(--app-surface, #fff);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.dashboard-main .figma-title-header .figma-header-actions > button.catalog-trash-top:hover {
+  background: #fff1f2;
+  color: #dc2626;
+}
+.dashboard-main .catalog-trash-top svg {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+}
+.catalog-trash-row {
+  display: inline-grid;
+  place-items: center;
+  color: #8b99ae;
+}
+.catalog-trash-row:hover {
+  color: #dc2626;
+  background: #fff1f2;
+}
+.catalog-trash-modal {
+  width: min(640px, calc(100vw - 32px));
+}
+.catalog-trash-body {
+  padding: 20px 24px;
+}
+.catalog-trash-body > p {
+  color: #718198;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.catalog-trash-list {
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.catalog-trash-list li {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  justify-content: space-between;
+  padding: 15px 0;
+  border-bottom: 1px solid #edf1f7;
+}
+.catalog-trash-list li > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.catalog-trash-list strong {
+  display: block;
+  font-size: 14px;
+  color: #17233b;
+}
+.catalog-trash-list small {
+  display: block;
+  margin-top: 5px;
+  color: #91a3bd;
+  font-size: 12px;
+}
+.catalog-trash-list .catalog-button {
+  flex-shrink: 0;
+}
+.catalog-trash-modal .catalog-form-actions {
+  align-items: center;
+}

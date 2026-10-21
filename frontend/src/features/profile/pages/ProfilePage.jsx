@@ -3,9 +3,10 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { ApiError, authApi } from '../../../shared/api/authApi.js'
 import { uploadProfilePhoto } from '../../../shared/api/cloudinaryApi.js'
 import { AdminSidebar } from '../../../shared/components/AdminSidebar.jsx'
-import { LanguageControl, ThemeControl } from '../../../shared/components/PreferenceControls.jsx'
+import { PageHeader } from '../../../shared/components/AdminUi.jsx'
 import { useAuth } from '../../../shared/context/AuthContext.jsx'
 import { useUiPreferences } from '../../../shared/context/UiPreferencesContext.jsx'
+import '../../../shared/styles/admin.css'
 
 const genderLabels = { MALE: 'Nam', FEMALE: 'Nữ', OTHER: 'Khác' }
 const emptyForm = { fullName: '', phone: '', dateOfBirth: '', gender: '' }
@@ -154,40 +155,6 @@ function PasswordField({
       </div>
       {error && <small className="field-error">{error}</small>}
     </label>
-  )
-}
-
-function UtilityIcon({ name }) {
-  const paths = {
-    portal: (
-      <>
-        <rect x="3.5" y="7" width="17" height="12" rx="2" />
-        <path d="M8.5 7V5.5h7V7M3.5 11h17" />
-      </>
-    ),
-    search: (
-      <>
-        <circle cx="11" cy="11" r="6" />
-        <path d="m16 16 4 4" />
-      </>
-    ),
-    refresh: (
-      <>
-        <path d="M20 6v5h-5" />
-        <path d="M18.2 15a7 7 0 1 1-.2-8.2L20 11" />
-      </>
-    ),
-    bell: (
-      <>
-        <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
-        <path d="M10 21h4" />
-      </>
-    ),
-  }
-  return (
-    <svg className="utility-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      {paths[name]}
-    </svg>
   )
 }
 
@@ -405,46 +372,19 @@ export function ProfilePage() {
         onLogout={logout}
       />
       <main className="dashboard-main">
-        <header className="profile-utility profile-title-header">
-          <div className="profile-utility-title">
-            <h1>{t(mode === 'password' ? 'Password & Security' : 'Profile Settings')}</h1>
-            <small>
-              {t(
-                mode === 'password'
-                  ? 'Update your administrator password regularly to protect system access, fleet operations, and technician dispatch privileges.'
-                  : 'Manage your administrator account details, personal credentials, and notification contact preferences.'
-              )}
-            </small>
-          </div>
-          <div>
-            <LanguageControl />
-            <button
-              type="button"
-              disabled={status === 'loading'}
-              onClick={() => {
-                setStatus('loading')
-                setMessage('')
-                setProfileRefresh((value) => value + 1)
-              }}
-            >
-              <UtilityIcon name="refresh" /> {t(status === 'loading' ? 'Refreshing' : 'Refresh')}
-            </button>
-            <button className="notification-button" type="button" aria-label="Thông báo">
-              <UtilityIcon name="bell" />
-              <i />
-            </button>
-            <ThemeControl />
-            <span className="utility-user">
-              <i style={avatarUrl ? { backgroundImage: `url(${avatarUrl})` } : undefined}>
-                {!avatarUrl && initials(profile?.fullName ?? user?.fullName)}
-              </i>
-              <span>
-                <strong>{profile?.fullName ?? user?.fullName ?? 'Marcus Vance'}</strong>
-                <small>{t('Fleet Director')}</small>
-              </span>
-            </span>
-          </div>
-        </header>
+        <PageHeader
+          title={mode === 'password' ? 'Password & Security' : 'Profile Settings'}
+          subtitle={mode === 'password'
+            ? 'Update your administrator password regularly to protect system access, fleet operations, and technician dispatch privileges.'
+            : 'Manage your administrator account details, personal credentials, and notification contact preferences.'}
+          onRefresh={() => {
+            setStatus('loading')
+            setMessage('')
+            setProfileRefresh((value) => value + 1)
+          }}
+          refreshing={status === 'loading'}
+          headerUser={{ ...user, ...profile, avatarUrl: avatarUrl || user?.avatarUrl || '' }}
+        />
         <section className="profile-content">
           {status === 'loading' && (
             <div className="profile-card profile-state" aria-busy="true">

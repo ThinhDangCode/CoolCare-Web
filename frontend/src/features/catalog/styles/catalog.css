@@ -367,9 +367,16 @@
 }
 .catalog-row-actions {
   display: flex;
+  align-items: center;
   gap: 5px;
+  flex-wrap: nowrap;
 }
 .catalog-row-actions button {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
   border: 0;
   border-radius: 4px;
   padding: 4px 6px;
@@ -940,7 +947,7 @@
 
 /* Align the remaining Service & AC Catalog screens with the Admin/Profile scale. */
 .catalog-content {
-  padding: 0 0 42px;
+  padding: 24px 0 42px;
 }
 .catalog-breadcrumb {
   display: none;
@@ -1195,4 +1202,30 @@
   background-position: center;
   background-size: cover;
   background-repeat: no-repeat;
+}
+.catalog-image-preview {
+  width: 100%;
+  max-width: 280px;
+  height: 160px;
+  object-fit: contain;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+.catalog-image-field input[type='file'] {
+  padding: 10px;
+  height: auto;
+}
+.catalog-image-field input[type='file']::file-selector-button {
+  margin-right: 12px;
+  padding: 8px 12px;
+  border: 1px solid #fed7aa;
+  border-radius: 6px;
+  background: #fff7ed;
+  color: #c2410c;
+  font: inherit;
+  cursor: pointer;
+}
+.catalog-image-field > .catalog-button {
+  align-self: flex-start;
 }

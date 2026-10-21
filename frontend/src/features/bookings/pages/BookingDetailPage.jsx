@@ -3,8 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { useAuth } from '../../../shared/context/AuthContext.jsx'
 import { useUiPreferences } from '../../../shared/context/UiPreferencesContext.jsx'
 import { adminRequest } from '../../../shared/api/adminApi.js'
-import { BellIcon } from '../../../shared/components/AdminUi.jsx'
-import { PreferenceControls } from '../../../shared/components/PreferenceControls.jsx'
+import { PageHeader } from '../../../shared/components/AdminUi.jsx'
 import { TechnicianAvatar } from '../../technicians/components/TechnicianShared.jsx'
 import { BookingStatus } from './BookingShared.jsx'
 import { bookingStatusLabels, date, time, money } from './bookingFormat.js'
@@ -22,7 +21,7 @@ function DetailField({ title, children }) {
 }
 export function BookingDetailPage() {
   const { id } = useParams(),
-    { token, user, logout } = useAuth()
+    { token, logout } = useAuth()
   const { t } = useUiPreferences()
   const [data, setData] = useState(null),
     [loading, setLoading] = useState(true),
@@ -62,29 +61,17 @@ export function BookingDetailPage() {
     data && duration ? new Date(new Date(data.scheduled_at).getTime() + duration * 60000) : null
   return (
     <main className="figma-admin-main booking-page booking-detail-page">
-      <header className="booking-detail-topbar">
-        <div>
-          <Link to="/admin/bookings" aria-label={t('Back to bookings')}>
-            ←
-          </Link>
-          <span>{t('BOOKING')}</span>
-          <strong>{data?.booking_code || t('Details')}</strong>
-          {data && <BookingStatus status={data.status} />}
-        </div>
-        <div>
-          <PreferenceControls compact />
-          <button onClick={retry} disabled={loading} aria-label={t('Refresh booking')}>
-            ↻
-          </button>
-          <BellIcon />
-          <span className="booking-admin">
-            <strong>{user?.fullName || 'Admin'}</strong>
-            <small>{t('Admin')}</small>
-          </span>
-          <TechnicianAvatar name={user?.fullName} url={user?.avatarUrl} />
-        </div>
-      </header>
+      <PageHeader
+        title={data?.booking_code || 'Booking Detail'}
+        subtitle="Booking"
+        headingAddon={data && <BookingStatus status={data.status} />}
+        onRefresh={retry}
+        refreshing={loading}
+      />
       <section className="booking-content">
+        <Link to="/admin/bookings" aria-label={t('Back to bookings')} className="booking-detail-back">
+          ← {t('Back to bookings')}
+        </Link>
         {loading ? (
           <div className="booking-state" role="status">
             <i className="figma-spinner" /> {t('Loading booking details…')}
