@@ -38,6 +38,9 @@ import { createQuotationRouter } from './modules/quotations/quotation.routes.js'
 import { createPaymentsRouter } from './modules/payments/payments.routes.js'
 import { createCustomerPaymentRouter } from './modules/payments/customer-payment.routes.js'
 import { createRevenueRouter } from './modules/revenue/revenue.routes.js'
+import { createReportsRouter } from './modules/reports/reports.routes.js'
+import { createCustomerStatisticsRouter } from './modules/customer-statistics/customer-statistics.routes.js'
+import { createTechnicianStatisticsRouter } from './modules/technician-statistics/technician-statistics.routes.js'
 import { createWithdrawalsRouter } from './modules/withdrawals/withdrawals.routes.js'
 import { createTopupsRouter } from './modules/topups/topups.routes.js'
 import { createTechnicianApplicationRouter } from './modules/technician-applications/technician-application.routes.js'
@@ -151,6 +154,9 @@ app.use('/api/admin', createAdminVoucherRouter(voucherController))
 app.use('/api/admin/payments', createPaymentsRouter())
 app.use('/api/payments', createCustomerPaymentRouter())
 app.use('/api/admin/revenue', createRevenueRouter())
+app.use('/api/admin/reports', createReportsRouter())
+app.use('/api/admin/customer-statistics', createCustomerStatisticsRouter())
+app.use('/api/admin/technician-statistics', createTechnicianStatisticsRouter())
 app.use('/api/admin/withdrawals', createWithdrawalsRouter())
 app.use('/api/admin/topups', createTopupsRouter())
 app.use('/api/admin/technicians', createTechnicianRouter())

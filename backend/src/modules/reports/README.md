@@ -1,0 +1,15 @@
+# STT121 — Statistical reports
+
+`GET /api/admin/reports` requires an Admin access token. This module performs no writes, migrations, settlement operations or exports.
+
+Only `from` and `to` query parameters are supported. Supply both as real `YYYY-MM-DD` dates (1900–9999), in increasing order, for at most 366 inclusive calendar days. Omitting both defaults to the last 30 days including today. The API names its time zone `Asia/Ho_Chi_Minh`, with a fixed UTC+7 business offset for all boundaries and buckets, consistent with STT118 (including historical dates). Unknown, repeated, object, incomplete or invalid parameters return 422. Responses include `Cache-Control: no-store`, including authentication and validation errors.
+
+- Bookings and service usage use the booking's `created_at` within the inclusive UTC+7 range. Completed/cancelled/processing are the **current** statuses of those bookings. Processing includes every status other than `COMPLETED` and `CANCELLED`; it does not imply a dispatch-only queue or completion during this period.
+- Commission uses the saved `payments.commission_amount` for `SUCCESS` payments with `settled_at` in the same UTC+7 range. It does not use gross receipts, current rates, `paid_at`, top-ups or withdrawals. A missing saved commission makes the full amount and its average unavailable (`null`); `knownCommissionAmount` preserves the exact partial sum. An empty period has `0.00` commission and no average. The average denominator is eligible settled payments, not bookings created in the period.
+- Customer and technician totals are current counts of their respective profiles, including inactive profiles and people with both profiles. They are current snapshots, independent of the selected period, and must not be added together as unique users.
+- A service use is one `booking_unit_services` row attached to a booking in the cohort. Multiple units/services may therefore contribute multiple uses for one booking. Historical uses of inactive services remain included. Percentages use all service uses as the denominator; all used services are returned, ordered by count descending then ID.
+- Trends use zero-filled days for ranges up to 90 days and months for longer ranges. Monthly edge buckets include only the requested days. Each date is the start of its calendar bucket. Bookings and commission retain their independent time bases and units.
+
+All aggregates execute in a single `REPEATABLE READ READ ONLY` transaction. `asOf` is its database transaction timestamp. Money is returned as exact decimal strings and averages round to cents with integer arithmetic. Successful report reads emit one `READ_REPORT` audit event with the period, granularity and booking count; no customer, technician, address or service details are audited. CSV/PDF exports and detailed customer/technician analytics are separate backlog work.
+
+Run `node --test tests/reports.test.js`. To enable SELECT-only fixture and local database checks, use `RUN_REPORTS_DB_TESTS=1 node --test tests/reports.database.test.js` with the existing local backend environment. Fixtures are CTEs, not inserts or temporary tables.
