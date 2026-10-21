@@ -348,6 +348,15 @@ export class TechnicianMatchingService {
         db
       )
 
+      // Deliver a persisted in-app notification to the selected technician.
+      // Keep it in the same transaction as the assignment so it cannot be
+      // shown for a request that failed to commit.
+      await this.repository.notifyTechnicianOfNewRequest(
+        validBookingId,
+        validTechnicianId,
+        db
+      )
+
       // 9. Return the selection result.
       return {
         booking: {

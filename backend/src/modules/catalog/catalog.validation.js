@@ -132,7 +132,6 @@ export function validateInput(kind, body, partial = false) {
 }
 export function validateQuery(query, kind) {
   const errors = {}
-  if (query.trash !== undefined && !['true', 'false'].includes(query.trash)) errors.trash = 'Invalid trash filter.'
   const page = query.page === undefined ? 1 : Number(query.page)
   const limit = query.limit === undefined ? 10 : Number(query.limit)
   if (!Number.isInteger(page) || page < 1 || page > 1000000) errors.page = 'Trang không hợp lệ.'
@@ -196,7 +195,6 @@ export function validateQuery(query, kind) {
   }
   requireValidBody(errors)
   return {
-    ...(query.trash !== undefined ? { trash: query.trash === 'true' } : {}),
     page,
     limit,
     search: query.search?.trim() ?? '',

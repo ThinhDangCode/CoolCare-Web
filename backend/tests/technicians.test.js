@@ -23,6 +23,7 @@ test('approving a technician repairs the receiving account and activates the pro
             identity_number: '012345678901',
             identity_front_url: 'https://example.com/front.jpg',
             identity_back_url: 'https://example.com/back.jpg',
+            user_id: 'customer-user-id',
           }] }
         }
         if (sql.includes('UPDATE technician_profiles SET verification_status')) {
@@ -49,6 +50,9 @@ test('approving a technician repairs the receiving account and activates the pro
   assert.ok(queries.some(({ sql }) => sql.includes('INSERT INTO technician_accounts')))
   assert.ok(queries.some(({ sql }) => sql.includes('ON CONFLICT (technician_id) DO NOTHING')))
   assert.ok(queries.some(({ sql }) => sql.includes("CASE WHEN $2='VERIFIED' THEN true")))
+  const notification = queries.find(({ sql }) => sql.includes('INSERT INTO notifications'))
+  assert.equal(notification.params[0], 'customer-user-id')
+  assert.equal(notification.params[1], 'Đăng ký kỹ thuật viên đã được duyệt')
 })
 
 test('verified technicians cannot clear all skills or produce a successful audit', async () => {

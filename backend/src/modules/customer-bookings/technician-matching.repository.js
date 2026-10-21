@@ -507,4 +507,30 @@ export class TechnicianMatchingRepository {
 
     return result.rows[0]
   }
+
+  async notifyTechnicianOfNewRequest(bookingId, technicianId, db) {
+    await db.query(
+      `INSERT INTO notifications(user_id,type,title,message,reference_type,reference_id)
+       SELECT u.id,
+              'BOOKING',
+              'New Job Request',
+              'A customer sent you a new service request for booking ' || b.booking_code || '.',
+              'BOOKING',
+              b.id::text
+         FROM technician_profiles tp
+         JOIN users u ON u.id = tp.user_id
+         JOIN bookings b ON b.id = $1
+        WHERE tp.id = $2
+          AND NOT EXISTS (
+            SELECT 1
+              FROM notifications n
+             WHERE n.user_id = u.id
+               AND n.type = 'BOOKING'
+               AND n.title = 'New Job Request'
+               AND n.reference_type = 'BOOKING'
+               AND n.reference_id = b.id::text
+          )`,
+      [bookingId, technicianId]
+    )
+  }
 }

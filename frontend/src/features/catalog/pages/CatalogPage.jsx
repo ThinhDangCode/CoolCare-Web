@@ -6,7 +6,6 @@ import { uploadProfilePhoto } from '../../../shared/api/cloudinaryApi.js'
 import { catalogRequest } from '../api/catalogApi.js'
 import { CatalogLayout } from '../components/CatalogLayout.jsx'
 import { Modal } from '../components/Modal.jsx'
-import { CatalogTrash, CatalogTrashButton } from '../components/CatalogTrash.jsx'
 import '../styles/catalog.css'
 import { nameError, numberError } from '../catalogValidation.js'
 
@@ -144,15 +143,6 @@ export function CatalogPage() {
         setRefresh(value => value + 1)
       }}
       refreshing={loading}
-      actions={
-        <CatalogTrash
-          kind={kind}
-          onChanged={() => {
-            setLoading(true)
-            setRefresh((n) => n + 1)
-          }}
-        />
-      }
     >
       <section className="catalog-content">
         <div className="catalog-breadcrumb">
@@ -356,14 +346,6 @@ export function CatalogPage() {
                           >
                             ◷
                           </button>
-                          <CatalogTrashButton
-                            kind={kind}
-                            row={row}
-                            onChanged={() => {
-                              setLoading(true)
-                              setRefresh((n) => n + 1)
-                            }}
-                          />
                         </div>
                       </td>
                     </tr>

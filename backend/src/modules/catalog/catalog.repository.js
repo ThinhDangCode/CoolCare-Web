@@ -13,7 +13,7 @@ export class CatalogRepository {
     if (kind === 'skills') return listSkills(filters, mobile, this.transaction)
     const { table } = resources[kind]
     const values = []
-    const clauses = [`r.deleted_at IS ${!mobile && filters.trash ? 'NOT ' : ''}NULL`]
+    const clauses = []
     const bind = (value) => {
       values.push(value)
       return `$${values.length}`
@@ -26,14 +26,14 @@ export class CatalogRepository {
       clauses.push(`r.is_active = ${bind(mobile || filters.status === 'active')}`)
     if (kind === 'services' && filters.categoryId)
       clauses.push(`r.category_id = ${bind(filters.categoryId)}`)
-    if (mobile && kind === 'services') clauses.push('c.is_active = true AND c.deleted_at IS NULL')
+    if (mobile && kind === 'services') clauses.push('c.is_active = true')
     if (kind === 'models') {
       if (filters.brandId) clauses.push(`r.brand_id = ${bind(filters.brandId)}`)
       if (filters.acType) clauses.push(`r.ac_type = ${bind(filters.acType)}`)
       if (filters.capacityBtu !== undefined)
         clauses.push(`r.capacity_btu = ${bind(filters.capacityBtu)}`)
       if (filters.inverter !== undefined) clauses.push(`r.inverter = ${bind(filters.inverter)}`)
-      if (mobile) clauses.push('b.is_active = true AND b.deleted_at IS NULL')
+      if (mobile) clauses.push('b.is_active = true')
     }
     const join =
       kind === 'services'
@@ -71,6 +71,59 @@ export class CatalogRepository {
     })
   }
 
+  async find(kind, id, mobile = false) {
+    if (kind === 'skills') {
+      return this.transaction(async (client) => {
+        const result = await client.query(
+          `SELECT r.*, 'SK-' || upper(left(r.id::text, 8)) AS code,
+                  s.name AS service_name, s.is_active AS service_is_active
+             FROM skills r
+             JOIN services s ON s.id = r.service_id
+            WHERE r.id = $1
+              AND ($2::boolean = false OR (
+                r.is_active AND s.is_active AND EXISTS (
+                  SELECT 1 FROM service_categories c
+                   WHERE c.id = s.category_id AND c.is_active
+                )
+              ))
+            LIMIT 1`,
+          [id, mobile]
+        )
+        return result.rows[0] ?? null
+      })
+    }
+
+    const { table } = resources[kind]
+    const join =
+      kind === 'services'
+        ? ' JOIN service_categories c ON c.id = r.category_id'
+        : kind === 'models'
+          ? ' JOIN ac_brands b ON b.id = r.brand_id'
+          : ''
+    const columns =
+      kind === 'services'
+        ? 'r.*, c.name AS category_name'
+        : kind === 'models'
+          ? 'r.*, b.name AS brand_name'
+          : 'r.*'
+    const mobileVisibility =
+      kind === 'services'
+        ? ' AND r.is_active AND c.is_active'
+        : kind === 'models'
+          ? ' AND r.is_active AND b.is_active'
+          : ' AND r.is_active'
+
+    return this.transaction(async (client) => {
+      const result = await client.query(
+        `SELECT ${columns} FROM ${table} r${join}
+          WHERE r.id = $1${mobile ? mobileVisibility : ''}
+          LIMIT 1`,
+        [id]
+      )
+      return result.rows[0] ?? null
+    })
+  }
+
   async mutate(kind, id, data, action, actorId) {
     const { table } = resources[kind]
     try {
@@ -81,18 +134,6 @@ export class CatalogRepository {
           existing = (await client.query(`SELECT * FROM ${table} WHERE id=$1 FOR UPDATE`, [id]))
             .rows[0]
           if (!existing) throw new AppError(404, 'NOT_FOUND', 'Không tìm thấy dữ liệu.')
-          if (action === 'TRASH' || action === 'RESTORE' || action === 'DELETE') {
-            const restoring = action === 'RESTORE'
-            if (restoring && !existing.deleted_at || !restoring && existing.deleted_at) return existing
-            if (restoring) {
-              const parent = kind === 'services' ? ['service_categories', existing.category_id] : kind === 'models' ? ['ac_brands', existing.brand_id] : kind === 'skills' ? ['services', existing.service_id] : null
-              if (parent && !(await client.query(`SELECT id FROM ${parent[0]} WHERE id=$1 AND deleted_at IS NULL FOR SHARE`, [parent[1]])).rowCount)
-                throw new AppError(409, 'PARENT_IN_TRASH', 'Restore the related category, brand or service first.')
-            }
-            const row = (await client.query(`UPDATE ${table} SET deleted_at=${restoring ? 'NULL' : 'CURRENT_TIMESTAMP'},updated_at=CURRENT_TIMESTAMP WHERE id=$1 RETURNING *`, [id])).rows[0]
-            return row
-          }
-          if (existing.deleted_at) throw new AppError(409, 'RESOURCE_IN_TRASH', 'Restore this item before editing it.')
         }
         if (kind === 'skills') {
           if (action === 'DELETE') {
@@ -102,7 +143,7 @@ export class CatalogRepository {
           before = existing
           if (data.service_id) {
             const service = await client.query(
-              'SELECT id FROM services WHERE id=$1 AND deleted_at IS NULL AND (is_active OR id=$2::uuid) FOR SHARE',
+              'SELECT id FROM services WHERE id=$1 AND (is_active OR id=$2::uuid) FOR SHARE',
               [data.service_id, existing?.service_id ?? null]
             )
             if (!service.rowCount)
@@ -119,7 +160,7 @@ export class CatalogRepository {
               'Model chỉ được vô hiệu hóa, không được xóa.'
             )
           if (data.brand_id) {
-            const brand = await client.query('SELECT id FROM ac_brands WHERE id=$1 AND deleted_at IS NULL FOR SHARE', [
+            const brand = await client.query('SELECT id FROM ac_brands WHERE id=$1 FOR SHARE', [
               data.brand_id,
             ])
             if (!brand.rowCount)
@@ -143,7 +184,7 @@ export class CatalogRepository {
         }
         if (kind === 'services' && data.category_id) {
           const category = await client.query(
-            'SELECT id FROM service_categories WHERE id=$1 AND deleted_at IS NULL FOR SHARE',
+            'SELECT id FROM service_categories WHERE id=$1 FOR SHARE',
             [data.category_id]
           )
           if (!category.rowCount)
@@ -166,7 +207,9 @@ export class CatalogRepository {
             })
         }
         let after = null
-        {
+        if (action === 'DELETE') {
+          await client.query(`DELETE FROM ${table} WHERE id=$1`, [id])
+        } else {
           const fields = Object.keys(data)
           const values = Object.values(data)
           if (!id) {

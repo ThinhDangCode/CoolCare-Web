@@ -6,7 +6,7 @@ export async function listSkills(filters, mobile = false, transaction = withTran
   return transaction(async (client) => {
     await client.query('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY')
     const values = []
-    const clauses = [`r.deleted_at IS ${!mobile && filters.trash ? 'NOT ' : ''}NULL`]
+    const clauses = []
     const bind = (value) => {
       values.push(value)
       return `$${values.length}`
@@ -18,7 +18,7 @@ export async function listSkills(filters, mobile = false, transaction = withTran
       )
     }
     if (filters.serviceId) clauses.push(`r.service_id = ${bind(filters.serviceId)}`)
-    if (mobile) clauses.push('r.is_active AND s.is_active AND s.deleted_at IS NULL AND EXISTS (SELECT 1 FROM service_categories c WHERE c.id=s.category_id AND c.is_active AND c.deleted_at IS NULL)')
+    if (mobile) clauses.push('r.is_active AND s.is_active AND EXISTS (SELECT 1 FROM service_categories c WHERE c.id=s.category_id AND c.is_active)')
     const source = 'FROM skills r JOIN services s ON s.id=r.service_id'
     const where = clauses.length ? ` WHERE ${clauses.join(' AND ')}` : ''
     const statistics = (

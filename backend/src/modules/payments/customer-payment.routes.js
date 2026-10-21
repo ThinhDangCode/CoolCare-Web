@@ -611,7 +611,7 @@ router.get('/technician/bookings/:bookingId/summary', authenticate, requireRole(
  const id=validateUuid(req.params.bookingId)
  const data=await withTransaction(async db=>{
    const b=await assigned(db,req.auth.userId,id)
-   const r=await db.query(`SELECT p.id,p.amount,p.payment_status,p.payment_kind,p.checkout_url,p.qr_expires_at,p.paid_at,pm.code AS method_code
+   const r=await db.query(`SELECT p.id,p.amount,p.payment_status,p.payment_kind,p.paid_at,pm.code AS method_code
     FROM payments p JOIN payment_methods pm ON pm.id=p.payment_method_id WHERE p.booking_id=$1 ORDER BY p.created_at DESC`,[id])
    return {booking:{id:b.id,status:b.status,total_amount:b.total_amount,charges_confirmed_at:b.charges_confirmed_at},payments:r.rows}
  })
@@ -635,7 +635,7 @@ router.get(
            p.amount,
            p.payment_status,
            p.payment_kind,
-           p.created_at, p.paid_at, p.checkout_url, p.qr_expires_at,
+           p.created_at, p.paid_at,
            pm.code AS method_code
          FROM payments p
          JOIN payment_methods pm ON pm.id=p.payment_method_id
@@ -806,9 +806,6 @@ router.post(
     // =================================================
 
     if (payment.provider === 'VNPAY') {
-      if (payment.checkout_url) {
-        return res.json({data: {paymentId: payment.id, url: payment.checkout_url, provider: 'VNPAY'}})
-      }
       const now = new Date()
 
       const data = {
@@ -844,7 +841,13 @@ router.post(
         mac(env('VNPAY_HASH_SECRET'), qs, 'sha512')
 
       await withTransaction(async db => {
-        await db.query(`UPDATE payments SET provider_order_id=COALESCE(provider_order_id,$2), checkout_url=$3, qr_expires_at=NOW()+INTERVAL '15 minutes', updated_at=NOW() WHERE id=$1 AND payment_status='PENDING'`,[payment.id,payment.payment_code,url])
+        await db.query(
+          `UPDATE payments
+              SET provider_order_id=COALESCE(provider_order_id,$2),
+                  updated_at=NOW()
+            WHERE id=$1 AND payment_status='PENDING'`,
+          [payment.id, payment.payment_code]
+        )
       })
       return res.json({
         data: {
@@ -973,12 +976,10 @@ router.post(
         await db.query(
           `UPDATE payments
            SET provider_order_id = $2,
-               provider_token = $3,
-               checkout_url = $4,
-               qr_expires_at = NOW() + INTERVAL '15 minutes',
-               updated_at = CURRENT_TIMESTAMP
+                provider_token = $3,
+                updated_at = CURRENT_TIMESTAMP
            WHERE id = $1`,
-          [p.id, orderId, result.zp_trans_token || null, gatewayQr || hostedCheckout]
+          [p.id, orderId, result.zp_trans_token || null]
         )
       }
     })

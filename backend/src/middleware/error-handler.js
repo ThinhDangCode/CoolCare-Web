@@ -4,7 +4,7 @@ export function notFoundHandler(request, _response, next) {
   next(new AppError(404, 'NOT_FOUND', `Không tìm thấy ${request.method} ${request.originalUrl}.`))
 }
 
-export function errorHandler(error, _request, response, _next) {
+export function errorHandler(error, request, response, _next) {
   if (error instanceof AppError) {
     return response.status(error.status).json({
       error: {
@@ -24,7 +24,13 @@ export function errorHandler(error, _request, response, _next) {
     })
   }
 
-  console.error(error)
+  console.error('Unhandled API error', {
+    method: request.method,
+    route: `${request.baseUrl ?? ''}${request.route?.path ?? request.path}`,
+    code: error?.code,
+    message: error?.message,
+  })
+  if (error?.stack) console.error(error.stack)
   return response.status(500).json({
     error: {
       code: 'INTERNAL_SERVER_ERROR',

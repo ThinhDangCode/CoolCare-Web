@@ -5,7 +5,6 @@ import { useAutoDismiss } from '../../../shared/hooks/useAutoDismiss.js'
 import { catalogRequest } from '../api/catalogApi.js'
 import { CatalogLayout } from '../components/CatalogLayout.jsx'
 import { Modal } from '../components/Modal.jsx'
-import { CatalogTrash, CatalogTrashButton } from '../components/CatalogTrash.jsx'
 import '../styles/catalog.css'
 import './models.css'
 import { nameError, numberError } from '../catalogValidation.js'
@@ -240,7 +239,6 @@ export function AcModelsPage() {
       }
       actions={
         <>
-          <CatalogTrash kind="models" onChanged={reload} />
           <Link className="catalog-button primary" to="/catalog/models/new">
             <ModelIcon name="plus" /> Add Model
           </Link>
@@ -387,7 +385,6 @@ export function AcModelsPage() {
                           ✎
                         </button>
                         <button type="button" title="Record details" aria-label={`View details of ${row.model_name}`} onClick={() => open('details', row)}>◷</button>
-                        <CatalogTrashButton kind="models" row={row} onChanged={reload} />
                       </div>
                     </td>
                   </tr>

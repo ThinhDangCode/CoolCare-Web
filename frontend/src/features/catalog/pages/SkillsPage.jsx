@@ -5,7 +5,6 @@ import { useAutoDismiss } from '../../../shared/hooks/useAutoDismiss.js'
 import { catalogRequest } from '../api/catalogApi.js'
 import { CatalogLayout } from '../components/CatalogLayout.jsx'
 import { Modal } from '../components/Modal.jsx'
-import { CatalogTrash, CatalogTrashButton } from '../components/CatalogTrash.jsx'
 import '../styles/catalog.css'
 import './skills.css'
 import { nameError } from '../catalogValidation.js'
@@ -427,7 +426,6 @@ export function SkillsPage() {
       }
       actions={
         <>
-          <CatalogTrash kind="skills" onChanged={reload} />
           <Link className="catalog-button primary skill-add" to="/catalog/skills/new">
             <SkillIcon name="plus" />
             Add Skill
@@ -647,7 +645,6 @@ export function SkillsPage() {
                           >
                             ◷
                           </button>
-                          <CatalogTrashButton kind="skills" row={row} onChanged={reload} />
                         </div>
                       </td>
                     </tr>

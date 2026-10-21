@@ -73,13 +73,9 @@ export function createCatalogRouter(repository = new CatalogRepository(), admin 
         })
       )
     router.delete(`/${kind}/:id`, asyncHandler(async (req,res) => {
-      await repository.mutate(kind,validateId(req.params.id),{},'TRASH',req.auth.userId)
+      await repository.mutate(kind,validateId(req.params.id),{},'DELETE',req.auth.userId)
       res.sendStatus(204)
     }))
-    router.patch(`/${kind}/:id/restore`, asyncHandler(async (req,res) => {
-      res.json({data:await repository.mutate(kind,validateId(req.params.id),{},'RESTORE',req.auth.userId)})
-    }))
-
   }
   return router
 }
