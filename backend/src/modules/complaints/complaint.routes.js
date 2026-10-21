@@ -11,3 +11,12 @@ export function createComplaintRouter(controller) {
   router.post('/:id/compensation-voucher', asyncHandler(controller.createCompensationVoucher))
   return router
 }
+
+export function createCustomerComplaintRouter(controller) {
+  const router = Router()
+  router.use(authenticate, requireRole('CUSTOMER'))
+  router.get('/', asyncHandler(controller.listMine))
+  router.post('/', asyncHandler(controller.submit))
+  router.get('/:id', asyncHandler(controller.getMine))
+  return router
+}

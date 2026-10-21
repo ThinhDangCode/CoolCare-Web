@@ -34,6 +34,20 @@ export class TechnicianMutations {
         availability_status=CASE WHEN $2='VERIFIED' THEN availability_status ELSE 'OFFLINE' END,
         updated_at=CURRENT_TIMESTAMP WHERE id=$1
         RETURNING id,verification_status,reviewed_by_id,reviewed_at,is_active,availability_status`,[id,input.status,actorId,input.reason])
+      const notification = input.status === 'VERIFIED'
+        ? {
+            title: 'Đăng ký kỹ thuật viên đã được duyệt',
+            message: 'Hồ sơ của bạn đã được duyệt thành công. Bạn có thể chuyển sang chế độ kỹ thuật viên để nhận công việc.',
+          }
+        : {
+            title: 'Đăng ký kỹ thuật viên cần cập nhật',
+            message: `Hồ sơ của bạn chưa được duyệt.${input.reason ? ` Lý do: ${input.reason}` : ''}`,
+          }
+      await client.query(
+        `INSERT INTO notifications(user_id,type,title,message,reference_type,reference_id)
+         VALUES($1,'VERIFICATION',$2,$3,'TECHNICIAN',$4)`,
+        [before.user_id, notification.title, notification.message, id],
+      )
       // Do not enable receiving jobs here: wallet/debt restrictions are independent.
       return result.rows[0]
     })

@@ -20,6 +20,91 @@ export class ComplaintRepository {
     this.audit = audit
   }
 
+  async listMine(userId, filters) {
+    return this.transaction(async (client) => {
+      const values = [userId]
+      const statusClause = filters.status === 'ALL' ? '' : ` AND c.status=${add(values, filters.status)}`
+      const total = (await client.query(
+        `SELECT count(*)::int total FROM complaints c
+         JOIN customer_profiles cp ON cp.id=c.customer_id
+         WHERE cp.user_id=$1${statusClause}`,
+        values
+      )).rows[0].total
+      const rows = await client.query(
+        `SELECT c.id,c.complaint_code,c.booking_id,b.booking_code,c.status,
+                c.type,c.subject,
+                c.description,c.resolution,c.created_at,c.resolved_at
+           FROM complaints c
+           JOIN customer_profiles cp ON cp.id=c.customer_id
+           JOIN bookings b ON b.id=c.booking_id
+          WHERE cp.user_id=$1${statusClause}
+          ORDER BY c.created_at DESC,c.id DESC LIMIT $${values.length + 1} OFFSET $${values.length + 2}`,
+        [...values, filters.limit, (filters.page - 1) * filters.limit]
+      )
+      return { items: rows.rows, total, page: filters.page, limit: filters.limit }
+    })
+  }
+
+  async getMine(userId, id) {
+    const row = await this.transaction(async (client) => (
+      await client.query(
+        `SELECT c.id,c.complaint_code,c.booking_id,b.booking_code,c.status,
+                c.type,c.subject,
+                c.description,c.resolution,c.created_at,c.resolved_at,
+                tu.full_name technician_name
+           FROM complaints c
+           JOIN customer_profiles cp ON cp.id=c.customer_id
+           JOIN bookings b ON b.id=c.booking_id
+           LEFT JOIN technician_profiles tp ON tp.id=c.technician_id
+           LEFT JOIN users tu ON tu.id=tp.user_id
+          WHERE c.id=$1 AND cp.user_id=$2`,
+        [id, userId]
+      )
+    ).rows[0])
+    if (!row) throw new AppError(404, 'NOT_FOUND', 'Không tìm thấy khiếu nại.')
+    return row
+  }
+
+  async submit(userId, data) {
+    return this.transaction(async (client) => {
+      const booking = (await client.query(
+        `SELECT b.id,b.customer_id,
+                (SELECT bt.technician_id FROM booking_technicians bt
+                  WHERE bt.booking_id=b.id AND bt.status IN ('SELECTED','ACCEPTED','COMPLETED')
+                  ORDER BY CASE bt.status WHEN 'COMPLETED' THEN 1 WHEN 'ACCEPTED' THEN 2 ELSE 3 END LIMIT 1) technician_id
+           FROM bookings b JOIN customer_profiles cp ON cp.id=b.customer_id
+          WHERE b.id=$1 AND cp.user_id=$2 FOR UPDATE OF b`,
+        [data.booking_id, userId]
+      )).rows[0]
+      if (!booking)
+        throw new AppError(404, 'BOOKING_NOT_FOUND', 'Không tìm thấy đơn dịch vụ thuộc tài khoản của bạn.')
+      if (data.type === 'TECHNICIAN' && !booking.technician_id)
+        throw new AppError(422, 'VALIDATION_ERROR', 'Đơn này chưa có kỹ thuật viên để khiếu nại.', {
+          booking_id: 'Vui lòng chọn đơn đã có kỹ thuật viên.',
+        })
+      const duplicate = (await client.query(
+        `SELECT id FROM complaints WHERE booking_id=$1 AND customer_id=$2
+          AND status IN ('OPEN','IN_PROGRESS') LIMIT 1`,
+        [booking.id, booking.customer_id]
+      )).rows[0]
+      if (duplicate)
+        throw new AppError(409, 'ACTIVE_COMPLAINT_EXISTS', 'Đơn này đang có một khiếu nại được xử lý.')
+      const id = randomUUID()
+      const code = `CP-${Date.now().toString(36).toUpperCase()}-${id.slice(0, 4).toUpperCase()}`
+      const created = (await client.query(
+        `INSERT INTO complaints
+           (id,complaint_code,booking_id,customer_id,technician_id,type,subject,description,status)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'OPEN') RETURNING *`,
+        [id, code, booking.id, booking.customer_id, booking.technician_id, data.type, data.subject, data.description]
+      )).rows[0]
+      return {
+        ...created,
+        type: data.type,
+        subject: data.subject,
+      }
+    })
+  }
+
   async list(filters) {
     return this.transaction(async (client) => {
       await client.query('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY')

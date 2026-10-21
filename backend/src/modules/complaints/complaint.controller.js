@@ -3,6 +3,8 @@ import {
   validateComplaintId,
   validateComplaintListQuery,
   validateComplaintResolution,
+  validateComplaintSubmission,
+  validateCustomerComplaintQuery,
 } from './complaint.validation.js'
 
 export class ComplaintController {
@@ -31,4 +33,25 @@ export class ComplaintController {
           request.auth.userId
         ),
       })
+
+  listMine = async (request, response) =>
+    response.json({
+      data: await this.service.listMine(
+        request.auth.userId,
+        validateCustomerComplaintQuery(request.query)
+      ),
+    })
+
+  getMine = async (request, response) =>
+    response.json({
+      data: await this.service.getMine(request.auth.userId, validateComplaintId(request.params.id)),
+    })
+
+  submit = async (request, response) =>
+    response.status(201).json({
+      data: await this.service.submit(
+        request.auth.userId,
+        validateComplaintSubmission(request.body)
+      ),
+    })
 }

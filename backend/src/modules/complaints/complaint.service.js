@@ -14,4 +14,13 @@ export class ComplaintService {
   createCompensationVoucher(id, input, actorId) {
     return this.repository.createCompensationVoucher(id, input, actorId)
   }
+  listMine(userId, filters) {
+    return this.repository.listMine(userId, filters)
+  }
+  getMine(userId, id) {
+    return this.repository.getMine(userId, id)
+  }
+  submit(userId, input) {
+    return this.repository.submit(userId, input)
+  }
 }

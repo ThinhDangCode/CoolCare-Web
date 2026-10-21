@@ -79,7 +79,6 @@ export function createCatalogRouter(repository = new CatalogRepository(), admin 
     router.patch(`/${kind}/:id/restore`, asyncHandler(async (req,res) => {
       res.json({data:await repository.mutate(kind,validateId(req.params.id),{},'RESTORE',req.auth.userId)})
     }))
-
   }
   return router
 }
