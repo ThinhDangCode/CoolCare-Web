@@ -472,7 +472,7 @@ export class TechnicianWalletRepository {
         )
       }
 
-      if (String(row.payment_status) === '0') {
+      if (normalizeTopup(row).payment_status === 'PENDING') {
         await db.query(
           `
           UPDATE technician_topups
@@ -515,13 +515,13 @@ export class TechnicianWalletRepository {
         return false
       }
 
-      const status = String(row.payment_status)
+      const status = normalizeTopup(row).payment_status
 
-      if (status === '2') {
+      if (status === 'SUCCESS') {
         return true
       }
 
-      if (['3', '4'].includes(status)) {
+      if (['FAILED', 'CANCELLED'].includes(status)) {
         return false
       }
 
@@ -575,13 +575,13 @@ export class TechnicianWalletRepository {
         return false
       }
 
-      const status = String(row.payment_status)
+      const status = normalizeTopup(row).payment_status
 
-      if (status === '2') {
+      if (status === 'SUCCESS') {
         return false
       }
 
-      if (['3', '4'].includes(status)) {
+      if (['FAILED', 'CANCELLED'].includes(status)) {
         return true
       }
 

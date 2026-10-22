@@ -650,46 +650,20 @@ export function createTechnicianWalletCallbackRouter(
         })
       }
 
-
-console.log('[VNPAY VERIFY]', {
-  topupId: row.id,
-
-  methodFromDatabase: row.method,
-
-  tmnCodeMatches:
-    String(params.vnp_TmnCode) ===
-    requireGateway('VNPAY_TMN_CODE'),
-
-  currencyFromVNPay: params.vnp_CurrCode,
-
-  amountFromVNPay: Number(params.vnp_Amount),
-
-  amountExpected:
-    Math.round(Number(row.amount) * 100),
-
-  amountMatches:
-    Number(params.vnp_Amount) ===
-    Math.round(Number(row.amount) * 100),
-})
-
-// Giữ nguyên đoạn kiểm tra cũ
-
-if (
-  row.method !== 'VNPAY' ||
-  String(params.vnp_TmnCode) !==
-    requireGateway('VNPAY_TMN_CODE') ||
-  (params.vnp_CurrCode != null &&
-    String(params.vnp_CurrCode) !== 'VND') ||
-  Number(params.vnp_Amount) !==
-    Math.round(Number(row.amount) * 100)
-) {
-  return res.json({
-    RspCode: '04',
-    Message: 'Invalid amount or merchant',
-  })
-}
-
-
+      if (
+        row.method !== 'VNPAY' ||
+        String(params.vnp_TmnCode) !==
+          requireGateway('VNPAY_TMN_CODE') ||
+        (params.vnp_CurrCode != null &&
+          String(params.vnp_CurrCode) !== 'VND') ||
+        Number(params.vnp_Amount) !==
+          Math.round(Number(row.amount) * 100)
+      ) {
+        return res.json({
+          RspCode: '04',
+          Message: 'Invalid amount or merchant',
+        })
+      }
 
       if (row.payment_status === 'SUCCESS') {
         return res.json({
