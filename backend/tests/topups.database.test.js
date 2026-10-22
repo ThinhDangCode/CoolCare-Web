@@ -170,7 +170,7 @@ const fixtureSql = `WITH technician_topups AS (
     SELECT ('10000000-0000-0000-0000-'||lpad(i::text,12,'0'))::uuid AS id,'SYNTHETIC-TOPUP-'||i::text AS topup_code,
       '${techA}'::uuid AS technician_id,CASE WHEN i=3 THEN '${accountB}'::uuid ELSE '${accountA}'::uuid END AS technician_account_id,
       CASE WHEN i IN(5,6) THEN '${methodB}'::uuid ELSE '${methodA}'::uuid END AS payment_method_id,150000.00::numeric AS amount,
-      CASE i WHEN 1 THEN 'PENDING' WHEN 5 THEN 'FAILED' WHEN 6 THEN 'CANCELLED' WHEN 7 THEN 'PROCESSING' WHEN 9 THEN 'PENDING' ELSE 'SUCCESS' END AS payment_status,
+      CASE i WHEN 1 THEN 0 WHEN 5 THEN 3 WHEN 6 THEN 4 WHEN 7 THEN 1 WHEN 9 THEN 0 ELSE 2 END::smallint AS payment_status,
       CASE WHEN i IN(2,3,4,8) THEN 'SYNTHETIC-PROVIDER-'||i::text ELSE NULL END AS transaction_reference,
       CASE i WHEN 6 THEN '2026-10-01 23:59:59+07'::timestamptz WHEN 7 THEN '2026-10-02 00:00:00+07'::timestamptz
         WHEN 8 THEN '2026-09-30 23:59:59+07'::timestamptz ELSE '2026-10-01 00:00:00+07'::timestamptz END AS created_at,
@@ -192,7 +192,7 @@ const fixtureSql = `WITH technician_topups AS (
     SELECT ('50000000-0000-0000-0000-'||lpad(i::text,12,'0'))::uuid AS id,
       ('10000000-0000-0000-0000-'||lpad(i::text,12,'0'))::uuid AS topup_id,
       CASE WHEN i IN(3,4) THEN '${accountB}'::uuid ELSE '${accountA}'::uuid END AS technician_account_id,
-      CASE WHEN i=8 THEN 'WITHDRAWAL' ELSE 'TOP_UP' END AS transaction_type,
+      CASE WHEN i=8 THEN 3 ELSE 2 END::smallint AS transaction_type,
       150000.00::numeric AS amount,-100000.00::numeric AS balance_before,50000.00::numeric AS balance_after,
       '2026-10-02 12:00:01+07'::timestamptz AS created_at,NULL::text AS reference_id
     FROM (VALUES(2),(3),(4),(8),(9)) fixture(i)

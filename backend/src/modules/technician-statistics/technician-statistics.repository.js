@@ -36,9 +36,9 @@ export function buildTechnicianStatisticsSql(sources = {}) {
         count(*) FILTER(WHERE status='ACTIVE')::text AS active,
         count(*) FILTER(WHERE status='INACTIVE')::text AS inactive,
         count(*) FILTER(WHERE status='LOCKED')::text AS locked,
-        count(*) FILTER(WHERE verification_status='VERIFIED')::text AS verified,
-        count(*) FILTER(WHERE verification_status='PENDING')::text AS pending,
-        count(*) FILTER(WHERE verification_status='REJECTED')::text AS rejected
+        count(*) FILTER(WHERE verification_status=1)::text AS verified,
+        count(*) FILTER(WHERE verification_status=0)::text AS pending,
+        count(*) FILTER(WHERE verification_status=2)::text AS rejected
       FROM technicians
     ),
     buckets AS (
@@ -96,17 +96,17 @@ export function buildTechnicianStatisticsSql(sources = {}) {
     activity_summary AS (
       SELECT count(*)::text AS total,count(*) FILTER(WHERE accepted)::text AS accepted,
         count(*) FILTER(WHERE completed)::text AS completed,
-        count(*) FILTER(WHERE status='DECLINED')::text AS declined,
+        count(*) FILTER(WHERE status=3)::text AS declined,
         count(*) FILTER(WHERE technician_cancelled)::text AS technician_cancelled,
         count(*) FILTER(WHERE other_cancelled)::text AS other_cancelled,
-        count(*) FILTER(WHERE status='SELECTED')::text AS pending,
-        count(*) FILTER(WHERE status='EXPIRED')::text AS expired FROM request_cohort
+        count(*) FILTER(WHERE status=1)::text AS pending,
+        count(*) FILTER(WHERE status=5)::text AS expired FROM request_cohort
     ),
     activity_trend AS (
       SELECT date_trunc($3::text,requested_at AT TIME ZONE INTERVAL '+07:00')::date AS bucket,
         count(*)::text AS total,count(*) FILTER(WHERE accepted)::text AS accepted,
         count(*) FILTER(WHERE completed)::text AS completed,
-        count(*) FILTER(WHERE status='DECLINED')::text AS declined,
+        count(*) FILTER(WHERE status=3)::text AS declined,
         count(*) FILTER(WHERE technician_cancelled)::text AS technician_cancelled
       FROM request_cohort GROUP BY 1
     ),
@@ -128,14 +128,14 @@ export function buildTechnicianStatisticsSql(sources = {}) {
       WHERE p.applied_at>=start_at AND p.applied_at<end_at
     ),
     complaint_summary AS (
-      SELECT count(*)::text AS total,count(*) FILTER(WHERE status IN ('OPEN','IN_PROGRESS'))::text AS open,
-        count(*) FILTER(WHERE status='RESOLVED')::text AS resolved,
-        count(*) FILTER(WHERE status='REJECTED')::text AS rejected,
-        count(*) FILTER(WHERE status='CLOSED')::text AS closed FROM eligible_complaints
+      SELECT count(*)::text AS total,count(*) FILTER(WHERE status IN (0,1))::text AS open,
+        count(*) FILTER(WHERE status=2)::text AS resolved,
+        count(*) FILTER(WHERE status=3)::text AS rejected,
+        count(*) FILTER(WHERE status=4)::text AS closed FROM eligible_complaints
     ),
     complaint_trend AS (
       SELECT date_trunc($3::text,created_at AT TIME ZONE INTERVAL '+07:00')::date AS bucket,
-        count(*)::text AS count,count(*) FILTER(WHERE status='RESOLVED')::text AS resolved
+        count(*)::text AS count,count(*) FILTER(WHERE status=2)::text AS resolved
       FROM eligible_complaints GROUP BY 1
     ),
     penalty_trend AS (

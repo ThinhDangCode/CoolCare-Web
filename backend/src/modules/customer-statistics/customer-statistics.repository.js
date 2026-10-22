@@ -35,9 +35,9 @@ export function buildCustomerStatisticsSql(sources = {}) {
     customer_summary AS (
       SELECT count(*)::text AS total,
         count(*) FILTER(WHERE created_at>=start_at AND created_at<end_at)::text AS new,
-        count(*) FILTER(WHERE status='ACTIVE')::text AS active,
-        count(*) FILTER(WHERE status='LOCKED')::text AS locked,
-        count(*) FILTER(WHERE status='INACTIVE')::text AS inactive,
+        count(*) FILTER(WHERE status=0)::text AS active,
+        count(*) FILTER(WHERE status=1)::text AS locked,
+        count(*) FILTER(WHERE status=2)::text AS inactive,
         count(*) FILTER(WHERE has_bookings)::text AS with_bookings,
         count(*) FILTER(WHERE NOT has_bookings)::text AS without_bookings,
         count(*) FILTER(WHERE created_at>=previous_start_at AND created_at<start_at)::text AS previous,
@@ -74,7 +74,7 @@ export function buildCustomerStatisticsSql(sources = {}) {
       FROM source_bookings b JOIN customers c ON c.id=b.customer_id CROSS JOIN bounds
       WHERE b.created_at>=start_at AND b.created_at<end_at
     ),
-    completed AS (SELECT * FROM booking_cohort WHERE status='COMPLETED'),
+    completed AS (SELECT * FROM booking_cohort WHERE status=9),
     customer_bookings AS (SELECT customer_id,count(*) AS count FROM completed GROUP BY customer_id),
     usage_lines AS (
       SELECT b.id AS booking_id,b.customer_id,us.service_id,s.name AS service_name,
@@ -110,7 +110,7 @@ export function buildCustomerStatisticsSql(sources = {}) {
       FROM booking_cohort GROUP BY 1
     ),
     locked_matches AS (
-      SELECT * FROM customers WHERE status='LOCKED' AND ($4::text='' OR
+      SELECT * FROM customers WHERE status=1 AND ($4::text='' OR
         strpos(lower(concat_ws(' ',id::text,full_name,email,phone)),lower($4::text))>0)
     ),
     locked_page AS (SELECT * FROM locked_matches ORDER BY created_at DESC,id LIMIT $5::int OFFSET $6::int)

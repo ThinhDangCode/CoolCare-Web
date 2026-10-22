@@ -1,5 +1,5 @@
 -- COOLCARE DEMO v2 — Can Tho after the 2025 administrative merger, 12 accounts, 20 bookings.
--- Run ONCE after the team's finalized CoolCare_database_final.sql, on a fresh demo DB.
+-- Run ONCE on a fresh database with the current CoolCare schema.
 -- All persons, phones, addresses, certificates and payment references are synthetic.
 -- Do not send SMS/email or call payment providers for these records.
 -- Demo login password: CoolCare@123 (BCrypt, cost 10, random salt per account).
@@ -60,7 +60,7 @@ BEGIN
         VALUES(uid,(SELECT id FROM roles WHERE code='CUSTOMER'),'customer'||lpad(i::text,2,'0')||'@example.com',
             origin,'09099000'||lpad(i::text,2,'0'),origin,crypt('CoolCare@123',gen_salt('bf',10)),names[i],origin,origin);
         INSERT INTO customer_profiles(id,user_id,date_of_birth,gender,created_at,updated_at)
-        VALUES(cid,uid,make_date(1990+i,1+i,10),CASE WHEN i IN (2,3) THEN 'FEMALE' ELSE 'MALE' END,origin,origin);
+        VALUES(cid,uid,make_date(1990+i,1+i,10),CASE WHEN i IN (2,3) THEN 1 ELSE 0 END,origin,origin);
         FOR j IN 1..CASE WHEN i<=5 THEN 2 ELSE 1 END LOOP
             INSERT INTO customer_addresses(id,customer_id,recipient_name,phone,address_line,ward,city,is_default,created_at,updated_at)
             VALUES(pg_temp.demo_id('address-'||i||'-'||j),cid,names[i],'09099000'||lpad(i::text,2,'0'),
@@ -96,12 +96,12 @@ BEGIN
         VALUES(tid,pg_temp.demo_id('user-'||(i+4)),CASE WHEN i<=5 THEN '00000000000'||i ELSE NULL END,
             CASE WHEN i<=5 THEN 'https://example.com/demo/identity-'||i||'-front.png' ELSE NULL END,
             CASE WHEN i<=5 THEN 'https://example.com/demo/identity-'||i||'-back.png' ELSE NULL END,
-            CASE WHEN i<=4 THEN 'INTERMEDIATE' ELSE 'BEGINNER' END,'Hồ sơ kỹ thuật viên giả lập tại Cần Thơ',
-            CASE WHEN i<=4 THEN i+1 ELSE 0 END,CASE WHEN i<=4 THEN 'VERIFIED' ELSE 'PENDING' END,
+            CASE WHEN i<=4 THEN 1 ELSE 0 END,'Hồ sơ kỹ thuật viên giả lập tại Cần Thơ',
+            CASE WHEN i<=4 THEN i+1 ELSE 0 END,CASE WHEN i<=4 THEN 1 ELSE 0 END,
             CASE WHEN i<=4 THEN pg_temp.demo_id('admin-1') ELSE NULL END,
             CASE WHEN i<=4 THEN origin+interval '2 days' ELSE NULL END,
             CASE WHEN i<=5 THEN origin+interval '1 day' ELSE NULL END,
-            CASE WHEN i<=4 THEN 'ONLINE' ELSE 'OFFLINE' END,i<=4,origin,CURRENT_TIMESTAMP);
+            CASE WHEN i<=4 THEN 0 ELSE 1 END,i<=4,origin,CURRENT_TIMESTAMP);
         INSERT INTO technician_accounts(id,technician_id,is_receiving_jobs_allowed,created_at)
         VALUES(pg_temp.demo_id('account-'||i),tid,i<=4,origin);
         INSERT INTO technician_areas(id,technician_id,city,ward)
@@ -112,7 +112,7 @@ BEGIN
                 expiry_date,document_url,verification_status,reviewed_by_id,reviewed_at,created_at)
             VALUES(cert_id,tid,'Chứng chỉ điện lạnh demo','DEMO-CERT-'||i,'Đơn vị đào tạo giả lập',
                 CURRENT_DATE-365,CURRENT_DATE+365,'https://example.com/demo/certificate-'||i||'.pdf',
-                CASE WHEN i<=4 THEN 'VERIFIED' ELSE 'PENDING' END,
+                CASE WHEN i<=4 THEN 1 ELSE 0 END,
                 CASE WHEN i<=4 THEN pg_temp.demo_id('admin-1') ELSE NULL END,
                 CASE WHEN i<=4 THEN origin+interval '2 days' ELSE NULL END,origin);
             INSERT INTO technician_certification_submissions(id,certification_id,submission_number,certificate_name,
@@ -123,7 +123,7 @@ BEGIN
             FOR j IN 1..4 LOOP
                 FOR k IN 1..5 LOOP
                     INSERT INTO technician_skills(id,technician_id,skill_id,ac_brand_id,skill_level)
-                    VALUES(pg_temp.demo_id('techskill-'||i||'-'||j||'-'||k),tid,pg_temp.demo_id('skill-'||j||'-1'),pg_temp.demo_id('brand-'||k),'INTERMEDIATE');
+                    VALUES(pg_temp.demo_id('techskill-'||i||'-'||j||'-'||k),tid,pg_temp.demo_id('skill-'||j||'-1'),pg_temp.demo_id('brand-'||k),1);
                 END LOOP;
             END LOOP;
         END IF;
@@ -135,7 +135,7 @@ BEGIN
         aid:=pg_temp.demo_id('account-'||i);
         INSERT INTO settlement_transactions(id,idempotency_key,technician_account_id,transaction_type,amount,balance_before,balance_after,
             reference_type,reference_id,description,created_at)
-        VALUES(pg_temp.demo_id('opening-debt-'||i),'DEMO-OPENING-DEBT-'||i,aid,'ADJUSTMENT',-100000,0,-100000,
+        VALUES(pg_temp.demo_id('opening-debt-'||i),'DEMO-OPENING-DEBT-'||i,aid,4,-100000,0,-100000,
             'DEMO_OPENING','DEMO-OPENING-'||i,'Nợ đầu kỳ giả lập 100.000đ để minh họa đối soát; không phát sinh từ booking thật.',week_start-interval '13 days');
         UPDATE technician_accounts SET settlement_balance=-100000 WHERE id=aid;
     END LOOP;
@@ -144,8 +144,8 @@ BEGIN
     INSERT INTO vouchers(id,code,name,discount_type,discount_value,minimum_order_amount,maximum_discount,
         usage_limit,usage_limit_per_customer,start_at,end_at)
     VALUES
-        (pg_temp.demo_id('voucher-1'),'DEMO10','Demo giảm 10%','PERCENTAGE',10,200000,50000,100,5,CURRENT_TIMESTAMP-interval '30 days',CURRENT_TIMESTAMP+interval '90 days'),
-        (pg_temp.demo_id('voucher-2'),'DEMO30K','Demo giảm 30.000đ','FIXED_AMOUNT',30000,250000,NULL,100,5,CURRENT_TIMESTAMP-interval '30 days',CURRENT_TIMESTAMP+interval '90 days');
+        (pg_temp.demo_id('voucher-1'),'DEMO10','Demo giảm 10%',0,10,200000,50000,100,5,CURRENT_TIMESTAMP-interval '30 days',CURRENT_TIMESTAMP+interval '90 days'),
+        (pg_temp.demo_id('voucher-2'),'DEMO30K','Demo giảm 30.000đ',1,30000,250000,NULL,100,5,CURRENT_TIMESTAMP-interval '30 days',CURRENT_TIMESTAMP+interval '90 days');
 
     -- 5. Create completed bookings FIRST so the four technicians can take current work later.
     -- 01..03 cash; 04..06 online; 07..08 completed/unpaid; 09..14 pending;
@@ -166,7 +166,7 @@ BEGIN
             subtotal_value,subtotal_value,CURRENT_TIMESTAMP-interval '1 day'
         FROM customer_addresses WHERE id=pg_temp.demo_id('address-'||c||'-1');
         INSERT INTO booking_status_history(booking_id,status,changed_by_id,note,created_at)
-        VALUES(bid,'PENDING',uid,'Khách tạo lịch demo',CURRENT_TIMESTAMP-interval '1 day');
+        VALUES(bid,0,uid,'Khách tạo lịch demo',CURRENT_TIMESTAMP-interval '1 day');
         FOR j IN 1..unit_count LOOP
             unit_id:=pg_temp.demo_id('unit-'||n||'-'||j); brand_n:=1+((n+j-2)%5);
             INSERT INTO booking_units(id,booking_id,unit_number,ac_brand_id,ac_model_id,description)
@@ -180,78 +180,80 @@ BEGIN
         END LOOP;
         IF n BETWEEN 9 AND 14 THEN CONTINUE; END IF;
         IF n>=19 THEN
-            UPDATE bookings SET status='CANCELLED',cancelled_at=CURRENT_TIMESTAMP,cancelled_by_id=uid,
+            UPDATE bookings SET status=10,cancelled_at=CURRENT_TIMESTAMP,cancelled_by_id=uid,
                 cancellation_reason='Khách đổi kế hoạch — tình huống demo',updated_at=CURRENT_TIMESTAMP WHERE id=bid;
             INSERT INTO booking_status_history(booking_id,status,changed_by_id,note)
-            VALUES(bid,'CANCELLED',uid,'Hủy trước khi có thợ nhận; chưa thu tiền');
+            VALUES(bid,10,uid,'Hủy trước khi có thợ nhận; chưa thu tiền');
             CONTINUE;
         END IF;
         t:=CASE WHEN n<=6 THEN 1+(n-1)%3 WHEN n<=8 THEN 4 ELSE n-14 END;
         tid:=pg_temp.demo_id('tech-'||t);
         INSERT INTO booking_technicians(id,booking_id,technician_id,status,match_score,match_reason,requested_at,responded_at)
-        VALUES(pg_temp.demo_id('assignment-'||n),bid,tid,'ACCEPTED',95,'Khớp dịch vụ, hãng và khu vực demo Cần Thơ',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP);
-        UPDATE bookings SET status='ACCEPTED',updated_at=CURRENT_TIMESTAMP WHERE id=bid;
+        VALUES(pg_temp.demo_id('assignment-'||n),bid,tid,2,95,'Khớp dịch vụ, hãng và khu vực demo Cần Thơ',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP);
+        UPDATE bookings SET status=2,updated_at=CURRENT_TIMESTAMP WHERE id=bid;
         INSERT INTO booking_status_history(booking_id,status,changed_by_id,note)
-        VALUES(bid,'ACCEPTED',pg_temp.demo_id('user-'||(t+4)),'KTV nhận booking demo');
+        VALUES(bid,2,pg_temp.demo_id('user-'||(t+4)),'KTV nhận booking demo');
         IF n=15 THEN CONTINUE; END IF;
-        UPDATE bookings SET status='IN_PROGRESS',updated_at=CURRENT_TIMESTAMP WHERE id=bid;
+        UPDATE bookings SET status=3,updated_at=CURRENT_TIMESTAMP WHERE id=bid;
         INSERT INTO booking_status_history(booking_id,status,changed_by_id,note)
-        VALUES(bid,'IN_PROGRESS',pg_temp.demo_id('user-'||(t+4)),'Bắt đầu kiểm tra máy demo');
+        VALUES(bid,3,pg_temp.demo_id('user-'||(t+4)),'Bắt đầu kiểm tra máy demo');
         IF n=16 THEN CONTINUE; END IF;
 
         qid:=pg_temp.demo_id('quote-'||n); parts_value:=CASE WHEN n>=17 THEN 180000 ELSE 0 END;
         INSERT INTO quotations(id,booking_id,technician_id,quotation_number,quotation_type,parts_amount,subtotal,total_amount,status,
             issue_description,note,sent_at,expires_at)
-        VALUES(qid,bid,tid,1,'INITIAL',parts_value,subtotal_value+parts_value,subtotal_value+parts_value,'PENDING',
+        VALUES(qid,bid,tid,1,0,parts_value,subtotal_value+parts_value,subtotal_value+parts_value,1,
             'Kiểm tra máy lạnh demo','Chi phí linh kiện chỉ lưu tổng, cần khách đồng ý.',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP+interval '2 days');
         INSERT INTO quotation_items(quotation_id,booking_unit_service_id,item_type,service_id,description,quantity,unit,unit_price,total_price)
-        SELECT qid,bs.id,'SERVICE',bs.service_id,sv.name,1,'lần',bs.unit_price,bs.unit_price
+        SELECT qid,bs.id,0,bs.service_id,sv.name,1,'lần',bs.unit_price,bs.unit_price
         FROM booking_unit_services bs JOIN booking_units bu ON bu.id=bs.booking_unit_id JOIN services sv ON sv.id=bs.service_id
         WHERE bu.booking_id=bid;
-        UPDATE bookings SET status='QUOTATION_SENT',updated_at=CURRENT_TIMESTAMP WHERE id=bid;
+        UPDATE bookings SET status=5,updated_at=CURRENT_TIMESTAMP WHERE id=bid;
         INSERT INTO booking_status_history(booking_id,status,changed_by_id,note)
-        VALUES(bid,'QUOTATION_SENT',pg_temp.demo_id('user-'||(t+4)),'Gửi báo giá cho khách duyệt');
+        VALUES(bid,5,pg_temp.demo_id('user-'||(t+4)),'Gửi báo giá cho khách duyệt');
         IF n>=17 THEN CONTINUE; END IF;
-        UPDATE quotations SET status='ACCEPTED',responded_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP WHERE id=qid;
+        UPDATE quotations SET status=2,responded_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP WHERE id=qid;
         IF n IN (2,5,8) THEN
             qextra:=pg_temp.demo_id('additional-'||n);
             INSERT INTO quotations(id,booking_id,technician_id,quotation_number,quotation_type,issue_description,labor_amount,parts_amount,
                 subtotal,total_amount,status,sent_at,responded_at,note)
-            VALUES(qextra,bid,tid,2,'ADDITIONAL','Phát hiện hư hỏng cần thay linh kiện; khách đã đồng ý trong demo',50000,300000,
-                350000,350000,'ACCEPTED',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,'Chỉ phần tăng thêm: công 50.000đ và tổng linh kiện 300.000đ');
+            VALUES(qextra,bid,tid,2,1,'Phát hiện hư hỏng cần thay linh kiện; khách đã đồng ý trong demo',50000,300000,
+                350000,350000,2,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,'Chỉ phần tăng thêm: công 50.000đ và tổng linh kiện 300.000đ');
             INSERT INTO quotation_items(quotation_id,item_type,description,quantity,unit,unit_price,total_price)
-            VALUES(qextra,'LABOR','Công xử lý phát sinh demo',1,'lần',50000,50000);
+            VALUES(qextra,1,'Công xử lý phát sinh demo',1,'lần',50000,50000);
         END IF;
         selected_voucher:=CASE WHEN n IN (3,4,8) THEN pg_temp.demo_id('voucher-1')
             WHEN n=6 THEN pg_temp.demo_id('voucher-2') ELSE NULL END;
         PERFORM refresh_booking_pricing(bid,selected_voucher);
-        UPDATE bookings SET status='QUOTATION_ACCEPTED',updated_at=CURRENT_TIMESTAMP WHERE id=bid;
+        UPDATE bookings SET status=6,updated_at=CURRENT_TIMESTAMP WHERE id=bid;
         INSERT INTO booking_status_history(booking_id,status,changed_by_id,note)
-        VALUES(bid,'QUOTATION_ACCEPTED',uid,'Khách duyệt báo giá và phần phát sinh nếu có');
+        VALUES(bid,6,uid,'Khách duyệt báo giá và phần phát sinh nếu có');
         UPDATE bookings SET technician_completed_by_id=pg_temp.demo_id('user-'||(t+4)),technician_completed_at=CURRENT_TIMESTAMP,
             completion_confirmed_by_id=uid,completion_confirmed_at=CURRENT_TIMESTAMP,
             charges_confirmed_by_id=uid,charges_confirmed_at=CURRENT_TIMESTAMP WHERE id=bid;
         INSERT INTO booking_status_history(booking_id,status,changed_by_id,note)
-        VALUES(bid,'COMPLETED',uid,'Cả KTV và khách xác nhận hoàn thành và khách duyệt chi phí cuối');
+        VALUES(bid,9,uid,'Cả KTV và khách xác nhận hoàn thành và khách duyệt chi phí cuối');
         UPDATE booking_units SET diagnosis='Đã kiểm tra trong kịch bản demo',service_notes='Hoàn tất dịch vụ đã duyệt',
             serviced_at=CURRENT_TIMESTAMP,next_maintenance_at=CASE WHEN s IN (1,3) THEN CURRENT_TIMESTAMP+interval '180 days' ELSE NULL END
         WHERE booking_id=bid;
         inv_id:=pg_temp.demo_id('invoice-'||n);
         INSERT INTO invoices(id,invoice_number,booking_id,customer_id,parts_amount,subtotal,discount_amount,total_amount,issued_at)
         SELECT inv_id,'DEMO-INV-'||lpad(n::text,3,'0'),b.id,b.customer_id,
-            (SELECT sum(parts_amount) FROM quotations WHERE booking_id=bid AND status='ACCEPTED'),b.subtotal,b.discount_amount,b.total_amount,CURRENT_TIMESTAMP
+            (SELECT sum(parts_amount) FROM quotations WHERE booking_id=bid AND status=2),b.subtotal,b.discount_amount,b.total_amount,CURRENT_TIMESTAMP
         FROM bookings b WHERE b.id=bid;
         INSERT INTO invoice_items(invoice_id,quotation_item_id,booking_unit_service_id,item_type,description,quantity,unit,unit_price,total_price,discount_amount)
         SELECT inv_id,qi.id,qi.booking_unit_service_id,qi.item_type,qi.description,qi.quantity,qi.unit,qi.unit_price,qi.total_price,0
-        FROM quotation_items qi JOIN quotations q ON q.id=qi.quotation_id WHERE q.booking_id=bid AND q.status='ACCEPTED';
+        FROM quotation_items qi JOIN quotations q ON q.id=qi.quotation_id WHERE q.booking_id=bid AND q.status=2;
         IF n<=6 THEN
             pid:=pg_temp.demo_id('payment-'||n);
             source_method:=CASE WHEN n<=3 THEN 'CASH' WHEN n=5 THEN 'ZALOPAY' ELSE 'VNPAY' END;
             SELECT id INTO method_id FROM payment_methods WHERE code=source_method;
             INSERT INTO payments(id,payment_code,idempotency_key,booking_id,customer_id,technician_id,amount,payment_method_id)
             SELECT pid,'DEMO-PAY-'||lpad(n::text,3,'0'),'DEMO-PAYMENT-'||n,bid,cid,tid,total_amount,method_id FROM bookings WHERE id=bid;
-            UPDATE payments SET payment_status='PROCESSING',updated_at=CURRENT_TIMESTAMP WHERE id=pid;
-            UPDATE payments SET payment_status='SUCCESS',paid_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP,
+            UPDATE payments SET payment_status=1,
+                provider_order_id=CASE WHEN n>3 THEN 'DEMO-ORDER-'||n ELSE NULL END,
+                updated_at=CURRENT_TIMESTAMP WHERE id=pid;
+            UPDATE payments SET payment_status=2,paid_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP,
                 transaction_reference=CASE WHEN n>3 THEN 'DEMO-NOT-A-REAL-PAYMENT-'||n ELSE NULL END,
                 cash_received_by_id=CASE WHEN n<=3 THEN pg_temp.demo_id('user-'||(t+4)) ELSE NULL END,
                 cash_received_at=CASE WHEN n<=3 THEN CURRENT_TIMESTAMP ELSE NULL END WHERE id=pid;
@@ -264,7 +266,7 @@ BEGIN
 
     -- Reviews are application-maintained aggregates in this schema.
     UPDATE technician_profiles tp SET rating_average=r.avg_rating,total_reviews=r.cnt,updated_at=CURRENT_TIMESTAMP
-    FROM (SELECT technician_id,round(avg(rating),2) avg_rating,count(*)::integer cnt FROM reviews WHERE status='PUBLISHED' GROUP BY technician_id) r
+    FROM (SELECT technician_id,round(avg(rating),2) avg_rating,count(*)::integer cnt FROM reviews WHERE status=0 GROUP BY technician_id) r
     WHERE tp.id=r.technician_id;
 
     -- 6. Simulated successful topup, withdrawal, and pending withdrawal hold.
@@ -272,14 +274,14 @@ BEGIN
     INSERT INTO technician_topups(id,idempotency_key,topup_code,technician_id,technician_account_id,amount,payment_method_id)
     VALUES(row_id,'DEMO-TOPUP-1','DEMO-TOPUP-001',pg_temp.demo_id('tech-3'),pg_temp.demo_id('account-3'),150000,
         (SELECT id FROM payment_methods WHERE code='VNPAY'));
-    UPDATE technician_topups SET payment_status='PROCESSING' WHERE id=row_id;
-    UPDATE technician_topups SET payment_status='SUCCESS',transaction_reference='DEMO-NOT-A-REAL-TOPUP',paid_at=CURRENT_TIMESTAMP WHERE id=row_id;
+    UPDATE technician_topups SET payment_status=1 WHERE id=row_id;
+    UPDATE technician_topups SET payment_status=2,transaction_reference='DEMO-NOT-A-REAL-TOPUP',paid_at=CURRENT_TIMESTAMP WHERE id=row_id;
     row_id:=pg_temp.demo_id('withdrawal-1');
     INSERT INTO withdrawals(id,idempotency_key,technician_id,technician_account_id,amount,bank_name,account_number,account_holder,initiated_at,note)
     VALUES(row_id,'DEMO-WITHDRAWAL-1',pg_temp.demo_id('tech-2'),pg_temp.demo_id('account-2'),100000,
         'Ngân hàng giả lập','000000000002','TRAN QUOC HUY',CURRENT_TIMESTAMP,'Dữ liệu demo, không chuyển tiền thật');
-    UPDATE withdrawals SET status='PROCESSING' WHERE id=row_id;
-    UPDATE withdrawals SET status='SUCCESS',fee_amount=5000,payout_reference='DEMO-NOT-A-REAL-PAYOUT',paid_at=CURRENT_TIMESTAMP WHERE id=row_id;
+    UPDATE withdrawals SET status=1 WHERE id=row_id;
+    UPDATE withdrawals SET status=2,fee_amount=5000,payout_reference='DEMO-NOT-A-REAL-PAYOUT',paid_at=CURRENT_TIMESTAMP WHERE id=row_id;
     INSERT INTO withdrawals(id,idempotency_key,technician_id,technician_account_id,amount,bank_name,account_number,account_holder,initiated_at,note)
     VALUES(pg_temp.demo_id('withdrawal-2'),'DEMO-WITHDRAWAL-2',pg_temp.demo_id('tech-1'),pg_temp.demo_id('account-1'),100000,
         'Ngân hàng giả lập','000000000001','NGUYEN THANH HAI',CURRENT_TIMESTAMP,'Đang giữ tiền chờ xử lý — demo');
@@ -292,7 +294,7 @@ BEGIN
             INSERT INTO settlements(id,settlement_code,technician_id,technician_account_id,period_start,period_end,closing_balance)
             VALUES(row_id,'DEMO-SET-'||i||'-'||j,pg_temp.demo_id('tech-'||i),pg_temp.demo_id('account-'||i),
                 week_start-make_interval(days=>21-7*j),week_start-make_interval(days=>14-7*j),0);
-            UPDATE settlements SET status='CALCULATED' WHERE id=row_id;
+            UPDATE settlements SET status=1 WHERE id=row_id;
         END LOOP;
     END LOOP;
 
@@ -300,10 +302,10 @@ BEGIN
     INSERT INTO chat_rooms(id,booking_id,customer_id,technician_id)
     VALUES(pg_temp.demo_id('chat-16'),pg_temp.demo_id('booking-16'),pg_temp.demo_id('customer-4'),pg_temp.demo_id('tech-2'));
     INSERT INTO chat_messages(room_id,sender_id,message_type,content)
-    VALUES(pg_temp.demo_id('chat-16'),pg_temp.demo_id('user-4'),'TEXT','Tin nhắn demo: nhờ anh kiểm tra giúp máy lạnh.'),
-          (pg_temp.demo_id('chat-16'),pg_temp.demo_id('user-6'),'TEXT','Tin nhắn demo: tôi sẽ báo chi phí trước khi xử lý.');
+    VALUES(pg_temp.demo_id('chat-16'),pg_temp.demo_id('user-4'),0,'Tin nhắn demo: nhờ anh kiểm tra giúp máy lạnh.'),
+          (pg_temp.demo_id('chat-16'),pg_temp.demo_id('user-6'),0,'Tin nhắn demo: tôi sẽ báo chi phí trước khi xử lý.');
     INSERT INTO notifications(user_id,type,title,message,reference_type,reference_id)
-    VALUES(pg_temp.demo_id('user-1'),'BOOKING','Booking demo đã tạo','Dữ liệu giả lập để trình bày chức năng đặt lịch.','BOOKING',pg_temp.demo_id('booking-9')::text);
+    VALUES(pg_temp.demo_id('user-1'),0,'Booking demo đã tạo','Dữ liệu giả lập để trình bày chức năng đặt lịch.','BOOKING',pg_temp.demo_id('booking-9')::text);
 END;
 $$;
 DROP FUNCTION pg_temp.demo_id(text);

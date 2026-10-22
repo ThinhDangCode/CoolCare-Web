@@ -158,7 +158,7 @@ const fixtureSql = `WITH withdrawals AS (
     CASE WHEN i IN(2,3,4,8) THEN 'SYNTHETIC-PAYOUT-'||i::text ELSE NULL END AS payout_reference,
     100000.00::numeric AS amount,CASE WHEN i IN(2,3,4,8) THEN 5000.00::numeric ELSE NULL END AS fee_amount,
     CASE WHEN i IN(2,3,4,8) THEN 95000.00::numeric ELSE NULL END AS net_amount,
-    CASE i WHEN 1 THEN 'PENDING' WHEN 5 THEN 'FAILED' WHEN 6 THEN 'CANCELLED' WHEN 7 THEN 'PROCESSING' ELSE 'SUCCESS' END AS status,
+    CASE i WHEN 1 THEN 0 WHEN 5 THEN 3 WHEN 6 THEN 4 WHEN 7 THEN 1 ELSE 2 END::smallint AS status,
     CASE i WHEN 6 THEN '2026-10-01 23:59:59+07'::timestamptz WHEN 7 THEN '2026-10-02 00:00:00+07'::timestamptz
       WHEN 8 THEN '2026-09-30 23:59:59+07'::timestamptz ELSE '2026-10-01 00:00:00+07'::timestamptz END AS initiated_at,
     NULL::timestamptz AS processed_at,NULL::timestamptz AS paid_at,'Synthetic bank'::text AS bank_name,
@@ -173,7 +173,7 @@ const fixtureSql = `WITH withdrawals AS (
     SELECT ('50000000-0000-0000-0000-'||lpad(i::text,12,'0'))::uuid AS id,
       ('10000000-0000-0000-0000-'||lpad(i::text,12,'0'))::uuid AS withdrawal_id,
       CASE WHEN i IN(3,4) THEN '${accountB}'::uuid ELSE '${accountA}'::uuid END AS technician_account_id,
-      CASE WHEN i=8 THEN 'TOP_UP' ELSE 'WITHDRAWAL' END AS transaction_type,
+      CASE WHEN i=8 THEN 2 ELSE 3 END::smallint AS transaction_type,
       -100000.00::numeric AS amount,200000.00::numeric AS balance_before,100000.00::numeric AS balance_after,
       '2026-10-01 00:00:01+07'::timestamptz AS created_at,NULL::text AS reference_id
     FROM (VALUES(2),(3),(4),(8)) AS fixture(i)

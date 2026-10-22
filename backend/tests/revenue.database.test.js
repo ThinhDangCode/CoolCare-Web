@@ -15,28 +15,28 @@ const sourceServiceB = '10000000-0000-0000-0000-000000000002'
 const sourceServiceC = '10000000-0000-0000-0000-000000000003'
 const syntheticSql = buildRevenueAggregationSql({
   payments: `SELECT * FROM (VALUES
-    ('round','round-book','SUCCESS','2026-10-01 00:00:00+07'::timestamptz,0.02::numeric,3.00::numeric,' CẦN   THƠ '),
-    ('valid','valid-book','SUCCESS','2026-10-03 00:00:00+07'::timestamptz,20.00::numeric,100.00::numeric,'Cần Thơ'),
-    ('mismatch','mismatch-book','SUCCESS','2026-10-03 01:00:00+07'::timestamptz,5.00::numeric,100.00::numeric,'can tho'),
-    ('missing','missing-book','SUCCESS','2026-10-03 02:00:00+07'::timestamptz,NULL::numeric,100.00::numeric,'Cần Thơ'),
-    ('huge1','huge-book','SUCCESS','2026-10-03 03:00:00+07'::timestamptz,999999999999.99::numeric,999999999999.99::numeric,'Cần Thơ'),
-    ('huge2','huge-book','SUCCESS','2026-10-31 23:59:59+07'::timestamptz,999999999999.99::numeric,999999999999.99::numeric,'Cần Thơ'),
-    ('prior','prior-book','SUCCESS','2026-09-30 23:59:59+07'::timestamptz,500.00::numeric,2500.00::numeric,'Cần Thơ'),
-    ('unpaid','round-book','PROCESSING','2026-10-03 03:00:00+07'::timestamptz,10.00::numeric,3.00::numeric,'Cần Thơ'),
-    ('next','round-book','SUCCESS','2026-11-01 00:00:00+07'::timestamptz,10.00::numeric,3.00::numeric,'Cần Thơ'),
-    ('old','round-book','SUCCESS','2026-08-31 23:59:59+07'::timestamptz,10.00::numeric,3.00::numeric,'Cần Thơ'),
-    ('no-settle','round-book','SUCCESS',NULL::timestamptz,10.00::numeric,3.00::numeric,'Cần Thơ')
+    ('round','round-book',2,'2026-10-01 00:00:00+07'::timestamptz,0.02::numeric,3.00::numeric,' CẦN   THƠ '),
+    ('valid','valid-book',2,'2026-10-03 00:00:00+07'::timestamptz,20.00::numeric,100.00::numeric,'Cần Thơ'),
+    ('mismatch','mismatch-book',2,'2026-10-03 01:00:00+07'::timestamptz,5.00::numeric,100.00::numeric,'can tho'),
+    ('missing','missing-book',2,'2026-10-03 02:00:00+07'::timestamptz,NULL::numeric,100.00::numeric,'Cần Thơ'),
+    ('huge1','huge-book',2,'2026-10-03 03:00:00+07'::timestamptz,999999999999.99::numeric,999999999999.99::numeric,'Cần Thơ'),
+    ('huge2','huge-book',2,'2026-10-31 23:59:59+07'::timestamptz,999999999999.99::numeric,999999999999.99::numeric,'Cần Thơ'),
+    ('prior','prior-book',2,'2026-09-30 23:59:59+07'::timestamptz,500.00::numeric,2500.00::numeric,'Cần Thơ'),
+    ('unpaid','round-book',1,'2026-10-03 03:00:00+07'::timestamptz,10.00::numeric,3.00::numeric,'Cần Thơ'),
+    ('next','round-book',2,'2026-11-01 00:00:00+07'::timestamptz,10.00::numeric,3.00::numeric,'Cần Thơ'),
+    ('old','round-book',2,'2026-08-31 23:59:59+07'::timestamptz,10.00::numeric,3.00::numeric,'Cần Thơ'),
+    ('no-settle','round-book',2,NULL::timestamptz,10.00::numeric,3.00::numeric,'Cần Thơ')
   ) AS p(id,booking_id,payment_status,settled_at,commission_amount,commission_base_amount,city)`,
   lines: `SELECT * FROM (VALUES
-    ('round-book','ra',1.00::numeric,'SERVICE','${sourceService}','A'),
-    ('round-book','rb',1.00::numeric,'SERVICE','${sourceServiceB}','B'),
-    ('round-book','rc',1.00::numeric,'SERVICE','${sourceServiceC}','C'),
-    ('valid-book','va',60.00::numeric,'SERVICE','${sourceService}','A'),
-    ('valid-book','vl',40.00::numeric,'LABOR',NULL::text,NULL::text),
-    ('mismatch-book','ma',40.00::numeric,'SERVICE','${sourceService}','A'),
-    ('missing-book','mi',100.00::numeric,'SERVICE','${sourceService}','A'),
-    ('huge-book','hi',999999999999.99::numeric,'SERVICE','${sourceService}','A'),
-    ('prior-book','pa',2500.00::numeric,'SERVICE','${sourceService}','A')
+    ('round-book','ra',1.00::numeric,0,'${sourceService}','A'),
+    ('round-book','rb',1.00::numeric,0,'${sourceServiceB}','B'),
+    ('round-book','rc',1.00::numeric,0,'${sourceServiceC}','C'),
+    ('valid-book','va',60.00::numeric,0,'${sourceService}','A'),
+    ('valid-book','vl',40.00::numeric,1,NULL::text,NULL::text),
+    ('mismatch-book','ma',40.00::numeric,0,'${sourceService}','A'),
+    ('missing-book','mi',100.00::numeric,0,'${sourceService}','A'),
+    ('huge-book','hi',999999999999.99::numeric,0,'${sourceService}','A'),
+    ('prior-book','pa',2500.00::numeric,0,'${sourceService}','A')
   ) AS l(booking_id,item_id,total_price,item_type,service_id,service_name)`,
 })
 
@@ -180,11 +180,11 @@ test(
   { skip: !enabled },
   async () => {
     const sql = buildRevenueAggregationSql({
-      payments: `SELECT i::text AS id,'many'::text AS booking_id,'SUCCESS'::text AS payment_status,
+      payments: `SELECT i::text AS id,'many'::text AS booking_id,2::smallint AS payment_status,
         '2026-10-01 00:00:00+07'::timestamptz AS settled_at,1.00::numeric AS commission_amount,
         1.00::numeric AS commission_base_amount,'Cần Thơ'::text AS city FROM generate_series(1,10001) i`,
       lines: `SELECT 'many'::text AS booking_id,'line'::text AS item_id,1.00::numeric AS total_price,
-        'SERVICE'::text AS item_type,'${sourceService}'::text AS service_id,'A'::text AS service_name`,
+        0::smallint AS item_type,'${sourceService}'::text AS service_id,'A'::text AS service_name`,
     })
     const rows = (
       await pool.query(sql, [
