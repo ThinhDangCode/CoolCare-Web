@@ -16,7 +16,8 @@ const certificateColumns = `c.id,c.technician_id,c.certificate_name,c.certificat
   to_char(c.issued_date,'YYYY-MM-DD') AS issued_date,
   to_char(c.expiry_date,'YYYY-MM-DD') AS expiry_date,c.document_url,c.verification_status,
   c.reviewed_at,c.rejection_reason,c.updated_at,
-  CASE WHEN c.verification_status <> 'VERIFIED' THEN c.verification_status
+  CASE WHEN c.verification_status <> 'VERIFIED' THEN
+         CASE c.verification_status WHEN 0 THEN 'PENDING' ELSE 'REJECTED' END
        WHEN c.expiry_date < CURRENT_DATE THEN 'EXPIRED'
        WHEN c.expiry_date <= CURRENT_DATE + 30 THEN 'EXPIRING'
        ELSE 'VERIFIED' END AS status`
@@ -32,7 +33,7 @@ export class TechnicianRepository {
       ${remainingPointsSql('t.id')} AS remaining_points, ${activePointsSql('t.id')} AS active_penalty_points,
       p.applied_at,p.expires_at,p.status AS recorded_status,u.full_name,u.phone,u.email,u.avatar_url,
       b.booking_code,CASE WHEN p.status='ACTIVE' AND p.expires_at <= CURRENT_TIMESTAMP
-      THEN 'EXPIRED' ELSE p.status END AS status
+      THEN 'EXPIRED' ELSE CASE p.status WHEN 0 THEN 'ACTIVE' WHEN 1 THEN 'EXPIRED' ELSE 'REVOKED' END END AS status
       FROM technician_penalties p JOIN technician_profiles t ON t.id=p.technician_id
       JOIN users u ON u.id=t.user_id LEFT JOIN bookings b ON b.id=p.booking_id
       LEFT JOIN (SELECT complaints.*,ROW_NUMBER() OVER (ORDER BY created_at,id)::int AS complaint_number FROM complaints) c

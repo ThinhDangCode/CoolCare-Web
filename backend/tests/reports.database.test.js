@@ -9,29 +9,29 @@ import { revenueUnits, revenueDecimal } from '../src/modules/revenue/revenue.mon
 const enabled = process.env.RUN_REPORTS_DB_TESTS === '1'
 const fixtureSources = {
   bookings: `SELECT * FROM (VALUES
-    ('complete','2026-09-30 17:00:00+00'::timestamptz,'COMPLETED'),
-    ('p1','2026-10-15 01:00:00+07'::timestamptz,'PENDING'),
-    ('p2','2026-10-15 01:00:00+07'::timestamptz,'TECHNICIAN_SELECTED'),
-    ('p3','2026-10-15 01:00:00+07'::timestamptz,'ACCEPTED'),
-    ('p4','2026-10-15 01:00:00+07'::timestamptz,'IN_PROGRESS'),
-    ('p5','2026-10-15 01:00:00+07'::timestamptz,'WAITING_QUOTATION'),
-    ('p6','2026-10-15 01:00:00+07'::timestamptz,'QUOTATION_SENT'),
-    ('p7','2026-10-15 01:00:00+07'::timestamptz,'QUOTATION_ACCEPTED'),
-    ('p8','2026-10-15 01:00:00+07'::timestamptz,'QUOTATION_REJECTED'),
-    ('p9','2026-10-15 01:00:00+07'::timestamptz,'WAITING_CONFIRMATION'),
-    ('cancel','2026-10-31 16:59:59.999+00'::timestamptz,'CANCELLED'),
-    ('prior','2026-09-30 16:59:59.999+00'::timestamptz,'COMPLETED'),
-    ('next','2026-10-31 17:00:00+00'::timestamptz,'COMPLETED')
+    ('complete','2026-09-30 17:00:00+00'::timestamptz,9),
+    ('p1','2026-10-15 01:00:00+07'::timestamptz,0),
+    ('p2','2026-10-15 01:00:00+07'::timestamptz,1),
+    ('p3','2026-10-15 01:00:00+07'::timestamptz,2),
+    ('p4','2026-10-15 01:00:00+07'::timestamptz,3),
+    ('p5','2026-10-15 01:00:00+07'::timestamptz,4),
+    ('p6','2026-10-15 01:00:00+07'::timestamptz,5),
+    ('p7','2026-10-15 01:00:00+07'::timestamptz,6),
+    ('p8','2026-10-15 01:00:00+07'::timestamptz,7),
+    ('p9','2026-10-15 01:00:00+07'::timestamptz,8),
+    ('cancel','2026-10-31 16:59:59.999+00'::timestamptz,10),
+    ('prior','2026-09-30 16:59:59.999+00'::timestamptz,9),
+    ('next','2026-10-31 17:00:00+00'::timestamptz,9)
   ) b(id,created_at,status)`,
   payments: `SELECT * FROM (VALUES
-    ('SUCCESS','2026-09-30 17:00:00+00'::timestamptz,10.01::numeric),
-    ('SUCCESS','2026-10-15 01:00:00+07'::timestamptz,NULL::numeric),
-    ('SUCCESS','2026-10-31 16:59:59.999+00'::timestamptz,999999999999999999.99::numeric),
-    ('SUCCESS','2026-09-30 16:59:59.999+00'::timestamptz,100.00::numeric),
-    ('SUCCESS','2026-10-31 17:00:00+00'::timestamptz,200.00::numeric),
-    ('FAILED','2026-10-15 01:00:00+07'::timestamptz,300.00::numeric),
-    ('PENDING','2026-10-15 01:00:00+07'::timestamptz,400.00::numeric),
-    ('SUCCESS',NULL::timestamptz,500.00::numeric)
+    (2,'2026-09-30 17:00:00+00'::timestamptz,10.01::numeric),
+    (2,'2026-10-15 01:00:00+07'::timestamptz,NULL::numeric),
+    (2,'2026-10-31 16:59:59.999+00'::timestamptz,999999999999999999.99::numeric),
+    (2,'2026-09-30 16:59:59.999+00'::timestamptz,100.00::numeric),
+    (2,'2026-10-31 17:00:00+00'::timestamptz,200.00::numeric),
+    (3,'2026-10-15 01:00:00+07'::timestamptz,300.00::numeric),
+    (0,'2026-10-15 01:00:00+07'::timestamptz,400.00::numeric),
+    (2,NULL::timestamptz,500.00::numeric)
   ) p(payment_status,settled_at,commission_amount)`,
   customers: 'SELECT i AS id FROM generate_series(1,10) i',
   technicians: 'SELECT i AS id FROM generate_series(1,4) i',
@@ -110,8 +110,8 @@ test('monthly trends clip edge months to selected dates; empty periods keep curr
 test('fixed UTC+7 historical boundaries and year 9999 do not shift or overflow buckets', { skip: !enabled }, async () => {
   for (const date of ['1900-01-01', '9999-12-31']) {
     const report = await fixtureReport({ from: date, to: date }, {
-      bookings: `SELECT 'historic'::text AS id,'${date} 00:00:00+07'::timestamptz AS created_at,'COMPLETED'::text AS status`,
-      payments: `SELECT 'SUCCESS'::text AS payment_status,'${date} 00:00:00+07'::timestamptz AS settled_at,0.00::numeric AS commission_amount`,
+      bookings: `SELECT 'historic'::text AS id,'${date} 00:00:00+07'::timestamptz AS created_at,9::smallint AS status`,
+      payments: `SELECT 2::smallint AS payment_status,'${date} 00:00:00+07'::timestamptz AS settled_at,0.00::numeric AS commission_amount`,
     })
     assert.equal(report.summary.bookings, 1)
     assert.equal(report.summary.settledPayments, 1)

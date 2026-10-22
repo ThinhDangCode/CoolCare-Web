@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto'
 import { pool } from '../src/config/database.js'
 import { ComplaintRepository } from '../src/modules/complaints/complaint.repository.js'
 import { remainingPointsSql, activePointsSql } from '../src/modules/technicians/technician.points.js'
+import { TechnicianMutations } from '../src/modules/technicians/technician.mutations.js'
 
 test('acceptance creates one linked technician penalty; rejection and drafts do not',
   { skip: process.env.RUN_COMPLAINT_DB_TESTS !== '1' }, async () => {
@@ -34,11 +35,11 @@ test('acceptance creates one linked technician penalty; rejection and drafts do 
       const booking = (await client.query(`SELECT b.id,b.customer_id,bt.technician_id
         FROM bookings b JOIN booking_technicians bt ON bt.booking_id=b.id LIMIT 1`)).rows[0]
       assert.ok(actor && booking, 'Integration fixtures require an admin and a booking with a technician')
-      async function complaint(type = 'TECHNICIAN', technicianId = booking.technician_id) {
+      async function complaint(type = 'TECHNICIAN', technicianId = booking.technician_id, status = 'IN_PROGRESS') {
         return (await client.query(`INSERT INTO complaints
-          (complaint_code,booking_id,customer_id,technician_id,type,subject,description)
-          VALUES ($1,$2,$3,$4,$5,'Integration complaint','Customer reported technician misconduct.') RETURNING *`,
-          [`TEST-${randomUUID().slice(0, 12)}`, booking.id, booking.customer_id, technicianId, type])).rows[0]
+          (complaint_code,booking_id,customer_id,technician_id,type,subject,description,status)
+          VALUES ($1,$2,$3,$4,$5,'Integration complaint','Customer reported technician misconduct.',$6) RETURNING *`,
+          [`TEST-${randomUUID().slice(0, 12)}`, booking.id, booking.customer_id, technicianId, type, status])).rows[0]
       }
       const decision = { status: 'RESOLVED', resolution: 'Verified misconduct after reviewing customer evidence.', penalty_points: 5, penalty_expires_at: new Date(Date.now() + 7 * 86400000).toISOString() }
       const accepted = await complaint()
@@ -68,10 +69,10 @@ test('acceptance creates one linked technician penalty; rejection and drafts do 
       await repository.resolve(rejected.id, { status: 'REJECTED', resolution: 'Evidence does not substantiate the complaint.' }, actor.id)
       assert.equal((await client.query(`SELECT count(*)::int AS total FROM technician_penalties WHERE split_part(reason, ' ', 1) = '[COMPLAINT:' || $1::text || ']'`, [rejected.id])).rows[0].total, 0)
 
-      const draft = await complaint()
+      const draft = await complaint('TECHNICIAN', booking.technician_id, 'OPEN')
       await repository.resolve(draft.id, { status: 'OPEN', resolution: 'Investigation draft', is_draft: true }, actor.id)
       assert.equal((await client.query(`SELECT count(*)::int AS total FROM technician_penalties WHERE split_part(reason, ' ', 1) = '[COMPLAINT:' || $1::text || ']'`, [draft.id])).rows[0].total, 0)
-      await assert.rejects(repository.resolve(draft.id, { status: 'RESOLVED', resolution: decision.resolution }, actor.id), { status: 422 })
+      await assert.rejects(repository.resolve(draft.id, { status: 'RESOLVED', resolution: decision.resolution }, actor.id), { status: 409 })
       const unassigned = await complaint('TECHNICIAN', null)
       await assert.rejects(repository.resolve(unassigned.id, decision, actor.id), { status: 422 })
 
@@ -94,7 +95,7 @@ test('acceptance creates one linked technician penalty; rejection and drafts do 
       const rollback = await complaint()
       failPenalty = true
       await assert.rejects(repository.resolve(rollback.id, decision, actor.id), /Simulated penalty insert failure/)
-      assert.equal((await client.query('SELECT status FROM complaints WHERE id=$1', [rollback.id])).rows[0].status, 'OPEN')
+      assert.equal((await client.query('SELECT status FROM complaints WHERE id=$1', [rollback.id])).rows[0].status, 'IN_PROGRESS')
       failPenalty = false
       const exhausted = await complaint()
       const exhaustedResult = await repository.resolve(exhausted.id, { ...decision, penalty_points: 12 }, actor.id)
@@ -108,8 +109,8 @@ test('acceptance creates one linked technician penalty; rejection and drafts do 
       const activeAfter = (await client.query(`SELECT ${activePointsSql('$1')} AS points`, [booking.technician_id])).rows[0].points
       assert.equal(activeBefore - activeAfter, 12, 'Expired penalties automatically stop reducing priority without needing a scheduled status update')
       assert.equal((await client.query(`SELECT ${remainingPointsSql('$1')} AS remaining_points`, [booking.technician_id])).rows[0].remaining_points, 0, 'Expiry never returns deducted points')
-      const techUser = (await client.query('SELECT user_id FROM technician_profiles WHERE id=$1', [booking.technician_id])).rows[0].user_id
-      await assert.rejects(repository.changeUserStatus(techUser, 'ACTIVE', actor.id), { code: 'POINTS_EXHAUSTED' })
+      const technicians = new TechnicianMutations({ transaction: repository.transaction, audit: () => {} })
+      await assert.rejects(technicians.activate(booking.technician_id, actor.id), { code: 'POINTS_EXHAUSTED' })
     } finally {
       await client.query('ROLLBACK')
       client.release()

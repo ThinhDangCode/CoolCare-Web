@@ -1,5 +1,13 @@
 # CoolCare Web
 
+## Database schema (22/10/2026)
+
+The current PostgreSQL database stores status, type, gender and skill codes as
+`smallint`. The backend translates them to the existing string API values for
+Web and App. `backend/database/seed_data.sql` is optional demo data for a fresh
+database only; never run it on a database containing real data. Keep a database
+backup before any future schema changes.
+
 Technician administration uses the existing database schema without migrations. Reviews use `reviewed_by_id`, `reviewed_at`, and `rejection_reason`. The original one-active-job limit is preserved. Review actions write structured `ADMIN_AUDIT` events to the backend logger. Approval does not override wallet restrictions. Deactivation disables sign-in and new assignments while preserving existing job history.
 
 - `backend`: API dùng chung cho Flutter và Admin Web.
@@ -53,11 +61,7 @@ npm install
 npm run dev
 ```
 
-Xác thực email khi đăng ký cần migration sau (chạy một lần trên database đang dùng):
-
-```text
-psql -d coolcare_db -v ON_ERROR_STOP=1 -f backend/database/migrations/20261003_add_email_verification_tokens.sql
-```
+Schema mới đã bao gồm bảng token cho xác thực email và đặt lại mật khẩu.
 
 Để gửi OTP thật đến Gmail, cấu hình SMTP trong `backend/.env`. Không commit mật khẩu SMTP:
 

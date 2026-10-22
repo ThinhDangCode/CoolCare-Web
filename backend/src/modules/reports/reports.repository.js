@@ -4,7 +4,7 @@ import { withTransaction } from '../../config/database.js'
 export function buildReportsAggregationSql(sources = {}) {
   const source = {
     bookings: 'SELECT id, created_at, status FROM bookings',
-    payments: 'SELECT payment_status::text, settled_at, commission_amount FROM payments',
+    payments: 'SELECT payment_status, settled_at, commission_amount FROM payments',
     customers: 'SELECT id FROM customer_profiles',
     technicians: 'SELECT id FROM technician_profiles',
     units: 'SELECT id, booking_id FROM booking_units',
@@ -42,8 +42,8 @@ export function buildReportsAggregationSql(sources = {}) {
       FROM eligible_payments
     ),
     booking_status AS (
-      SELECT CASE WHEN status='COMPLETED' THEN 'completed'
-        WHEN status='CANCELLED' THEN 'cancelled' ELSE 'processing' END AS key,
+      SELECT CASE WHEN status=9 THEN 'completed'
+        WHEN status=10 THEN 'cancelled' ELSE 'processing' END AS key,
         count(*)::text AS count FROM booking_cohort GROUP BY 1
     ),
     booking_trend AS (

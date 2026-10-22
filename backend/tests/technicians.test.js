@@ -49,7 +49,7 @@ test('approving a technician repairs the receiving account and activates the pro
   assert.equal(result.availability_status, 'OFFLINE')
   assert.ok(queries.some(({ sql }) => sql.includes('INSERT INTO technician_accounts')))
   assert.ok(queries.some(({ sql }) => sql.includes('ON CONFLICT (technician_id) DO NOTHING')))
-  assert.ok(queries.some(({ sql }) => sql.includes("CASE WHEN $2='VERIFIED' THEN true")))
+  assert.ok(queries.some(({ sql }) => sql.includes('CASE WHEN $2::smallint=1 THEN true')))
   const notification = queries.find(({ sql }) => sql.includes('INSERT INTO notifications'))
   assert.equal(notification.params[0], 'customer-user-id')
   assert.equal(notification.params[1], 'Đăng ký kỹ thuật viên đã được duyệt')

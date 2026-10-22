@@ -16,12 +16,12 @@ const fixtureSources = {
     ('c6','u6','2026-01-01 00:00:00+07'::timestamptz)
   ) c(id,user_id,created_at)`,
   users: `SELECT * FROM (VALUES
-    ('u1','Dual customer and technician','one@example.com',NULL::text,NULL::text,'ACTIVE'),
-    ('u2','Second','two@example.com','0901234567',NULL,'ACTIVE'),
-    ('u3','Literal %_ customer','three@example.com',NULL,NULL,'LOCKED'),
-    ('u4','Inactive','four@example.com',NULL,NULL,'INACTIVE'),
-    ('u5','Locked normal','five@example.com',NULL,NULL,'LOCKED'),
-    ('u6','No bookings','six@example.com',NULL,NULL,'ACTIVE')
+    ('u1','Dual customer and technician','one@example.com',NULL::text,NULL::text,0),
+    ('u2','Second','two@example.com','0901234567',NULL,0),
+    ('u3','Literal %_ customer','three@example.com',NULL,NULL,1),
+    ('u4','Inactive','four@example.com',NULL,NULL,2),
+    ('u5','Locked normal','five@example.com',NULL,NULL,1),
+    ('u6','No bookings','six@example.com',NULL,NULL,0)
   ) u(id,full_name,email,phone,avatar_url,status)`,
   addresses: `SELECT * FROM (VALUES
     ('a1','c1','Alpha','Common','Same',true),('a2','c1','Ignore','Other','Other',false),
@@ -29,27 +29,27 @@ const fixtureSources = {
     ('a5','c3','Missing default','Other',NULL,false)
   ) a(id,customer_id,city,district,ward,is_default)`,
   bookings: `SELECT * FROM (VALUES
-    ('b1','c1','2026-09-30 17:00:00+00'::timestamptz,'COMPLETED',NULL::text),
-    ('b2','c1','2026-10-15 00:00:00+07'::timestamptz,'COMPLETED',NULL),
-    ('b3','c2','2026-10-15 00:00:00+07'::timestamptz,'COMPLETED',NULL),
-    ('b4','c1','2026-10-15 00:00:00+07'::timestamptz,'CANCELLED','u1'),
-    ('b5','c2','2026-10-15 00:00:00+07'::timestamptz,'CANCELLED','admin'),
-    ('b6','c3','2026-10-15 00:00:00+07'::timestamptz,'CANCELLED','technician'),
-    ('b7','c4','2026-10-15 00:00:00+07'::timestamptz,'CANCELLED',NULL),
-    ('b8','c5','2026-10-15 00:00:00+07'::timestamptz,'QUOTATION_REJECTED',NULL),
-    ('b9','c5','2026-10-15 00:00:00+07'::timestamptz,'IN_PROGRESS',NULL),
-    ('b10','c1','2026-10-15 00:00:00+07'::timestamptz,'ACCEPTED',NULL),
-    ('outside1','c1','2026-10-31 17:00:00+00'::timestamptz,'COMPLETED',NULL),
-    ('outside2','c2','2026-09-30 16:59:59.999+00'::timestamptz,'COMPLETED',NULL),
-    ('p1','c1','2026-10-15 00:00:00+07'::timestamptz,'PENDING',NULL),
-    ('p2','c1','2026-10-15 00:00:00+07'::timestamptz,'TECHNICIAN_SELECTED',NULL),
-    ('p3','c1','2026-10-15 00:00:00+07'::timestamptz,'WAITING_QUOTATION',NULL),
-    ('p4','c1','2026-10-15 00:00:00+07'::timestamptz,'QUOTATION_SENT',NULL),
-    ('p5','c1','2026-10-15 00:00:00+07'::timestamptz,'QUOTATION_ACCEPTED',NULL),
-    ('p6','c1','2026-10-15 00:00:00+07'::timestamptz,'WAITING_CONFIRMATION',NULL)
+    ('b1','c1','2026-09-30 17:00:00+00'::timestamptz,9,NULL::text),
+    ('b2','c1','2026-10-15 00:00:00+07'::timestamptz,9,NULL),
+    ('b3','c2','2026-10-15 00:00:00+07'::timestamptz,9,NULL),
+    ('b4','c1','2026-10-15 00:00:00+07'::timestamptz,10,'u1'),
+    ('b5','c2','2026-10-15 00:00:00+07'::timestamptz,10,'admin'),
+    ('b6','c3','2026-10-15 00:00:00+07'::timestamptz,10,'technician'),
+    ('b7','c4','2026-10-15 00:00:00+07'::timestamptz,10,NULL),
+    ('b8','c5','2026-10-15 00:00:00+07'::timestamptz,7,NULL),
+    ('b9','c5','2026-10-15 00:00:00+07'::timestamptz,3,NULL),
+    ('b10','c1','2026-10-15 00:00:00+07'::timestamptz,2,NULL),
+    ('outside1','c1','2026-10-31 17:00:00+00'::timestamptz,9,NULL),
+    ('outside2','c2','2026-09-30 16:59:59.999+00'::timestamptz,9,NULL),
+    ('p1','c1','2026-10-15 00:00:00+07'::timestamptz,0,NULL),
+    ('p2','c1','2026-10-15 00:00:00+07'::timestamptz,1,NULL),
+    ('p3','c1','2026-10-15 00:00:00+07'::timestamptz,4,NULL),
+    ('p4','c1','2026-10-15 00:00:00+07'::timestamptz,5,NULL),
+    ('p5','c1','2026-10-15 00:00:00+07'::timestamptz,6,NULL),
+    ('p6','c1','2026-10-15 00:00:00+07'::timestamptz,8,NULL)
   ) b(id,customer_id,created_at,status,cancelled_by_id)`,
-  quotations: `SELECT * FROM (VALUES ('b4','REJECTED'),('b4','REJECTED'),('b9','REJECTED'),
-    ('b10','ACCEPTED'),('p1','PENDING')) q(booking_id,status)`,
+  quotations: `SELECT * FROM (VALUES ('b4',3),('b4',3),('b9',3),
+    ('b10',2),('p1',1)) q(booking_id,status)`,
   units: `SELECT * FROM (VALUES ('unit1','b1'),('unit2','b1'),('unit3','b2'),('unit4','b3'),
     ('unit5','p1'),('unit6','outside1')) u(id,booking_id)`,
   unitServices: `SELECT * FROM (VALUES ('unit1','s1'),('unit1','s2'),('unit2','s1'),('unit3','s2'),
@@ -196,7 +196,7 @@ test('locked table pages contain every matching customer once with deterministic
       customers: `SELECT 'c'||lpad(i::text,2,'0') AS id,'u'||lpad(i::text,2,'0') AS user_id,
         '2026-10-01 00:00:00+07'::timestamptz AS created_at FROM generate_series(1,12) i`,
       users: `SELECT 'u'||lpad(i::text,2,'0') AS id,'Locked '||i AS full_name,'locked'||i||'@example.com' AS email,
-        NULL::text AS phone,NULL::text AS avatar_url,'LOCKED'::text AS status FROM generate_series(1,12) i`,
+        NULL::text AS phone,NULL::text AS avatar_url,1::smallint AS status FROM generate_series(1,12) i`,
     }
     const first = await fixtureReport({ from: '2026-10-01', to: '2026-10-31' }, sources)
     const second = await fixtureReport({ from: '2026-10-01', to: '2026-10-31', page: '2' }, sources)
@@ -214,7 +214,7 @@ test('fixed UTC+7 registration and booking buckets work at 1900 and 9999 without
     const data = await fixtureReport({ from: date, to: date }, {
       customers: `SELECT 'c1'::text AS id,'u1'::text AS user_id,'${date} 00:00:00+07'::timestamptz AS created_at`,
       bookings: `SELECT 'b1'::text AS id,'c1'::text AS customer_id,'${date} 00:00:00+07'::timestamptz AS created_at,
-        'COMPLETED'::text AS status,NULL::text AS cancelled_by_id`,
+        9::smallint AS status,NULL::text AS cancelled_by_id`,
     })
     assert.equal(data.summary.totalCustomers, 1)
     assert.equal(data.summary.newCustomers, 1)

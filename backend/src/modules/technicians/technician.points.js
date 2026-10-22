@@ -2,8 +2,8 @@ import { AppError } from '../../utils.js'
 
 export const INITIAL_POINTS = 12
 // Expiry restores dispatch priority, never the lifetime point balance.
-export const remainingPointsSql = (id) => `GREATEST(0,12-COALESCE((SELECT sum(penalty_points) FROM technician_penalties WHERE technician_id=${id} AND status <> 'REVOKED'),0))::int`
-export const activePointsSql = (id) => `COALESCE((SELECT sum(penalty_points) FROM technician_penalties WHERE technician_id=${id} AND status='ACTIVE' AND (expires_at IS NULL OR expires_at>CURRENT_TIMESTAMP)),0)::int`
+export const remainingPointsSql = (id) => `GREATEST(0,12-COALESCE((SELECT sum(penalty_points) FROM technician_penalties WHERE technician_id=${id} AND status <> 2),0))::int`
+export const activePointsSql = (id) => `COALESCE((SELECT sum(penalty_points) FROM technician_penalties WHERE technician_id=${id} AND status=0 AND (expires_at IS NULL OR expires_at>CURRENT_TIMESTAMP)),0)::int`
 
 export async function lockPenaltyTechnician(client, id) {
   await client.query('SELECT id FROM technician_accounts WHERE technician_id=$1 FOR UPDATE', [id])

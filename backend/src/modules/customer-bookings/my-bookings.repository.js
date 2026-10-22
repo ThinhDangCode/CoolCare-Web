@@ -49,7 +49,7 @@ export class MyBookingsRepository {
         FROM bookings b
         WHERE b.customer_id = $1
           AND (
-            $2::varchar IS NULL
+            $2::smallint IS NULL
             OR b.status = $2
           )
       `,
@@ -172,7 +172,7 @@ export class MyBookingsRepository {
 
         WHERE b.customer_id = $1
           AND (
-            $2::varchar IS NULL
+            $2::smallint IS NULL
             OR b.status = $2
           )
 

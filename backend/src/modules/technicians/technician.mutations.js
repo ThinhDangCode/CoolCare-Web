@@ -28,10 +28,10 @@ export class TechnicianMutations {
       const before=await this.lock(client,id)
       if(before.verification_status!=='PENDING') throw new AppError(409,'ALREADY_REVIEWED','This profile has already been reviewed. Refresh the page.')
       if(input.status==='VERIFIED' && (!before.identity_number || !before.identity_front_url || !before.identity_back_url)) throw new AppError(422,'INCOMPLETE_IDENTITY','Citizen ID and both identity documents are required for approval.')
-      const result=await client.query(`UPDATE technician_profiles SET verification_status=$2::varchar,
+      const result=await client.query(`UPDATE technician_profiles SET verification_status=$2,
         reviewed_by_id=$3,reviewed_at=CURRENT_TIMESTAMP,rejection_reason=$4,
-        is_active=CASE WHEN $2='VERIFIED' THEN true ELSE false END,
-        availability_status=CASE WHEN $2='VERIFIED' THEN availability_status ELSE 'OFFLINE' END,
+        is_active=CASE WHEN $2::smallint=1 THEN true ELSE false END,
+        availability_status=CASE WHEN $2::smallint=1 THEN availability_status ELSE 1 END,
         updated_at=CURRENT_TIMESTAMP WHERE id=$1
         RETURNING id,verification_status,reviewed_by_id,reviewed_at,is_active,availability_status`,[id,input.status,actorId,input.reason])
       const notification = input.status === 'VERIFIED'
@@ -45,7 +45,7 @@ export class TechnicianMutations {
           }
       await client.query(
         `INSERT INTO notifications(user_id,type,title,message,reference_type,reference_id)
-         VALUES($1,'VERIFICATION',$2,$3,'TECHNICIAN',$4)`,
+         VALUES($1,'SYSTEM',$2,$3,'TECHNICIAN',$4)`,
         [before.user_id, notification.title, notification.message, id],
       )
       // Do not enable receiving jobs here: wallet/debt restrictions are independent.
