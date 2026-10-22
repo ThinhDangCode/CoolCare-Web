@@ -58,26 +58,26 @@ export class CancelAcceptedJobRepository {
       if (!assignmentResult.rows.length) throw unavailable()
 
       const cancellationReason = `Kỹ thuật viên hủy công việc đã nhận: ${reason}`
+      // Keep the booking available for reassignment instead of cancelling it.
       const bookingResult = await client.query(
         `UPDATE bookings
-         SET status='CANCELLED',cancelled_at=CURRENT_TIMESTAMP,cancelled_by_id=$2,
-             cancellation_reason=$3,updated_at=CURRENT_TIMESTAMP
+         SET status='PENDING',updated_at=CURRENT_TIMESTAMP
          WHERE id=$1 AND status='ACCEPTED' AND technician_completed_at IS NULL
-         RETURNING id,booking_code,status,cancelled_at,cancellation_reason,updated_at`,
-        [job.booking_id, technician.user_id, cancellationReason],
+         RETURNING id,booking_code,status,updated_at`,
+        [job.booking_id],
       )
       const booking = bookingResult.rows[0]
       if (!booking) throw unavailable()
 
       await client.query(
         `INSERT INTO booking_status_history(booking_id,status,changed_by_id,note)
-         VALUES($1,'CANCELLED',$2,$3)`,
+         VALUES($1,'PENDING',$2,$3)`,
         [job.booking_id, technician.user_id, cancellationReason],
       )
       await client.query(
         `INSERT INTO notifications(user_id,type,title,message,reference_type,reference_id)
          VALUES($1,'BOOKING','Kỹ thuật viên đã hủy công việc',$2,'BOOKING',$3)`,
-        [job.customer_user_id, `Booking ${job.booking_code} đã bị kỹ thuật viên hủy. Bạn có thể đặt lại dịch vụ.`, job.booking_id],
+        [job.customer_user_id, `Booking ${job.booking_code}: kỹ thuật viên đã hủy. Bạn có thể chọn kỹ thuật viên khác.`, job.booking_id],
       )
 
       let penalty = null

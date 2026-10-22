@@ -30,7 +30,8 @@ export class AddressService {
   // LOCATION
 
   async getProvinces() {
-    return this.repository.getProvinces()
+    const provinces = await this.repository.getProvinces()
+    return provinces.filter((p) => /cần\s*thơ|can\s*tho/i.test(p.name.normalize('NFC')))
   }
 
   async getWards(provinceCode) {
@@ -38,6 +39,10 @@ export class AddressService {
       throw new AppError(400, 'PROVINCE_CODE_REQUIRED', 'Province code is required.')
     }
 
+    const provinces = await this.getProvinces()
+    if (!provinces.some((p) => String(p.code) === String(provinceCode))) {
+      throw new AppError(400, 'OUTSIDE_SERVICE_AREA', 'Chỉ hỗ trợ địa chỉ tại Cần Thơ.')
+    }
     const wards = await this.repository.getWards(provinceCode)
 
     if (!wards) {
@@ -45,6 +50,14 @@ export class AddressService {
     }
 
     return wards
+  }
+
+  ensureCanTho(input) {
+    const city = String(input.city ?? '').normalize('NFC').trim()
+      .replace(/^(?:thành phố|tp\.?)\s*/iu, '')
+    if (!/^(?:cần\s*thơ|can\s*tho)$/iu.test(city)) {
+      throw new AppError(400, 'OUTSIDE_SERVICE_AREA', 'Chỉ hỗ trợ địa chỉ tại Cần Thơ.')
+    }
   }
 
   // ADDRESS
@@ -58,12 +71,14 @@ export class AddressService {
   async createAddress(auth, input) {
     const customerId = await this.getCustomerId(auth)
 
+    this.ensureCanTho(input)
     return this.repository.create(customerId, input)
   }
 
   async updateAddress(auth, addressId, input) {
     const customerId = await this.getCustomerId(auth)
 
+    this.ensureCanTho(input)
     const address = await this.repository.update(addressId, customerId, input)
 
     if (!address) {

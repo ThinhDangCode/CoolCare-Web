@@ -42,7 +42,9 @@ import { createWithdrawalsRouter } from './modules/withdrawals/withdrawals.route
 import { createTopupsRouter } from './modules/topups/topups.routes.js'
 import { createTechnicianApplicationRouter } from './modules/technician-applications/technician-application.routes.js'
 import { createTechnicianPortalRouter } from './modules/technician-portal/technician-portal.routes.js'
+import { createTechnicianWalletRouter, createTechnicianWalletCallbackRouter } from './modules/technician-wallet/wallet.routes.js'
 import { createServiceCategoryRouter } from './modules/services/service-category.routes.js'
+import { createServiceRouter } from './modules/services/service.routes.js'
 
 import { AddressRepository } from './modules/address/address.repository.js'
 import { AddressService } from './modules/address/address.service.js'
@@ -161,6 +163,9 @@ app.use('/api/customer', createReviewRouter(reviewController))
 app.use('/api/customer', createVoucherRouter(voucherController))
 app.use('/api/technician-applications', createTechnicianApplicationRouter())
 app.use('/api/technician-portal', createTechnicianPortalRouter())
+// Gateway callbacks are public endpoints authenticated by provider signatures. Register before the authenticated wallet router.
+app.use('/api/technician-wallet/callbacks', createTechnicianWalletCallbackRouter())
+app.use('/api/technician-wallet', createTechnicianWalletRouter())
 app.use('/api/quotations', createQuotationRouter())
 
 // ADDRESS
@@ -170,65 +175,7 @@ app.use('/api/bookings', createCustomerBookingRouter(customerBookingController))
 // SERVICES
 app.use('/api/service-categories', createServiceCategoryRouter())
 
-app.get(
-  '/api/services',
-  asyncHandler(async (_request, response) => {
-    const result = await pool.query(`
-    SELECT
-      id,
-      category_id,
-      name,
-      description,
-      base_price,
-      estimated_duration,
-      maintenance_interval_days,
-      is_active
-    FROM services
-    WHERE is_active = true
-    ORDER BY name ASC
-  `)
+app.use('/api/services', createServiceRouter())
 
-    response.json({
-      data: result.rows,
-    })
-  })
-)
-
-//SERVICE DETAIL
-app.get(
-  '/api/services/:id',
-  asyncHandler(async (request, response) => {
-    const result = await pool.query(
-      `
-      SELECT
-        id,
-        category_id,
-        name,
-        description,
-        base_price,
-        estimated_duration,
-        maintenance_interval_days,
-        is_active
-      FROM services
-      WHERE id = $1
-        AND is_active = true
-      LIMIT 1
-    `,
-      [request.params.id]
-    )
-
-    if (result.rows.length === 0) {
-      return response.status(404).json({
-        error: {
-          message: 'Service not found',
-        },
-      })
-    }
-
-    response.json({
-      data: result.rows[0],
-    })
-  })
-)
 app.use(notFoundHandler)
 app.use(errorHandler)
