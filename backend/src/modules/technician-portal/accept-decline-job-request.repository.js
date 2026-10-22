@@ -36,7 +36,7 @@ export class AcceptDeclineJobRequestRepository {
 
       const requestResult = await client.query(
         `SELECT bt.id,bt.booking_id,bt.status,bt.expires_at,
-                (bt.expires_at IS NOT NULL AND bt.expires_at<=CURRENT_TIMESTAMP) AS expired,
+                (COALESCE(bt.expires_at,bt.requested_at+INTERVAL '10 minutes')<=CURRENT_TIMESTAMP) AS expired,
                 b.status AS booking_status,
                 b.booking_code,cp.user_id AS customer_user_id
          FROM booking_technicians bt
@@ -67,19 +67,35 @@ export class AcceptDeclineJobRequestRepository {
   }
 
   async _accept(client, technician, jobRequest) {
-    const activeJob = await client.query(
-      `SELECT EXISTS(
-         SELECT 1 FROM booking_technicians
-         WHERE technician_id=$1 AND status='ACCEPTED'
-       ) AS exists`,
-      [technician.id],
+    // Compare service windows rather than treating every accepted job as
+    // an all-day conflict. Service estimated_duration is measured in minutes.
+    const overlap = await client.query(
+      `WITH windows AS (
+         SELECT b.id, b.scheduled_at AS starts_at,
+                b.scheduled_at + make_interval(mins => GREATEST(30,
+                  COALESCE((SELECT SUM(s.estimated_duration)::integer
+                    FROM booking_units bu
+                    JOIN booking_unit_services bus ON bus.booking_unit_id=bu.id
+                    JOIN services s ON s.id=bus.service_id
+                    WHERE bu.booking_id=b.id), 60))) AS ends_at
+         FROM bookings b
+         WHERE b.id=$2 OR EXISTS (
+           SELECT 1 FROM booking_technicians bt
+           WHERE bt.booking_id=b.id AND bt.technician_id=$1
+             AND bt.status='ACCEPTED'
+         )
+       )
+       SELECT EXISTS (
+         SELECT 1 FROM windows current_job JOIN windows other_job
+           ON current_job.id=$2 AND other_job.id<>$2
+         WHERE current_job.starts_at<other_job.ends_at
+           AND other_job.starts_at<current_job.ends_at
+       ) AS conflict`,
+      [technician.id, jobRequest.booking_id],
     )
-    if (activeJob.rows[0]?.exists) {
-      throw new AppError(
-        409,
-        'TECHNICIAN_ACTIVE_JOB_CONFLICT',
-        'Kỹ thuật viên đang có một công việc đã nhận và không thể nhận thêm yêu cầu mới.',
-      )
+    if (overlap.rows[0]?.conflict) {
+      throw new AppError(409, 'TECHNICIAN_SCHEDULE_CONFLICT',
+        'Kỹ thuật viên có công việc trùng khung giờ đã đặt.')
     }
 
     const eligibility = await client.query(
@@ -132,23 +148,22 @@ export class AcceptDeclineJobRequestRepository {
     )
     if (!assignment.rows.length) throw unavailable()
 
-    const cancellationReason = reason
-      ? `Kỹ thuật viên từ chối công việc: ${reason}`
-      : 'Kỹ thuật viên đã từ chối yêu cầu công việc.'
+    // A decline closes only this technician request, not the customer's booking.
+    // The customer can select another technician without creating a new booking.
     const booking = await client.query(
-      `UPDATE bookings SET status='CANCELLED',cancelled_at=CURRENT_TIMESTAMP,
-         cancelled_by_id=$2,cancellation_reason=$3,updated_at=CURRENT_TIMESTAMP
+      `UPDATE bookings SET status='PENDING',updated_at=CURRENT_TIMESTAMP
        WHERE id=$1 AND status='TECHNICIAN_SELECTED'
        RETURNING id,booking_code,status,updated_at`,
-      [jobRequest.booking_id, technician.user_id, cancellationReason],
+      [jobRequest.booking_id],
     )
     if (!booking.rows.length) throw unavailable()
 
     await client.query(
       `INSERT INTO booking_status_history(booking_id,status,changed_by_id,note)
-       VALUES($1,'CANCELLED',$2,$3)`,
+       VALUES($1,'PENDING',$2,$3)`,
       [jobRequest.booking_id, technician.user_id,
-        cancellationReason],
+        reason ? `Kỹ thuật viên từ chối: ${reason}. Khách có thể chọn lại.`
+          : 'Kỹ thuật viên từ chối; khách có thể chọn lại.'],
     )
     await this._notifyCustomer(
       client,

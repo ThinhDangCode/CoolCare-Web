@@ -3,7 +3,7 @@ import { pool } from '../../config/database.js'
 const effectiveStatus = `CASE
   WHEN b.status='COMPLETED' AND bt.status='ACCEPTED' THEN 'COMPLETED'
   WHEN b.status='CANCELLED' AND bt.status IN ('SELECTED','ACCEPTED') THEN 'CANCELLED'
-  WHEN bt.status='SELECTED' AND bt.expires_at IS NOT NULL AND bt.expires_at<=CURRENT_TIMESTAMP
+  WHEN bt.status='SELECTED' AND COALESCE(bt.expires_at,bt.requested_at+INTERVAL '10 minutes')<=CURRENT_TIMESTAMP
     THEN 'EXPIRED'
   ELSE CASE bt.status
     WHEN 0 THEN 'RECOMMENDED' WHEN 1 THEN 'SELECTED' WHEN 2 THEN 'ACCEPTED'
@@ -13,10 +13,12 @@ END`
 
 const visibleStatuses = `('SELECTED','ACCEPTED','DECLINED','EXPIRED','COMPLETED','CANCELLED')`
 const historyStatuses = `('DECLINED','EXPIRED','COMPLETED','CANCELLED')`
+const closedStatuses = `('DECLINED','EXPIRED','CANCELLED')`
 const statusFilter = `(
   $2::varchar IS NULL
   OR ($2='HISTORY' AND ${effectiveStatus} IN ${historyStatuses})
-  OR ($2<>'HISTORY' AND ${effectiveStatus}=$2)
+  OR ($2='CLOSED' AND ${effectiveStatus} IN ${closedStatuses})
+  OR ($2 NOT IN ('HISTORY','CLOSED') AND ${effectiveStatus}=$2)
 )`
 
 export class ViewJobRequestsRepository {
@@ -125,7 +127,7 @@ export class ViewJobRequestsRepository {
          AND bt.status IN ${visibleStatuses}
          AND ${statusFilter}
        ORDER BY
-         CASE WHEN $2='HISTORY' THEN
+         CASE WHEN $2 IN ('HISTORY','CLOSED') THEN
            CASE ${effectiveStatus}
              WHEN 'COMPLETED' THEN COALESCE(b.completed_at,b.updated_at)
              WHEN 'CANCELLED' THEN COALESCE(bt.cancelled_at,b.cancelled_at,b.updated_at)

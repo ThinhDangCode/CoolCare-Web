@@ -176,7 +176,10 @@ export class TechnicianMatchingRepository {
 
             COUNT(*) FILTER (
               WHERE bt.status = 'CANCELLED'
-            ) AS cancelled_jobs
+            ) AS cancelled_jobs,
+
+            COUNT(*) FILTER (WHERE bt.status = 'EXPIRED') AS expired_jobs,
+            COUNT(*) FILTER (WHERE bt.status IN ('ACCEPTED','COMPLETED','DECLINED','EXPIRED')) AS total_requests
 
           FROM booking_technicians bt
           GROUP BY bt.technician_id
@@ -238,6 +241,8 @@ export class TechnicianMatchingRepository {
               perf.cancelled_jobs,
               0
             ) AS cancelled_jobs,
+            COALESCE(perf.expired_jobs, 0) AS expired_jobs,
+            COALESCE(perf.total_requests, 0) AS total_requests,
 
             COALESCE(
               penalties.penalty_points,
@@ -260,6 +265,28 @@ export class TechnicianMatchingRepository {
           WHERE u.status = 'ACTIVE'
 
             AND can_recommend_technician(tp.id)
+            AND NOT EXISTS (
+              SELECT 1 FROM booking_technicians assigned
+              JOIN bookings existing ON existing.id=assigned.booking_id
+              JOIN bookings target_booking_time ON target_booking_time.id=$1
+              WHERE assigned.technician_id=tp.id
+                AND assigned.status='ACCEPTED'
+                AND target_booking_time.scheduled_at <
+                    existing.scheduled_at + make_interval(mins => GREATEST(30,
+                      COALESCE((SELECT SUM(s.estimated_duration)::integer
+                        FROM booking_units bu
+                        JOIN booking_unit_services bus ON bus.booking_unit_id=bu.id
+                        JOIN services s ON s.id=bus.service_id
+                        WHERE bu.booking_id=existing.id), 60)))
+                AND existing.scheduled_at <
+                    target_booking_time.scheduled_at + make_interval(mins => GREATEST(30,
+                      COALESCE((SELECT SUM(s.estimated_duration)::integer
+                        FROM booking_units bu
+                        JOIN booking_unit_services bus ON bus.booking_unit_id=bu.id
+                        JOIN services s ON s.id=bus.service_id
+                        WHERE bu.booking_id=$1), 60)))
+            )
+
 
             AND EXISTS (
               SELECT 1
@@ -317,7 +344,9 @@ export class TechnicianMatchingRepository {
                 END DESC,
 
                 penalty_points ASC,
-                declined_jobs ASC,
+                CASE WHEN total_requests >= 3 THEN
+                  (declined_jobs + expired_jobs)::numeric / NULLIF(total_requests, 0)
+                ELSE 0 END ASC,
                 cancelled_jobs ASC,
                 years_experience DESC,
                 same_ward DESC,
@@ -423,14 +452,12 @@ export class TechnicianMatchingRepository {
           booking_id,
           technician_id,
           status,
-          requested_at
+          requested_at,
+          expires_at
         )
-        VALUES (
-          $1,
-          $2,
-          'SELECTED',
-          CURRENT_TIMESTAMP
-        )
+        SELECT $1,$2,'SELECTED',CURRENT_TIMESTAMP,
+          LEAST(CURRENT_TIMESTAMP+INTERVAL '10 minutes',b.scheduled_at)
+        FROM bookings b WHERE b.id=$1
         RETURNING
           id,
           booking_id,

@@ -36,7 +36,7 @@ function fixture({ requestStatus = 'ACCEPTED', bookingStatus = 'ACCEPTED', compl
           cancelled_at: '2026-10-15T10:00:00.000Z', cancellation_reason: params[2],
         }] }
         if (sql.includes('UPDATE bookings')) return { rows: [{
-          id: 'booking-id', booking_code: 'BK-001', status: 'CANCELLED',
+          id: 'booking-id', booking_code: 'BK-001', status: 'PENDING',
           cancelled_at: '2026-10-15T10:00:00.000Z', cancellation_reason: params[2],
           updated_at: '2026-10-15T10:00:00.000Z',
         }] }
@@ -52,13 +52,13 @@ function fixture({ requestStatus = 'ACCEPTED', bookingStatus = 'ACCEPTED', compl
   return { repository, calls }
 }
 
-test('accepted job cancellation atomically cancels customer booking and records a late penalty', async () => {
+test('accepted job cancellation returns booking to pending and records a late penalty', async () => {
   const { repository, calls } = fixture()
   const result = await repository.cancel(userId, requestId, 'Family emergency')
   assert.equal(result.status, 'CANCELLED')
-  assert.equal(result.booking.status, 'CANCELLED')
+  assert.equal(result.booking.status, 'PENDING')
   assert.equal(result.penalty.penalty_points, 10)
-  assert.ok(calls.some(({ sql }) => sql.includes('booking_status_history') && sql.includes("'CANCELLED'")))
+  assert.ok(calls.some(({ sql }) => sql.includes('booking_status_history') && sql.includes("'PENDING'")))
   assert.ok(calls.some(({ sql, params }) => sql.includes('INSERT INTO notifications') && params[0] === 'customer-id'))
 })
 

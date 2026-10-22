@@ -24,6 +24,8 @@ export class VoucherController {
         validateVoucherCode(request.body)
       ),
     })
+  remove = async (request, response) =>
+    response.json({ data: await this.service.remove(request.auth.userId, validateVoucherBookingId(request.params.id)) })
   list = async (request, response) =>
     response.json({ data: await this.service.list(validateVoucherListQuery(request.query)) })
   create = async (request, response) =>

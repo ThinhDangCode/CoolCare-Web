@@ -1,5 +1,6 @@
 
 import { MyBookingsService } from './my-bookings.service.js'
+import { reconcileExpiredRequests } from './reconcile-technician-request.js'
 
 export class MyBookingsController {
   constructor(service = new MyBookingsService()) {
@@ -18,6 +19,7 @@ export class MyBookingsController {
    */
   getMyBookings = async (req, res, next) => {
     try {
+      await reconcileExpiredRequests()
       const result = await this.service.getMyBookings(
         req.auth?.userId,
         req.query

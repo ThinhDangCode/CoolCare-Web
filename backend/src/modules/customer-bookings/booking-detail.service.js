@@ -1,5 +1,6 @@
 
 import { AppError, validateUuid } from '../../utils.js'
+import { randomUUID } from 'node:crypto'
 import { withTransaction } from '../../config/database.js'
 import { BookingDetailRepository } from './booking-detail.repository.js'
 
@@ -36,6 +37,43 @@ export class BookingDetailService {
     }
 
     return booking
+  }
+
+  async reportNoShow(userId, bookingId, body) {
+    const description = String(body?.description ?? '').trim()
+    if (typeof body?.description !== 'string' || description.length < 10 ||
+        description.length > 2000 || Object.keys(body).some(k => k !== 'description')) {
+      throw new AppError(422, 'VALIDATION_ERROR',
+        'Please describe the missing technician (10–2000 characters).')
+    }
+    return this.transaction(async db => {
+      const booking = await this.owned(userId, bookingId, db, true)
+      if (booking.status !== 'ACCEPTED' ||
+          new Date(booking.scheduled_at).getTime() + 30*60*1000 > Date.now()) {
+        throw new AppError(409, 'NO_SHOW_NOT_REPORTABLE',
+          'A missing technician can only be reported 30 minutes after the appointment starts.')
+      }
+      const technician = (await db.query(`
+        SELECT technician_id FROM booking_technicians
+        WHERE booking_id=$1 AND status='ACCEPTED' LIMIT 1
+      `, [bookingId])).rows[0]
+      if (!technician) throw new AppError(409, 'TECHNICIAN_NOT_ASSIGNED',
+        'No accepted technician assignment was found.')
+      const previous = (await db.query(`
+        SELECT id FROM complaints WHERE booking_id=$1 AND type='TECHNICIAN'
+          AND subject='Technician did not arrive' LIMIT 1
+      `, [bookingId])).rows[0]
+      if (previous) throw new AppError(409, 'NO_SHOW_ALREADY_REPORTED',
+        'This booking already has a technician no-show report.')
+      const code = `NS-${randomUUID().replace(/-/g,'').slice(0,16).toUpperCase()}`
+      const result = await db.query(`
+        INSERT INTO complaints(complaint_code,booking_id,customer_id,technician_id,
+          type,subject,description)
+        VALUES($1,$2,$3,$4,'TECHNICIAN','Technician did not arrive',$5)
+        RETURNING id,complaint_code,status
+      `, [code, bookingId, booking.customer_id, technician.technician_id, description])
+      return result.rows[0]
+    })
   }
 
   // Convert database fields to the format expected by Flutter.

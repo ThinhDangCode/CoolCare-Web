@@ -7,6 +7,7 @@ export function createVoucherRouter(controller) {
   router.use(authenticate, requireRole('CUSTOMER'))
   router.get('/bookings/:id/available-vouchers', asyncHandler(controller.available))
   router.post('/bookings/:id/voucher', asyncHandler(controller.apply))
+  router.post('/bookings/:id/voucher/remove', asyncHandler(controller.remove))
   return router
 }
 
