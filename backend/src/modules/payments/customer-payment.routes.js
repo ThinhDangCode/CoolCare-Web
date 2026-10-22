@@ -230,6 +230,33 @@ router.get(
   })
 )
 
+// Customer payment history across all owned bookings (read-only).
+router.get('/history', authenticate, requireRole('CUSTOMER'), asyncHandler(async (req, res) => {
+  const limitRaw = req.query.limit === undefined ? 20 : Number(req.query.limit)
+  const pageRaw = req.query.page === undefined ? 1 : Number(req.query.page)
+  if (!Number.isSafeInteger(limitRaw) || limitRaw < 1 || limitRaw > 100 ||
+      !Number.isSafeInteger(pageRaw) || pageRaw < 1 || pageRaw > 100000) {
+    error('INVALID_PAGINATION', 'Page must be positive and limit between 1 and 100.', 422)
+  }
+  const offset = (pageRaw - 1) * limitRaw
+  const data = await withTransaction(async db => {
+    const args = [req.auth.userId]
+    const filter = `FROM payments p
+      JOIN bookings b ON b.id = p.booking_id
+      JOIN customer_profiles cp ON cp.id = b.customer_id
+      LEFT JOIN payment_methods pm ON pm.id = p.payment_method_id
+      WHERE cp.user_id = $1`
+    const count = await db.query(`SELECT COUNT(*)::integer AS total ${filter}`, args)
+    const rows = await db.query(`SELECT p.id, p.booking_id, p.payment_code, p.amount,
+      p.payment_status, p.payment_kind, p.created_at, p.paid_at,
+      pm.code AS method_code ${filter}
+      ORDER BY p.created_at DESC, p.id DESC LIMIT $2 OFFSET $3`,
+      [...args, limitRaw, offset])
+    return { payments: rows.rows, total: count.rows[0].total, page: pageRaw, limit: limitRaw }
+  })
+  res.json({ data })
+}))
+
 // =====================================================
 // GET BOOKING PAYMENTS
 // =====================================================

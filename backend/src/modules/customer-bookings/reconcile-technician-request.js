@@ -15,7 +15,7 @@ export async function reconcileTechnicianRequest(userId, bookingId) {
     await db.query(`
       UPDATE booking_technicians SET status='EXPIRED', responded_at=CURRENT_TIMESTAMP
       WHERE booking_id=$1 AND status='SELECTED'
-        AND expires_at IS NOT NULL AND expires_at<=CURRENT_TIMESTAMP
+        AND COALESCE(expires_at,requested_at+INTERVAL '10 minutes')<=CURRENT_TIMESTAMP
     `, [bookingId])
     const live = await db.query(`
       SELECT 1 FROM booking_technicians
@@ -39,5 +39,50 @@ export async function reconcileTechnicianRequest(userId, bookingId) {
         ? 'Technician request expired; customer can select again'
         : 'Technician declined; customer can select again'])
     }
+  })
+}
+
+// Process a bounded batch without depending on an open mobile application.
+// Lock the booking first, expire only SELECTED requests, and preserve history.
+export async function reconcileExpiredRequests() {
+  return withTransaction(async (db) => {
+    const result = await db.query(`
+      SELECT b.id
+      FROM bookings b
+      WHERE b.status='TECHNICIAN_SELECTED'
+        AND EXISTS (
+          SELECT 1 FROM booking_technicians bt WHERE bt.booking_id=b.id
+            AND bt.status='SELECTED'
+            AND COALESCE(bt.expires_at,bt.requested_at+INTERVAL '10 minutes')<=CURRENT_TIMESTAMP
+        )
+      ORDER BY b.id
+      LIMIT 100
+      FOR UPDATE OF b SKIP LOCKED
+    `)
+    let completed = 0
+    for (const booking of result.rows) {
+      const expired = await db.query(`
+        UPDATE booking_technicians SET status='EXPIRED',responded_at=CURRENT_TIMESTAMP
+        WHERE booking_id=$1 AND status='SELECTED'
+          AND COALESCE(expires_at,requested_at+INTERVAL '10 minutes')<=CURRENT_TIMESTAMP
+        RETURNING id
+      `, [booking.id])
+      if (!expired.rowCount) continue
+      const ready = await db.query(`
+        UPDATE bookings SET status='PENDING',updated_at=CURRENT_TIMESTAMP
+        WHERE id=$1 AND status='TECHNICIAN_SELECTED'
+          AND NOT EXISTS (SELECT 1 FROM booking_technicians
+                          WHERE booking_id=$1 AND status IN ('SELECTED','ACCEPTED'))
+        RETURNING id
+      `, [booking.id])
+      if (ready.rowCount) {
+        completed++
+        await db.query(`
+          INSERT INTO booking_status_history(booking_id,status,note)
+          VALUES($1,'PENDING','Technician request expired; customer can choose another technician.')
+        `, [booking.id])
+      }
+    }
+    return completed
   })
 }

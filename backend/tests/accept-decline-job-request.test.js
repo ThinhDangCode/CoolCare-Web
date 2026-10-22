@@ -31,7 +31,7 @@ test('Accept / Decline Job Request validation accepts strict actions and an opti
   ]) assert.throws(() => validateAcceptDeclineJobRequest(body), { status: 422 })
 })
 
-function repositoryFixture({ status = 'SELECTED', expiresAt = null, bookingStatus = 'TECHNICIAN_SELECTED', hasActiveJob = false } = {}) {
+function repositoryFixture({ status = 'SELECTED', expiresAt = null, bookingStatus = 'TECHNICIAN_SELECTED', hasOverlappingJob = false } = {}) {
   const calls = []
   const repository = new AcceptDeclineJobRequestRepository({
     transaction: async (operation) => operation({
@@ -43,15 +43,15 @@ function repositoryFixture({ status = 'SELECTED', expiresAt = null, bookingStatu
             is_active: true, availability_status: 'ONLINE', account_status: 'ACTIVE',
           }] }
         }
+        if (sql.includes('WITH windows AS')) {
+          return { rows: [{ conflict: hasOverlappingJob }] }
+        }
         if (sql.includes('FROM booking_technicians bt')) {
           return { rows: [{
             id: requestId, booking_id: 'booking-id', status, expires_at: expiresAt,
             expired: expiresAt !== null,
             booking_status: bookingStatus, booking_code: 'BK-001', customer_user_id: 'customer-id',
           }] }
-        }
-        if (sql.includes("status='ACCEPTED'") && sql.includes('SELECT EXISTS')) {
-          return { rows: [{ exists: hasActiveJob }] }
         }
         if (sql.includes('can_recommend_technician')) return { rows: [{ allowed: true }] }
         if (sql.includes('UPDATE booking_technicians')) {
@@ -65,7 +65,7 @@ function repositoryFixture({ status = 'SELECTED', expiresAt = null, bookingStatu
         if (sql.includes('UPDATE bookings')) {
           return { rows: [{
             id: 'booking-id', booking_code: 'BK-001',
-            status: sql.includes("status='ACCEPTED'") ? 'ACCEPTED' : 'CANCELLED',
+            status: sql.includes("status='ACCEPTED'") ? 'ACCEPTED' : 'PENDING',
             updated_at: '2026-10-15T08:00:00.000Z',
           }] }
         }
@@ -86,14 +86,14 @@ test('Accept atomically assigns the booking, records history, and notifies the c
   assert.ok(calls.some(({ sql, params }) => sql.includes('INSERT INTO notifications') && params[0] === 'customer-id'))
 })
 
-test('Decline cancels the customer booking and preserves the reason', async () => {
+test('Decline returns the booking to pending and preserves the reason', async () => {
   const { repository, calls } = repositoryFixture()
   const result = await repository.respond(userId, requestId, { action: 'DECLINE', reason: 'Busy' })
   assert.equal(result.status, 'DECLINED')
   assert.equal(result.decline_reason, 'Busy')
-  assert.equal(result.booking.status, 'CANCELLED')
-  assert.ok(calls.some(({ sql }) => sql.includes('booking_status_history') && sql.includes("'CANCELLED'")))
-  assert.ok(calls.some(({ sql }) => sql.includes('cancelled_by_id')))
+  assert.equal(result.booking.status, 'PENDING')
+  assert.ok(calls.some(({ sql }) => sql.includes('booking_status_history') && sql.includes("'PENDING'")))
+  assert.equal(calls.some(({ sql }) => sql.includes('cancelled_by_id')), false)
 })
 
 test('expired, already handled, and unavailable requests cannot be changed', async () => {
@@ -117,11 +117,11 @@ test('expired, already handled, and unavailable requests cannot be changed', asy
   )
 })
 
-test('technician cannot accept another request while an accepted job is active', async () => {
-  const { repository, calls } = repositoryFixture({ hasActiveJob: true })
+test('technician cannot accept another request in an overlapping service window', async () => {
+  const { repository, calls } = repositoryFixture({ hasOverlappingJob: true })
   await assert.rejects(
     repository.respond(userId, requestId, { action: 'ACCEPT', reason: null }),
-    { status: 409, code: 'TECHNICIAN_ACTIVE_JOB_CONFLICT' },
+    { status: 409, code: 'TECHNICIAN_SCHEDULE_CONFLICT' },
   )
   assert.equal(calls.some(({ sql }) => sql.includes('UPDATE booking_technicians')), false)
   assert.equal(calls.some(({ sql }) => sql.includes('UPDATE bookings')), false)

@@ -82,7 +82,7 @@ test('View Job History is scoped and ordered by newest terminal activity', async
   })
   assert.match(queries[0].sql, /\$2='HISTORY'/)
   assert.match(queries[0].sql, /'DECLINED','EXPIRED','COMPLETED','CANCELLED'/)
-  assert.match(queries[1].sql, /CASE WHEN \$2='HISTORY'/)
+  assert.match(queries[1].sql, /CASE WHEN \$2 IN \('HISTORY','CLOSED'\)/)
   assert.match(queries[1].sql, /END DESC NULLS LAST/)
   assert.deepEqual(queries[1].params, ['technician-id', 'HISTORY', 20, 0])
 })
@@ -95,7 +95,7 @@ test('View Job Requests repository derives expired requests and never returns re
     },
   })
   await repository.findJobRequests('technician-id', { status: 'EXPIRED', limit: 10, offset: 0 })
-  assert.match(queries[0].sql, /bt\.expires_at<=CURRENT_TIMESTAMP/)
+  assert.match(queries[0].sql, /COALESCE\(bt\.expires_at,bt\.requested_at\+INTERVAL '10 minutes'\)<=CURRENT_TIMESTAMP/)
   assert.match(queries[0].sql, /bt\.status IN \('SELECTED','ACCEPTED','DECLINED','EXPIRED','COMPLETED','CANCELLED'\)/)
   assert.doesNotMatch(queries[0].sql, /IN \('RECOMMENDED'/)
   assert.deepEqual(queries[0].params, ['technician-id', 'EXPIRED', 10, 0])

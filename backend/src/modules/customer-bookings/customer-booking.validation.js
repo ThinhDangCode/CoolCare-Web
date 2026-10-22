@@ -106,16 +106,8 @@ export function validateCreateBookingBody(body) {
         errors[`${key}.acBrandId`] = 'Invalid AC brand ID.'
       }
 
-      if (
-        unit.acModelId != null &&
-        !isUuid(unit.acModelId)
-      ) {
-        errors[`${key}.acModelId`] = 'Invalid AC model ID.'
-      }
-
-      if (unit.acModelId && !unit.acBrandId) {
-        errors[`${key}.acBrandId`] =
-          'AC brand is required when a model is selected.'
+      if (unit.acModelId != null) {
+        errors[`${key}.acModelId`] = 'AC model is confirmed by the technician.'
       }
 
       if (!optionalDescription(unit.description)) {
@@ -149,7 +141,7 @@ export function validateCreateBookingBody(body) {
     scheduledAt: scheduledAt.toISOString(),
     units: body.units.map((unit) => ({
       acBrandId: unit.acBrandId ?? null,
-      acModelId: unit.acModelId ?? null,
+      acModelId: null,
       description: unit.description?.trim() || null,
       serviceIds: [...unit.serviceIds],
     })),

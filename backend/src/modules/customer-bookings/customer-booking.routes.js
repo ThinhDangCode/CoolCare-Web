@@ -49,12 +49,15 @@ export function createCustomerBookingRouter(controller) {
     asyncHandler(controller.selectTechnician)
   )
 
+  router.get('/previous-ac-units', asyncHandler(controller.getPreviousAcUnits))
+
   // #41 - View My Bookings
   router.get('/', asyncHandler(myBookingsController.getMyBookings))
 
   // #42 Booking detail, #43 status timeline, #44 customer cancellation
   router.get('/:bookingId', asyncHandler(bookingDetailController.getDetail))
   router.get('/:bookingId/timeline', asyncHandler(bookingDetailController.getTimeline))
+  router.post('/:bookingId/report-no-show', asyncHandler(bookingDetailController.reportNoShow))
   router.post('/:bookingId/cancel', asyncHandler(bookingDetailController.cancel))
   router.post('/:bookingId/confirm-completion', asyncHandler(bookingDetailController.confirmCompletion))
 
