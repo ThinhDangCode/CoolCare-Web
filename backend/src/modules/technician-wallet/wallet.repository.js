@@ -12,6 +12,15 @@ const TOPUP_STATUSES = [
   'CANCELLED',
 ]
 
+const WITHDRAWAL_STATUSES = ['PENDING', 'PROCESSING', 'SUCCESS', 'FAILED', 'CANCELLED']
+const withdrawalStatus = value => {
+  const raw = String(value ?? '').toUpperCase()
+  const index = Number(raw)
+  return Number.isInteger(index) && index >= 0 && index < WITHDRAWAL_STATUSES.length
+    ? WITHDRAWAL_STATUSES[index]
+    : WITHDRAWAL_STATUSES.includes(raw) ? raw : 'UNKNOWN'
+}
+
 const TRANSACTION_TYPES = [
   'CASH_SETTLEMENT',
   'ONLINE_EARNING',
@@ -269,7 +278,7 @@ export class TechnicianWalletRepository {
       FROM withdrawals WHERE technician_id = $1
       ORDER BY initiated_at DESC, id DESC LIMIT $2 OFFSET $3
     `, [owner.technician_id, limit, (page - 1) * limit])
-    return { items: result.rows.map(r => ({...r, status: ['PENDING','PROCESSING','SUCCESS','FAILED','CANCELLED'][Number(r.status)] ?? r.status})), page, limit }
+    return { items: result.rows.map(r => ({...r, status: withdrawalStatus(r.status)})), page, limit }
   }
 
   async createMockWithdrawal(userId, input) {
@@ -286,7 +295,9 @@ export class TechnicianWalletRepository {
             row.account_holder !== input.accountHolder) {
           walletError('IDEMPOTENCY_CONFLICT', 'Withdrawal request key was already used.', 409)
         }
-        return { id: row.id, status: ['PENDING','PROCESSING','SUCCESS','FAILED','CANCELLED'][Number(row.status)], amount: row.amount, netAmount: row.net_amount }
+        return { id: row.id, amount: row.amount, netAmount: row.net_amount,
+          status: withdrawalStatus(row.status), payoutReference: row.payout_reference,
+          paidAt: row.paid_at, simulated: true }
       }
       const balance = await db.query('SELECT available_balance FROM technician_account_balances WHERE technician_account_id = $1', [owner.account_id])
       if (Number(balance.rows[0]?.available_balance ?? 0) < input.amount) {
