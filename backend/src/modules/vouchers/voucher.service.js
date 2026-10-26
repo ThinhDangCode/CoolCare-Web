@@ -9,6 +9,9 @@ export class VoucherService {
   apply(userId, bookingId, code) {
     return this.repository.apply(userId, bookingId, code)
   }
+  remove(userId, bookingId) {
+    return this.repository.remove(userId, bookingId)
+  }
   list(filters) {
     return this.repository.list(filters)
   }

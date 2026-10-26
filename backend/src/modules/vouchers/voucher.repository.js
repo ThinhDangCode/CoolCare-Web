@@ -120,6 +120,24 @@ export class VoucherRepository {
     })
   }
 
+  async remove(userId, bookingId) {
+    return this.transaction(async (client) => {
+      const booking = (await client.query(`
+        SELECT b.id, b.status, b.voucher_id
+        FROM bookings b
+        JOIN customer_profiles cp ON cp.id=b.customer_id
+        WHERE b.id=$1 AND cp.user_id=$2 FOR UPDATE OF b
+      `, [bookingId, userId])).rows[0]
+      if (!booking) throw new AppError(404, 'BOOKING_NOT_FOUND', 'Không tìm thấy đơn của bạn.')
+      if (!['QUOTATION_ACCEPTED', 'WAITING_CONFIRMATION'].includes(booking.status)) {
+        throw new AppError(409, 'BOOKING_NOT_ELIGIBLE', 'Không thể gỡ voucher ở giai đoạn này.')
+      }
+      if (!booking.voucher_id) return booking
+      // Recalculate using the existing DB pricing function, without modifying the schema.
+      return (await client.query('SELECT (refresh_booking_pricing($1,$2::uuid)).*', [bookingId, null])).rows[0]
+    })
+  }
+
   async list(filters) {
     return this.transaction(async (client) => {
       await client.query('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ')

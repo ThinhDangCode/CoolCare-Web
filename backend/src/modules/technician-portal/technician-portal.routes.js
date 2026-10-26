@@ -16,6 +16,7 @@ import { AcceptDeclineJobRequestService } from './accept-decline-job-request.ser
 import { UpdateJobStatusService } from './update-job-status.service.js'
 import { CancelAcceptedJobService } from './cancel-accepted-job.service.js'
 import { AcServiceHistoryService } from './ac-service-history.service.js'
+import { UpdateAcUnitRepository } from './update-ac-unit.repository.js'
 
 export function createTechnicianPortalRouter(
   repository = new TechnicianPortalRepository(),
@@ -72,6 +73,12 @@ export function createTechnicianPortalRouter(
         request.body,
       ),
     })
+  }))
+
+  router.patch('/job-requests/:id/units/:unitId/ac-information', asyncHandler(async (request, response) => {
+    response.json({ data: await new UpdateAcUnitRepository().update(
+      request.auth.userId, request.params.id, request.params.unitId, request.body,
+    ) })
   }))
 
   router.get('/job-requests/:id/units/:unitId/service-history', asyncHandler(async (request, response) => {
