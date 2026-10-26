@@ -173,7 +173,17 @@ export function createTechnicianWalletRouter(
   router.get(
     '/overview',
     asyncHandler(async (req, res) => {
-      const data = await repository.overview(req.auth.userId)
+      const { fromDate, toDate } = req.query
+      const validDate = value => typeof value === 'string' &&
+        /^\d{4}-\d{2}-\d{2}$/.test(value) &&
+        !Number.isNaN(Date.parse(`${value}T00:00:00Z`)) &&
+        new Date(`${value}T00:00:00Z`).toISOString().slice(0, 10) === value
+      if ((fromDate !== undefined && !validDate(fromDate)) ||
+          (toDate !== undefined && !validDate(toDate)) ||
+          (fromDate && toDate && fromDate > toDate)) {
+        walletError('INVALID_DATE_RANGE', 'Invalid date range.', 400)
+      }
+      const data = await repository.overview(req.auth.userId, fromDate ?? null, toDate ?? null)
 
       res
         .set('Cache-Control', 'no-store')
