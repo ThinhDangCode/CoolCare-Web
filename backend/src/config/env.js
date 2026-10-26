@@ -39,6 +39,12 @@ export const env = Object.freeze({
     .split(',')
     .map((origin) => origin.trim())
     .filter(Boolean),
+  company: {
+    name: process.env.COMPANY_NAME?.trim() || 'CoolCare',
+    address: process.env.COMPANY_ADDRESS?.trim() || '',
+    hotline: process.env.COMPANY_HOTLINE?.trim() || '',
+    taxCode: process.env.COMPANY_TAX_CODE?.trim() || '',
+  },
   smtp: {
     host: process.env.SMTP_HOST ?? '',
     port: asPositiveNumber(process.env.SMTP_PORT, 587),

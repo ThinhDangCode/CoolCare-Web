@@ -65,3 +65,61 @@ test('revised database top-up status, trigger ledger and replay remain atomic', 
   )
   assert.equal(remaining.rows[0].total, 0)
 })
+
+test('mock withdrawal replay keeps the success response and rolls back the ledger', {
+  skip: !enabled,
+}, async t => {
+  const eligible = await pool.query(`
+    SELECT tp.user_id
+    FROM technician_profiles tp
+    JOIN technician_accounts a ON a.technician_id = tp.id
+    JOIN technician_account_balances balance ON balance.technician_account_id = a.id
+    WHERE tp.verification_status = 1 AND tp.is_active = true
+      AND balance.available_balance >= 100000
+    LIMIT 1
+  `)
+  if (!eligible.rows.length) {
+    t.skip('No verified technician with 100000 VND available')
+    return
+  }
+
+  const key = randomUUID()
+  const rollback = Symbol('rollback mock withdrawal')
+  try {
+    await withTransaction(async db => {
+      const repository = new TechnicianWalletRepository({
+        queryable: db,
+        transaction: work => work(db),
+      })
+      const input = {
+        amount: 100000,
+        bankName: 'ZaloPay',
+        accountNumber: '0900000000',
+        accountHolder: 'Rollback Test',
+        key,
+      }
+      const first = await repository.createMockWithdrawal(eligible.rows[0].user_id, input)
+      const replay = await repository.createMockWithdrawal(eligible.rows[0].user_id, input)
+      assert.equal(first.status, 'SUCCESS')
+      assert.equal(first.simulated, true)
+      assert.equal(replay.status, first.status)
+      assert.equal(replay.simulated, true)
+      assert.equal(replay.id, first.id)
+      assert.equal(replay.payoutReference, first.payoutReference)
+      const ledger = await db.query(
+        'SELECT count(*)::int AS total FROM settlement_transactions WHERE withdrawal_id = $1',
+        [first.id],
+      )
+      assert.equal(ledger.rows[0].total, 1)
+      throw rollback
+    })
+  } catch (error) {
+    if (error !== rollback) throw error
+  }
+
+  const remaining = await pool.query(
+    'SELECT count(*)::int AS total FROM withdrawals WHERE idempotency_key = $1',
+    [key],
+  )
+  assert.equal(remaining.rows[0].total, 0)
+})

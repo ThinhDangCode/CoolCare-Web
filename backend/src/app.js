@@ -37,6 +37,7 @@ import { ComplaintService } from './modules/complaints/complaint.service.js'
 import { createQuotationRouter } from './modules/quotations/quotation.routes.js'
 import { createPaymentsRouter } from './modules/payments/payments.routes.js'
 import { createCustomerPaymentRouter } from './modules/payments/customer-payment.routes.js'
+import { createInvoiceRouter } from './modules/invoices/invoice.routes.js'
 import { createRevenueRouter } from './modules/revenue/revenue.routes.js'
 import { createReportsRouter } from './modules/reports/reports.routes.js'
 import { createCustomerStatisticsRouter } from './modules/customer-statistics/customer-statistics.routes.js'
@@ -50,6 +51,8 @@ import { createServiceCategoryRouter } from './modules/services/service-category
 import { createCustomerNotificationsRouter } from './modules/notifications/customer-notifications.routes.js'
 import { createTechnicianNotificationsRouter } from './modules/notifications/technician-notifications.routes.js'
 import { createServiceRouter } from './modules/services/service.routes.js'
+import { createChatRouter } from './modules/chat/chat.routes.js'
+import { createCustomerAcUnitRouter } from './modules/customer-ac-units/ac-unit.routes.js'
 
 import { AddressRepository } from './modules/address/address.repository.js'
 import { AddressService } from './modules/address/address.service.js'
@@ -156,9 +159,12 @@ app.use('/api/admin/blogs', createAdminBlogRouter(blogController))
 app.use('/api/admin/complaints', createComplaintRouter(complaintController))
 app.use('/api/customer/complaints', createCustomerComplaintRouter(complaintController))
 app.use('/api/customer/notifications', createCustomerNotificationsRouter())
+app.use('/api/customer/ac-units', createCustomerAcUnitRouter())
 app.use('/api/technician/notifications', createTechnicianNotificationsRouter())
 app.use('/api/admin', createAdminVoucherRouter(voucherController))
 app.use('/api/admin/payments', createPaymentsRouter())
+// Invoice routes first: they only claim /:paymentId/invoice* and fall through otherwise.
+app.use('/api/payments', createInvoiceRouter())
 app.use('/api/payments', createCustomerPaymentRouter())
 app.use('/api/admin/revenue', createRevenueRouter())
 app.use('/api/admin/reports', createReportsRouter())
@@ -187,6 +193,8 @@ app.use('/api/bookings', createCustomerBookingRouter(customerBookingController))
 app.use('/api/service-categories', createServiceCategoryRouter())
 
 app.use('/api/services', createServiceRouter())
+// CHAT (REST + Socket.IO realtime, same PostgreSQL tables)
+app.use('/api/chat', createChatRouter())
 
 app.use(notFoundHandler)
 app.use(errorHandler)
