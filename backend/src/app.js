@@ -36,6 +36,7 @@ import { createComplaintRouter, createCustomerComplaintRouter } from './modules/
 import { ComplaintService } from './modules/complaints/complaint.service.js'
 import { createQuotationRouter } from './modules/quotations/quotation.routes.js'
 import { createPaymentsRouter } from './modules/payments/payments.routes.js'
+import { createInvoicesRouter } from './modules/invoices/invoices.routes.js'
 import { createCustomerPaymentRouter } from './modules/payments/customer-payment.routes.js'
 import { createInvoiceRouter } from './modules/invoices/invoice.routes.js'
 import { createRevenueRouter } from './modules/revenue/revenue.routes.js'
@@ -44,6 +45,7 @@ import { createCustomerStatisticsRouter } from './modules/customer-statistics/cu
 import { createTechnicianStatisticsRouter } from './modules/technician-statistics/technician-statistics.routes.js'
 import { createWithdrawalsRouter } from './modules/withdrawals/withdrawals.routes.js'
 import { createTopupsRouter } from './modules/topups/topups.routes.js'
+import { createSettlementsRouter } from './modules/settlements/settlements.routes.js'
 import { createTechnicianApplicationRouter } from './modules/technician-applications/technician-application.routes.js'
 import { createTechnicianPortalRouter } from './modules/technician-portal/technician-portal.routes.js'
 import { createTechnicianWalletRouter, createTechnicianWalletCallbackRouter } from './modules/technician-wallet/wallet.routes.js'
@@ -163,6 +165,7 @@ app.use('/api/customer/ac-units', createCustomerAcUnitRouter())
 app.use('/api/technician/notifications', createTechnicianNotificationsRouter())
 app.use('/api/admin', createAdminVoucherRouter(voucherController))
 app.use('/api/admin/payments', createPaymentsRouter())
+app.use('/api/admin/invoices', createInvoicesRouter())
 // Invoice routes first: they only claim /:paymentId/invoice* and fall through otherwise.
 app.use('/api/payments', createInvoiceRouter())
 app.use('/api/payments', createCustomerPaymentRouter())
@@ -172,6 +175,7 @@ app.use('/api/admin/customer-statistics', createCustomerStatisticsRouter())
 app.use('/api/admin/technician-statistics', createTechnicianStatisticsRouter())
 app.use('/api/admin/withdrawals', createWithdrawalsRouter())
 app.use('/api/admin/topups', createTopupsRouter())
+app.use('/api/admin/settlements', createSettlementsRouter())
 app.use('/api/admin/technicians', createTechnicianRouter())
 app.use('/api/admin/bookings', createBookingRouter())
 app.use('/api/catalog', createCatalogRouter(undefined, false))
