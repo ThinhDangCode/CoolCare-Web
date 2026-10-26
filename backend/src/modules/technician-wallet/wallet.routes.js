@@ -198,6 +198,35 @@ export function createTechnicianWalletRouter(
     }),
   )
 
+  router.get('/withdrawals', asyncHandler(async (req, res) => {
+    const { page, limit } = getPage(req.query)
+    const data = await repository.withdrawals(req.auth.userId, page, limit)
+    res.set('Cache-Control', 'no-store').json({ data })
+  }))
+
+  router.post('/withdrawals', asyncHandler(async (req, res) => {
+    if (process.env.MOCK_WITHDRAWALS_ENABLED !== 'true') {
+      walletError('MOCK_WITHDRAWALS_DISABLED', 'Mock withdrawals are disabled.', 503)
+    }
+    const body = req.body ?? {}
+    const amount = body.amount
+    if (!Number.isSafeInteger(amount) || amount < 100000 || amount > 50000000) {
+      walletError('INVALID_WITHDRAWAL_AMOUNT', 'Amount must be from 100000 to 50000000 VND.', 422)
+    }
+    const bankName = String(body.bankName ?? '').trim()
+    const accountNumber = String(body.accountNumber ?? '').trim()
+    const accountHolder = String(body.accountHolder ?? '').trim()
+    if (bankName !== 'ZaloPay' || !/^0[0-9]{9}$/.test(accountNumber) ||
+        !accountHolder || accountHolder.length > 100) {
+      walletError('INVALID_WITHDRAWAL_DESTINATION', 'ZaloPay phone must contain 10 digits and start with 0.', 422)
+    }
+    const key = validateUuid(body.idempotencyKey)
+    const data = await repository.createMockWithdrawal(req.auth.userId, {
+      amount, bankName, accountNumber, accountHolder, key,
+    })
+    res.set('Cache-Control', 'no-store').status(201).json({ data })
+  }))
+
   router.get(
     '/topups',
     asyncHandler(async (req, res) => {

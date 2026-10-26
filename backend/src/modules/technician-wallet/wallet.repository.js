@@ -261,6 +261,55 @@ export class TechnicianWalletRepository {
     }
   }
 
+  async withdrawals(userId, page = 1, limit = 20) {
+    const owner = await this.owner(userId)
+    const result = await this.db.query(`
+      SELECT id, amount, fee_amount, net_amount, bank_name, account_number,
+        account_holder, status, payout_reference, initiated_at, processed_at, paid_at
+      FROM withdrawals WHERE technician_id = $1
+      ORDER BY initiated_at DESC, id DESC LIMIT $2 OFFSET $3
+    `, [owner.technician_id, limit, (page - 1) * limit])
+    return { items: result.rows.map(r => ({...r, status: ['PENDING','PROCESSING','SUCCESS','FAILED','CANCELLED'][Number(r.status)] ?? r.status})), page, limit }
+  }
+
+  async createMockWithdrawal(userId, input) {
+    return this.transaction(async db => {
+      const owner = await this.owner(userId, db)
+      // Serialize withdrawals for this wallet. The database lifecycle trigger
+      // performs the final reservation check and owns all ledger posting.
+      await db.query('SELECT id FROM technician_accounts WHERE id = $1 FOR UPDATE', [owner.account_id])
+      const existing = await db.query('SELECT * FROM withdrawals WHERE idempotency_key = $1', [input.key])
+      if (existing.rows.length) {
+        const row = existing.rows[0]
+        if (row.technician_id !== owner.technician_id || Number(row.amount) !== input.amount ||
+            row.bank_name !== input.bankName || row.account_number !== input.accountNumber ||
+            row.account_holder !== input.accountHolder) {
+          walletError('IDEMPOTENCY_CONFLICT', 'Withdrawal request key was already used.', 409)
+        }
+        return { id: row.id, status: ['PENDING','PROCESSING','SUCCESS','FAILED','CANCELLED'][Number(row.status)], amount: row.amount, netAmount: row.net_amount }
+      }
+      const balance = await db.query('SELECT available_balance FROM technician_account_balances WHERE technician_account_id = $1', [owner.account_id])
+      if (Number(balance.rows[0]?.available_balance ?? 0) < input.amount) {
+        walletError('INSUFFICIENT_BALANCE', 'Not enough available settlement balance.', 409)
+      }
+      const id = randomUUID()
+      await db.query(`INSERT INTO withdrawals
+        (id,idempotency_key,technician_id,technician_account_id,amount,bank_name,account_number,account_holder,initiated_at,note)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,CURRENT_TIMESTAMP,$9)`,
+        [id,input.key,owner.technician_id,owner.account_id,input.amount,input.bankName,input.accountNumber,input.accountHolder,'MOCK PAYOUT - NO REAL MONEY TRANSFER'])
+      await db.query('UPDATE withdrawals SET status = 1 WHERE id = $1', [id])
+      // This is explicitly a simulated payout. The trigger posts one debit.
+      const result = await db.query(`UPDATE withdrawals SET status = 2, fee_amount = 0,
+        payout_reference = $2, paid_at = CURRENT_TIMESTAMP WHERE id = $1
+        RETURNING id,amount,net_amount,status,payout_reference,paid_at`,
+        [id, `MOCK-${id}`])
+      const row = result.rows[0]
+      return { id: row.id, amount: row.amount, netAmount: row.net_amount,
+        status: 'SUCCESS', payoutReference: row.payout_reference, paidAt: row.paid_at,
+        simulated: true }
+    })
+  }
+
   async topups(userId, page = 1, limit = 20) {
     const owner = await this.owner(userId)
 

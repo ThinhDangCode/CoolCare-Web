@@ -3,7 +3,7 @@ import { env } from '../config/env.js'
 import { AppError } from '../utils.js'
 import { pool } from '../config/database.js'
 
-function verifyAccessToken(token) {
+export function verifyAccessToken(token) {
   try {
     return jwt.verify(token, env.jwtSecret)
   } catch (error) {
