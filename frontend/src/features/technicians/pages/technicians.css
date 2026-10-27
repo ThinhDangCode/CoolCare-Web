@@ -520,7 +520,7 @@
 }
 .technician-directory-page .technician-table th:last-child { white-space: nowrap; overflow-wrap: normal; }
 .technician-directory-page .technician-table th.technician-jobs-heading {
-  white-space: nowrap;
+  white-space: normal;
   overflow-wrap: normal;
 }
 .technician-directory-page .technician-table .technician-numeric {
