@@ -140,7 +140,7 @@ export function VerificationPage() {
               >
                 <option value="ALL">{t('All levels')}</option>
                 {['BEGINNER', 'INTERMEDIATE', 'ADVANCED', 'EXPERT'].map((value) => (
-                  <option key={value}>{t(value)}</option>
+                  <option key={value} value={value}>{t(value)}</option>
                 ))}
               </select>
             </label>

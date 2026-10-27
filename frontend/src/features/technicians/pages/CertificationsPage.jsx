@@ -294,8 +294,8 @@ export function CertificationsPage() {
                         <div className="certification-actions">
                           <button
                             className="certification-action view"
-                            aria-label={`View ${c.certificate_name} — ${c.full_name}`}
-                            title="View certificate details"
+                            aria-label={`${t('View certificate details')}: ${c.certificate_name} — ${c.full_name}`}
+                            title={t('View certificate details')}
                             onClick={() => setSelected(c)}
                           >
                             <EyeIcon />
@@ -304,8 +304,8 @@ export function CertificationsPage() {
                             <>
                               <button
                                 className="certification-action document"
-                                aria-label={`Approve ${c.certificate_name}`}
-                                title="Approve certification"
+                                aria-label={`${t('Approve certification')}: ${c.certificate_name}`}
+                                title={t('Approve certification')}
                                 onClick={() =>
                                   setReview({
                                     path: `/technicians/certifications/${c.id}/review`,
@@ -321,12 +321,13 @@ export function CertificationsPage() {
                               </button>
                               <button
                                 className="certification-action reject"
-                                aria-label={`Reject ${c.certificate_name}`}
-                                title="Reject certification"
+                                aria-label={`${t('Reject certification')}: ${c.certificate_name}`}
+                                title={t('Reject certification')}
                                 onClick={() =>
                                   setReview({
                                     path: `/technicians/certifications/${c.id}/review`,
                                     status: 'REJECTED',
+                                    certificate: c,
                                     name: `${c.certificate_name} — ${c.full_name}`,
                                     kind: 'certification',
                                     updatedAt: c.updated_at,

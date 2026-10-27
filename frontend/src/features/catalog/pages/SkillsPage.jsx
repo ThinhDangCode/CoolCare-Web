@@ -631,16 +631,16 @@ export function SkillsPage() {
                       <td>
                         <div className="catalog-row-actions">
                           <button
-                            aria-label={`Edit ${row.name}`}
-                            title="Edit skill"
+                            aria-label={`${t('Edit')} ${row.name}`}
+                            title={t('Edit Skill')}
                             onClick={() => open('edit', row)}
                           >
                             ✎
                           </button>
                           <button
                             type="button"
-                            title="Record details"
-                            aria-label={`View details of ${row.name}`}
+                            title={t('Record details')}
+                            aria-label={`${t('View details')}: ${row.name}`}
                             onClick={() => open('details', row)}
                           >
                             ◷
@@ -664,7 +664,7 @@ export function SkillsPage() {
                 <>
                   {t('Showing')}{' '}
                   <strong>
-                    {result.total ? (page - 1) * limit + 1 : 0} to{' '}
+                    {result.total ? (page - 1) * limit + 1 : 0}–
                     {Math.min(page * limit, result.total)}
                   </strong>{' '}
                   {t('of')} <strong>{result.total}</strong> {t('skills')}

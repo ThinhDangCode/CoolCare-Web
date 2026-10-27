@@ -430,13 +430,13 @@ export function AcModelsPage() {
                       <div className="catalog-row-actions">
                         <button
                           type="button"
-                          aria-label={'Edit ' + row.model_name}
-                          title="Edit model"
+                          aria-label={`${t('Edit')} ${row.model_name}`}
+                          title={t('Edit AC Model')}
                           onClick={() => open('edit', row)}
                         >
                           ✎
                         </button>
-                        <button type="button" title="Record details" aria-label={`View details of ${row.model_name}`} onClick={() => open('details', row)}>◷</button>
+                        <button type="button" title={t('Record details')} aria-label={`${t('View details')}: ${row.model_name}`} onClick={() => open('details', row)}>◷</button>
                         <CatalogTrashButton kind="models" row={row} onChanged={reload} />
                       </div>
                     </td>
@@ -449,24 +449,24 @@ export function AcModelsPage() {
         <footer className="models-pagination">
           <span>
             {loading ? (
-              'Loading…'
+              t('Loading…')
             ) : error ? (
-              'Models unavailable'
+              t('Models unavailable')
             ) : (
               <>
-                Showing{' '}
+                {t('Showing')}{' '}
                 <strong>
                   {data.total ? (page - 1) * limit + 1 : 0}-{Math.min(page * limit, data.total)}
                 </strong>{' '}
-                of <strong>{data.total}</strong> models
+                {t('of')} <strong>{data.total}</strong> {t('models')}
               </>
             )}
           </span>
           <div>
             <label>
-              Rows:{' '}
+              {t('Rows')}:{' '}
               <select
-                aria-label="Rows per page"
+                aria-label={t('Rows per page')}
                 value={limit}
                 onChange={(event) => {
                   setLimit(Number(event.target.value))
@@ -475,14 +475,14 @@ export function AcModelsPage() {
               >
                 {[10, 25, 50].map((value) => (
                   <option key={value} value={value}>
-                    {value} / page
+                    {value} / {t('page')}
                   </option>
                 ))}
               </select>
             </label>
-            <nav aria-label="Models pagination">
+            <nav aria-label={t('Models pagination')}>
               <button
-                aria-label="Previous page"
+                aria-label={t('Previous page')}
                 disabled={loading || !!error || page <= 1}
                 onClick={() => goToPage(page - 1)}
               >
@@ -494,7 +494,7 @@ export function AcModelsPage() {
                     <span className="models-page-gap">…</span>
                   )}
                   <button
-                    aria-label={'Page ' + value}
+                    aria-label={`${t('Page')} ${value}`}
                     aria-current={page === value ? 'page' : undefined}
                     disabled={loading || !!error}
                     onClick={() => goToPage(value)}
@@ -504,7 +504,7 @@ export function AcModelsPage() {
                 </span>
               ))}
               <button
-                aria-label="Next page"
+                aria-label={t('Next page')}
                 disabled={loading || !!error || page >= totalPages}
                 onClick={() => goToPage(page + 1)}
               >
@@ -515,7 +515,7 @@ export function AcModelsPage() {
         </footer>
       </section>
       {dialog?.type === 'edit' && (
-        <Modal title="Edit AC Model" onClose={close} busy={busy}>
+        <Modal title={t('Edit AC Model')} onClose={close} busy={busy}>
           <AcModelForm
             row={dialog.row}
             onCancel={close}

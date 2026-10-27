@@ -111,7 +111,7 @@ export default function WithdrawalsPage() {
   return (
     <main className="withdrawals-page">
       <PageHeader
-        title={t('Technician wallet')}
+        title={t('Withdrawal history')}
         subtitle={subtitle}
         onRefresh={reload}
         refreshing={loading}

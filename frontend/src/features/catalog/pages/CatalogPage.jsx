@@ -350,8 +350,8 @@ export function CatalogPage() {
                       <td>
                         <div className="catalog-row-actions">
                           <button
-                            title={`Edit ${row.name}`}
-                            aria-label={`Edit ${row.name}`}
+                            title={`${t('Edit')} ${row.name}`}
+                            aria-label={`${t('Edit')} ${row.name}`}
                             onClick={() => {
                               setError('')
                               setDialog({ type: 'edit', row })
@@ -360,8 +360,8 @@ export function CatalogPage() {
                             ✎
                           </button>
                           <button
-                            title="Record details"
-                            aria-label={`View details of ${row.name}`}
+                            title={t('Record details')}
+                            aria-label={`${t('View details')}: ${row.name}`}
                             onClick={() => {
                               setError('')
                               setDialog({ type: 'details', row })
@@ -388,13 +388,13 @@ export function CatalogPage() {
           <footer className="catalog-pagination">
             <div className="catalog-page-summary"><span>
               {result.total
-                ? `${(page - 1) * limit + 1}–${Math.min(page * limit, result.total)} of ${result.total}`
-                : '0 records'}
+                ? t('{first}–{last} of {total}', { first: (page - 1) * limit + 1, last: Math.min(page * limit, result.total), total: result.total })
+                : t('0 records')}
             </span>
             <label>
-              Rows{' '}
+              {t('Rows')}{' '}
               <select
-                aria-label="Rows per page"
+                aria-label={t('Rows per page')}
                 value={limit}
                 disabled={loading}
                 onChange={(event) => {
@@ -416,7 +416,7 @@ export function CatalogPage() {
                   setPage(page - 1)
                 }}
               >
-                ‹ Previous
+                ‹ {t('Previous')}
               </button>
               <span>
                 {page} / {totalPages}
@@ -428,14 +428,14 @@ export function CatalogPage() {
                   setPage(page + 1)
                 }}
               >
-                Next ›
+                {t('Next')} ›
               </button>
             </div>
           </footer>
         </div>
       </section>
       {dialog?.type === 'edit' && (
-        <Modal title={`Edit ${config.singular}`} onClose={close} busy={busy}>
+        <Modal title={t(`Edit ${config.singular}`)} onClose={close} busy={busy}>
           <CatalogForm
             kind={kind}
             row={dialog.row}
