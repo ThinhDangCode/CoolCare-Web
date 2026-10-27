@@ -572,12 +572,6 @@ export function ProfilePage() {
                         ♙<input value="Admin" disabled />
                       </span>
                     </label>
-                    <label className="profile-field">
-                      <span>{t('Assigned Department')}</span>
-                      <span className="field-control">
-                        ▥<input value={t('HVAC Operations & Fleet Management')} readOnly />
-                      </span>
-                    </label>
                   </div>
                   <div className="profile-form-actions">
                     <p>☑&nbsp; {t('All sessions synced across 2 active workstations')}</p>

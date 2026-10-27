@@ -328,8 +328,6 @@ const messages = {
     'Administrative Email Address': 'Email quản trị',
     'Direct Dispatch Phone': 'Số điện thoại điều phối',
     'Administrative Role & Scope': 'Vai trò và phạm vi quản trị',
-    'Assigned Department': 'Bộ phận phụ trách',
-    'HVAC Operations & Fleet Management': 'Vận hành HVAC và quản lý kỹ thuật viên',
     'All sessions synced across 2 active workstations':
       'Tất cả phiên đã đồng bộ trên 2 thiết bị đang hoạt động',
     'Saving...': 'Đang lưu...',
