@@ -189,11 +189,7 @@ export function TechniciansPage() {
               </colgroup>
               <thead>
                 <tr>
-                  <th className="technician-numeric">
-                    TECH
-                    <br />
-                    ID
-                  </th>
+                  <th className="technician-numeric">ID</th>
                   <th>{t('TECHNICIAN')}</th>
                   <th className="technician-numeric">
                     PHONE
