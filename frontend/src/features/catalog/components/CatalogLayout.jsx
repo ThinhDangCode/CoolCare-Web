@@ -1,6 +1,7 @@
 import { AdminHeaderControls } from '../../../shared/components/AdminUi.jsx'
 import { useUiPreferences } from '../../../shared/context/UiPreferencesContext.jsx'
 import '../../../shared/styles/admin.css'
+import './catalogTables.css'
 
 export function CatalogLayout({
   children,

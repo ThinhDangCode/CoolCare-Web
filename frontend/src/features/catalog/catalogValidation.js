@@ -7,6 +7,15 @@ export function nameError(value, maxLength = 100) {
   return ''
 }
 
+export function modelNameError(value) {
+  const name = value.trim()
+  if (!name) return 'Enter a model name.'
+  if (name.length > 100) return 'Model name must not exceed 100 characters.'
+  if (!/[\p{L}0-9]/u.test(name) || !/^[\p{L}\p{M}0-9 &'’()./_-]+$/u.test(name))
+    return 'Use letters, numbers, spaces and standard model separators.'
+  return ''
+}
+
 export function numberError(value, { optional = false, max, integer = true } = {}) {
   if (value === '') return optional ? '' : 'Enter a value.'
   const number = Number(value)

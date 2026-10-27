@@ -92,12 +92,12 @@ export class CatalogRepository {
             ? `r.*, (
                 SELECT count(*)::int
                 FROM services s
-                WHERE s.category_id = r.id
+                WHERE s.category_id = r.id AND s.deleted_at IS NULL
               ) AS service_count`
             : `r.*, (
                 SELECT count(*)::int
                 FROM ac_models m
-                WHERE m.brand_id = r.id
+                WHERE m.brand_id = r.id AND m.deleted_at IS NULL
               ) AS model_count`
 
     const nameColumn = kind === 'models'
@@ -254,6 +254,24 @@ export class CatalogRepository {
               (!restoring && existing.deleted_at)
             ) {
               return existing
+            }
+
+            if (!restoring && (kind === 'categories' || kind === 'brands')) {
+              const childTable = kind === 'categories' ? 'services' : 'ac_models'
+              const foreignKey = kind === 'categories' ? 'category_id' : 'brand_id'
+              const linked = await client.query(
+                `SELECT id FROM ${childTable} WHERE ${foreignKey} = $1 AND deleted_at IS NULL LIMIT 1`,
+                [id]
+              )
+              if (linked.rows.length) {
+                throw new AppError(
+                  409,
+                  kind === 'categories' ? 'CATEGORY_IN_USE' : 'BRAND_IN_USE',
+                  kind === 'categories'
+                    ? 'Move the services in this category to another category or to Trash first.'
+                    : 'Move the models in this brand to another brand or to Trash first.'
+                )
+              }
             }
 
             if (restoring) {

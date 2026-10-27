@@ -132,9 +132,11 @@ export function AdminSidebar({
   )
   const walletActive =
     location.pathname.startsWith('/admin/withdrawals') ||
-    location.pathname.startsWith('/admin/topups')
+    location.pathname.startsWith('/admin/topups') ||
+    location.pathname.startsWith('/admin/settlements')
   const financeActive =
     location.pathname.startsWith('/admin/payments') ||
+    location.pathname.startsWith('/admin/invoices') ||
     location.pathname.startsWith('/admin/revenue') ||
     walletActive
   const [financeOpen, setFinanceOpen] = useState(
@@ -326,11 +328,14 @@ export function AdminSidebar({
                       <NavLink to="/admin/topups" onClick={rememberScroll}>
                         {t('Top-up')}
                       </NavLink>
+                      <NavLink to="/admin/settlements" onClick={rememberScroll}>
+                        {t('Settlements')}
+                      </NavLink>
                     </div>
                   )}
-                  <button className="dashboard-subnav-action" type="button" disabled>
+                  <NavLink to="/admin/invoices" onClick={rememberScroll}>
                     {t('Invoice')}
-                  </button>
+                  </NavLink>
                 </div>
               )}
             </div>

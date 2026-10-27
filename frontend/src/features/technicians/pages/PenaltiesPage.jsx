@@ -22,7 +22,7 @@ const types = {
   RULE_VIOLATION: 'Rule violation',
 }
 const statuses = {
-  ALL: 'All',
+  ALL: 'All statuses',
   ACTIVE: 'Active',
   EXPIRED: 'Expired',
   REVOKED: 'Revoked',
@@ -32,7 +32,7 @@ export function PenaltiesPage() {
   const { t } = useUiPreferences()
   const [search, setSearch] = useState('')
   const [keyword, setKeyword] = useState('')
-  const [status, setStatus] = useState('ACTIVE')
+  const [status, setStatus] = useState('ALL')
   const [type, setType] = useState('ALL')
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState(10)
@@ -151,8 +151,8 @@ export function PenaltiesPage() {
                 <th>{t('TECHNICIAN')}</th>
                 <th>{t('VIOLATION & REASON')}</th>
                 <th>{t('REFERENCE')}</th>
-                <th>{t('DEDUCTION')}</th>
-                <th>{t('APPLIED / EXPIRES')}</th>
+                <th className="penalty-numeric">{t('DEDUCTION')}</th>
+                <th className="penalty-numeric">{t('APPLIED / EXPIRES')}</th>
                 <th>{t('STATUS')}</th>
                 <th>{t('ACTION')}</th>
               </tr>
@@ -210,7 +210,7 @@ export function PenaltiesPage() {
                         {row.booking_code || t('No linked booking')}
                       </small>
                     </td>
-                    <td>
+                    <td className="penalty-numeric">
                       <span
                         className="penalty-points"
                         aria-label={`${row.penalty_points} points deducted`}
@@ -221,7 +221,7 @@ export function PenaltiesPage() {
                         {row.remaining_points ?? 12} / 12 {t('left')}
                       </small>
                     </td>
-                    <td className="penalty-dates">
+                    <td className={`penalty-dates ${row.applied_at ? 'penalty-numeric' : ''}`}>
                       <span>{formatDate(row.applied_at)}</span>
                       <small className="technician-muted">
                         {row.expires_at ? `${t('Until')} ${formatDate(row.expires_at)}` : t('No expiry')}
