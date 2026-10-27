@@ -512,9 +512,15 @@
   overflow-wrap: anywhere;
 }
 .technician-directory-page .technician-table th { line-height: 1.45; white-space: normal; }
+.technician-directory-page .technician-table th:first-child,
+.technician-directory-page .technician-table td:first-child {
+  padding-inline: 8px;
+  white-space: nowrap;
+  overflow-wrap: normal;
+}
 .technician-directory-page .technician-table th:last-child { white-space: nowrap; overflow-wrap: normal; }
 .technician-directory-page .technician-table th.technician-jobs-heading {
-  white-space: nowrap;
+  white-space: normal;
   overflow-wrap: normal;
 }
 .technician-directory-page .technician-table .technician-numeric {

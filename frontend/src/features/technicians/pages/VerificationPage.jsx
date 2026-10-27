@@ -7,8 +7,6 @@ import {
   SearchIcon,
   SlidersIcon,
   EyeIcon,
-  CheckIcon,
-  CloseIcon,
   Pagination,
   TableState,
 } from '../../../shared/components/AdminUi.jsx'
@@ -140,7 +138,7 @@ export function VerificationPage() {
               >
                 <option value="ALL">{t('All levels')}</option>
                 {['BEGINNER', 'INTERMEDIATE', 'ADVANCED', 'EXPERT'].map((value) => (
-                  <option key={value}>{t(value)}</option>
+                  <option key={value} value={value}>{t(value)}</option>
                 ))}
               </select>
             </label>
@@ -219,44 +217,15 @@ export function VerificationPage() {
                             className="view"
                             aria-label={`${t('View identity')} — ${row.full_name}`}
                             title="Xem căn cước và kiểm tra AI trước khi duyệt"
-                            onClick={() => setReview({technicianId:row.id,path:`/technicians/${row.id}/verification`,status:'VERIFIED',name:row.full_name})}
+                            onClick={() => setReview({
+                              technicianId: row.id,
+                              path: `/technicians/${row.id}/verification`,
+                              chooseDecision: true,
+                              name: row.full_name,
+                            })}
                           >
                             <EyeIcon />
                           </button>
-                          {row.verification_status === 'PENDING' && (
-                            <>
-                              <button
-                                className="approve"
-                                aria-label={`${t('Approve profile')} ${row.full_name}`}
-                                title={t('Approve profile')}
-                                onClick={() =>
-                                  setReview({
-                                    path: `/technicians/${row.id}/verification`,
-                                    status: 'VERIFIED',
-                                    technicianId: row.id,
-                                    name: row.full_name,
-                                  })
-                                }
-                              >
-                                <CheckIcon />
-                              </button>
-                              <button
-                                className="reject"
-                                aria-label={`${t('Reject profile')} ${row.full_name}`}
-                                title={t('Reject profile')}
-                                onClick={() =>
-                                  setReview({
-                                    path: `/technicians/${row.id}/verification`,
-                                    status: 'REJECTED',
-                                    technicianId: row.id,
-                                    name: row.full_name,
-                                  })
-                                }
-                              >
-                                <CloseIcon />
-                              </button>
-                            </>
-                          )}
                         </div>
                       </td>
                     </tr>
@@ -293,8 +262,8 @@ export function VerificationPage() {
           <ReviewDialog
             target={review}
             onClose={() => setReview(null)}
-            onSuccess={() => {
-              setNotice(review.status === 'VERIFIED' ? 'Profile approved.' : 'Profile rejected.')
+            onSuccess={(decision) => {
+              setNotice(t(decision === 'VERIFIED' ? 'Profile approved.' : 'Profile rejected.'))
               setReview(null)
               setPage(1)
               retry()

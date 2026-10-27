@@ -24,7 +24,7 @@
   justify-content: flex-start;
 }
 .dashboard-main table.catalog-resource-table { min-width: 1000px; }
-.dashboard-main table.catalog-resource-services { min-width: 0; }
+.dashboard-main table.catalog-resource-services { min-width: 1100px; }
 .dashboard-main .catalog-resource-table th:nth-child(1) { width: 5%; }
 .dashboard-main .catalog-resource-table th:nth-child(2) { width: 23%; }
 .dashboard-main .catalog-resource-table th:nth-child(3) { width: 28%; }
@@ -32,12 +32,12 @@
 .dashboard-main .catalog-resource-table th:nth-child(5) { width: 12%; }
 .dashboard-main .catalog-resource-table th:nth-child(6) { width: 12%; }
 .dashboard-main .catalog-resource-table th:nth-child(7) { width: 10%; }
-.dashboard-main .catalog-resource-services th:nth-child(2) { width: 20%; }
-.dashboard-main .catalog-resource-services th:nth-child(3) { width: 14%; }
+.dashboard-main .catalog-resource-services th:nth-child(2) { width: 19%; }
+.dashboard-main .catalog-resource-services th:nth-child(3) { width: 13%; }
 .dashboard-main .catalog-resource-services th:nth-child(4) { width: 12%; }
 .dashboard-main .catalog-resource-services th:nth-child(5) { width: 9%; }
 .dashboard-main .catalog-resource-services th:nth-child(6) { width: 11%; }
-.dashboard-main .catalog-resource-services th:nth-child(7) { width: 9%; }
+.dashboard-main .catalog-resource-services th:nth-child(7) { width: 11%; }
 .dashboard-main .catalog-resource-services th:nth-child(8) { width: 10%; }
 .dashboard-main .catalog-resource-services th:nth-child(9) { width: 10%; }
 .dashboard-main table.catalog-resource-services :is(th, td) {
@@ -52,6 +52,7 @@
 .dashboard-main table.catalog-resource-services :is(th, td):first-child { padding-left: 12px; }
 .dashboard-main table.catalog-resource-services :is(th, td):last-child { padding-right: 12px; }
 .dashboard-main table.catalog-resource-services .catalog-name { min-width: 0; }
+.dashboard-main table.catalog-resource-services .catalog-status { white-space: nowrap; }
 .dashboard-main table.catalog-resource-services .catalog-row-actions { gap: 2px; }
 .dashboard-main table.catalog-resource-services .catalog-row-actions button {
   width: 26px;
@@ -62,18 +63,21 @@
 @media (max-width: 700px) {
   .dashboard-main table.catalog-resource-services { min-width: 960px; }
 }
-.dashboard-main table.models-table { min-width: 0; }
-.dashboard-main .models-table th:nth-child(1) { width: 13%; }
-.dashboard-main .models-table th:nth-child(2) { width: 24%; }
-.dashboard-main .models-table th:nth-child(3) { width: 18%; }
-.dashboard-main .models-table th:nth-child(4) { width: 19%; }
+.dashboard-main table.models-table { min-width: 1200px; }
+.dashboard-main .models-table th:nth-child(1) { width: 12%; }
+.dashboard-main .models-table th:nth-child(2) { width: 20%; }
+.dashboard-main .models-table th:nth-child(3) { width: 12%; }
+.dashboard-main .models-table th:nth-child(4) { width: 13%; }
 .dashboard-main .models-table th:nth-child(5) { width: 12%; }
-.dashboard-main .models-table th:nth-child(6) { width: 14%; }
+.dashboard-main .models-table th:nth-child(6) { width: 10%; }
+.dashboard-main .models-table th:nth-child(7) { width: 10%; }
+.dashboard-main .models-table th:nth-child(8) { width: 11%; }
 .dashboard-main table.models-table :is(th, td):first-child { padding-left: 24px; }
 .dashboard-main table.models-table :is(th, td):last-child { padding-right: 24px; text-align: right; }
+.dashboard-main table.models-table .catalog-status { white-space: nowrap; }
 .dashboard-main table.models-table .catalog-row-actions { justify-content: flex-end; }
 @media (max-width: 700px) {
-  .dashboard-main table.models-table { min-width: 900px; }
+  .dashboard-main table.models-table { min-width: 1200px; }
 }
 .dashboard-main table.skill-table { min-width: 1100px; }
 .dashboard-main .skill-table th:nth-child(1) { width: 16%; }

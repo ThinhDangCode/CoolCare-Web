@@ -431,7 +431,7 @@ export function ProfilePage() {
                   <div className="profile-identity">
                     <div>
                       <h2>{profile.fullName || 'Chưa cập nhật tên'}</h2>
-                      <em>{t('Fleet Director').toUpperCase()}</em>
+                      <em>ADMIN</em>
                       <span>
                         <i /> {t('Active Account')}
                       </span>
@@ -569,19 +569,7 @@ export function ProfilePage() {
                     <label className="profile-field">
                       <span>{t('Administrative Role & Scope')}</span>
                       <span className="field-control locked">
-                        ♙<input value={t('Fleet Director')} disabled />
-                      </span>
-                    </label>
-                    <label className="profile-field">
-                      <span>{t('Employee Identification Number')}</span>
-                      <span className="field-control locked">
-                        ▣<input value="CC-ADM-001" disabled />
-                      </span>
-                    </label>
-                    <label className="profile-field">
-                      <span>{t('Assigned Department')}</span>
-                      <span className="field-control">
-                        ▥<input value={t('HVAC Operations & Fleet Management')} readOnly />
+                        ♙<input value="Admin" disabled />
                       </span>
                     </label>
                   </div>

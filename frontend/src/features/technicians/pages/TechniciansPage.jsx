@@ -189,28 +189,12 @@ export function TechniciansPage() {
               </colgroup>
               <thead>
                 <tr>
-                  <th className="technician-numeric">
-                    TECH
-                    <br />
-                    ID
-                  </th>
+                  <th className="technician-numeric">ID</th>
                   <th>{t('TECHNICIAN')}</th>
-                  <th className="technician-numeric">
-                    PHONE
-                    <br />
-                    NUMBER
-                  </th>
-                  <th>
-                    ASSIGNED
-                    <br />
-                    AREA
-                  </th>
+                  <th className="technician-numeric">{t('PHONE NUMBER')}</th>
+                  <th>{t('ASSIGNED AREA')}</th>
                   <th className="technician-numeric">{t('RATING')}</th>
-                  <th className="technician-numeric technician-jobs-heading">
-                    COMPLETED
-                    <br />
-                    JOBS
-                  </th>
+                  <th className="technician-numeric technician-jobs-heading">{t('COMPLETED JOBS')}</th>
                   <th>{t('STATUS')}</th>
                   <th>{t('ACTION')}</th>
                 </tr>

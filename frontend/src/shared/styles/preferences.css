@@ -463,7 +463,8 @@ html[data-theme='dark'] .dashboard-panel {
 }
 html[data-theme='dark'] .metric-card > strong,
 html[data-theme='dark'] .dashboard-panel h2,
-html[data-theme='dark'] .revenue-summary > strong {
+html[data-theme='dark'] .revenue-summary > span,
+html[data-theme='dark'] .booking-rows strong {
   color: var(--app-text);
 }
 html[data-theme='dark'] .metric-card > small,
@@ -475,6 +476,14 @@ html[data-theme='dark'] .revenue-summary {
 }
 html[data-theme='dark'] .booking-progress {
   background: #20334d;
+}
+html[data-theme='dark'] .dashboard-load-error {
+  color: #ffb4a8;
+  background: #44232b;
+  border-color: #a8454c;
+}
+html[data-theme='dark'] .revenue-overview header > strong {
+  color: #9f4900;
 }
 html[data-theme='dark'] .record-detail-dialog {
   color: var(--app-text);

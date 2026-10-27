@@ -292,7 +292,7 @@ export function BlogEditorPage() {
             <div className="blog-author">
               <span>{t('Article Author')}</span>
               <strong>{user?.fullName || 'Admin'}</strong>
-              <small>{t('Fleet Director')}</small>
+              <small>Admin</small>
             </div>
             <div className="blog-setting-block">
               <span>{t('Publish Schedule')}</span>

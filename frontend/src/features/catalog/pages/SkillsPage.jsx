@@ -526,14 +526,14 @@ export function SkillsPage() {
           <div className="catalog-table-scroll">
             <table className="catalog-table skill-table">
               <caption className="skill-sr-only">
-                Technical skills and their linked services
+                {t('Technical skills and their linked services')}
               </caption>
               <thead>
                 <tr>
                   <th scope="col">{t('CODE')}</th>
                   <th scope="col">{t('SKILL NAME')}</th>
                   <th scope="col">{t('APPLICABLE SERVICE')}</th>
-                  <th scope="col">{t('TECHNICIANS')}</th>
+                  <th scope="col" className="catalog-numeric">{t('TECHNICIANS')}</th>
                   <th scope="col">{t('STATUS')}</th>
                   <th scope="col" className="catalog-actions-title">
                     {t('ACTIONS')}
@@ -617,7 +617,7 @@ export function SkillsPage() {
                       <td className="catalog-numeric">
                         <span
                           className="skill-technician-count"
-                          title={`${row.technician_count} assigned technicians`}
+                          title={t('{count} assigned technicians', { count: row.technician_count })}
                         >
                           {row.technician_count}
                         </span>
@@ -631,16 +631,16 @@ export function SkillsPage() {
                       <td>
                         <div className="catalog-row-actions">
                           <button
-                            aria-label={`Edit ${row.name}`}
-                            title="Edit skill"
+                            aria-label={`${t('Edit')} ${row.name}`}
+                            title={t('Edit Skill')}
                             onClick={() => open('edit', row)}
                           >
                             ✎
                           </button>
                           <button
                             type="button"
-                            title="Record details"
-                            aria-label={`View details of ${row.name}`}
+                            title={t('Record details')}
+                            aria-label={`${t('View details')}: ${row.name}`}
                             onClick={() => open('details', row)}
                           >
                             ◷
@@ -664,7 +664,7 @@ export function SkillsPage() {
                 <>
                   {t('Showing')}{' '}
                   <strong>
-                    {result.total ? (page - 1) * limit + 1 : 0} to{' '}
+                    {result.total ? (page - 1) * limit + 1 : 0}–
                     {Math.min(page * limit, result.total)}
                   </strong>{' '}
                   {t('of')} <strong>{result.total}</strong> {t('skills')}
