@@ -533,6 +533,13 @@ const messages = {
     CONTACT: 'LIÊN HỆ',
     'Live operations': 'Vận hành trực tiếp',
     'Dashboard Overview': 'Tổng quan hệ thống',
+    'Reports for the last six months · Vietnam time (UTC+7)':
+      'Báo cáo 6 tháng gần nhất · Giờ Việt Nam (UTC+7)',
+    'COMPLETED BOOKINGS': 'LỊCH ĐẶT ĐÃ HOÀN THÀNH',
+    'Monthly commission from settled payments': 'Hoa hồng theo tháng từ các thanh toán đã đối soát',
+    'Commission is unavailable for some settled payments.':
+      'Một số thanh toán đã đối soát chưa có số liệu hoa hồng.',
+    'No commission data is available.': 'Chưa có dữ liệu hoa hồng.',
     'Updated 5 mins ago': 'Cập nhật 5 phút trước',
     'Last 30 Days': '30 ngày gần nhất',
     'TOTAL REVENUE': 'TỔNG DOANH THU',
