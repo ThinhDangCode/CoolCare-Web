@@ -2721,7 +2721,7 @@ a:focus-visible {
   min-width: 132px;
 }
 .profile-shell .profile-card:has(.password-form) {
-  width: calc(100% - 72px);
+  width: 100%;
   border-radius: clamp(14px, 1.05vw, 16px);
   padding: 0;
 }
@@ -2762,7 +2762,7 @@ a:focus-visible {
 }
 .profile-shell .password-form > .profile-field,
 .profile-shell .current-password-row {
-  width: calc(100% - 80px);
+  width: 100%;
   margin: 0 0 clamp(18px, 1.45vw, 22px);
 }
 .current-password-row {
@@ -2821,7 +2821,7 @@ a:focus-visible {
   height: 15px;
 }
 .profile-shell .password-form .profile-form-actions {
-  width: calc(100% - 80px);
+  width: 100%;
   margin-top: clamp(15px, 1.2vw, 18px);
   padding: 4px 0 0;
 }
