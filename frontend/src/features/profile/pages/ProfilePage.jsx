@@ -573,12 +573,6 @@ export function ProfilePage() {
                       </span>
                     </label>
                     <label className="profile-field">
-                      <span>{t('Employee Identification Number')}</span>
-                      <span className="field-control locked">
-                        ▣<input value="CC-ADM-001" disabled />
-                      </span>
-                    </label>
-                    <label className="profile-field">
                       <span>{t('Assigned Department')}</span>
                       <span className="field-control">
                         ▥<input value={t('HVAC Operations & Fleet Management')} readOnly />
