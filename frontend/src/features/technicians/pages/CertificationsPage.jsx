@@ -7,7 +7,6 @@ import {
   Pagination,
   SearchIcon,
   EyeIcon,
-  CheckIcon,
   CloseIcon,
   TableState,
 } from '../../management/components/ManagementShared.jsx'
@@ -16,7 +15,6 @@ import { formatDate, safeDocumentUrl } from '../components/technicianFormat.js'
 import '../../management/pages/management.css'
 import './technicians.css'
 import './certifications.css'
-import { ReviewDialog } from '../components/TechnicianActions.jsx'
 
 const statusLabels = {
   VERIFIED: 'Active',
@@ -33,7 +31,32 @@ function CertificateStatus({ value }) {
     </span>
   )
 }
-function CertificateDialog({ certificate, onClose }) {
+function CertificateDialog({ certificate, onClose, onSuccess }) {
+  const { token, logout } = useAuth()
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const [rejecting, setRejecting] = useState(false)
+  const [reason, setReason] = useState('')
+  const pending = certificate.verification_status === 'PENDING'
+  async function review(status) {
+    if (busy) return
+    if (status === 'REJECTED' && reason.trim().length < 5) {
+      setError('Enter a rejection reason containing at least 5 characters.')
+      return
+    }
+    setBusy(true)
+    setError('')
+    try {
+      await adminRequest('/technicians/certifications/' + certificate.id + '/review', token, {
+        method: 'PATCH',
+        body: { status, expected_updated_at: certificate.updated_at, ...(status === 'REJECTED' ? { reason: reason.trim() } : {}) },
+      })
+      onSuccess(status)
+    } catch (err) {
+      setError(err.message)
+      if (err.status === 401) logout()
+    } finally { setBusy(false) }
+  }
   const ref = useRef(null)
   useEffect(() => {
     ref.current.showModal()
@@ -42,9 +65,9 @@ function CertificateDialog({ certificate, onClose }) {
     <dialog
       ref={ref}
       className="certification-dialog"
-      onCancel={onClose}
+      onCancel={event => { event.preventDefault(); if (!busy) onClose() }}
       onClick={(event) => {
-        if (event.target === event.currentTarget) onClose()
+        if (!busy && event.target === event.currentTarget) onClose()
       }}
       aria-labelledby="certificate-title"
     >
@@ -53,7 +76,7 @@ function CertificateDialog({ certificate, onClose }) {
           <small>CERTIFICATION DETAILS</small>
           <h2 id="certificate-title">{certificate.certificate_name}</h2>
         </div>
-        <button autoFocus aria-label="Close details" onClick={onClose}>
+        <button disabled={busy} autoFocus aria-label="Close details" onClick={onClose}>
           <CloseIcon />
         </button>
       </header>
@@ -88,23 +111,32 @@ function CertificateDialog({ certificate, onClose }) {
           <dd>{formatDate(certificate.reviewed_at)}</dd>
         </div>
       </dl>
-      {certificate.verification_evidence && (
-        <section>
-          <h3>Issuer verification evidence</h3>
-          <p>Số hiệu: {certificate.verification_evidence.serial_number || '—'}</p>
-          <p>Số vào sổ: {certificate.verification_evidence.register_number || '—'}</p>
-          <p>Method: {certificate.verification_evidence.method === 'OFFICIAL_LOOKUP' ? 'Official issuer website' : 'Confirmation from issuer'}</p>
-          <p>Reference: {certificate.verification_evidence.reference}</p>
-          {certificate.verification_evidence.method === 'OFFICIAL_LOOKUP' && <DocumentLink url={certificate.verification_evidence.reference} />}
-          <p style={{ whiteSpace: 'pre-wrap' }}>{certificate.verification_evidence.notes}</p>
-        </section>
-      )}
       {certificate.rejection_reason && (
         <p className="certification-reason">{certificate.rejection_reason}</p>
       )}
+      <section className="certificate-document-review">
+        <h3>Submitted certificate document</h3>
+        <DocumentLink url={certificate.document_url}>Open certificate document</DocumentLink>
+        {safeDocumentUrl(certificate.document_url) && /\.(png|jpe?g|webp|gif)([?#].*)?$/i.test(certificate.document_url) && (
+          <img src={safeDocumentUrl(certificate.document_url)} alt="Submitted certificates" />
+        )}
+      </section>
+      {pending && <p>Review the information and submitted document before approving or rejecting.</p>}
+      {rejecting && <label className="certificate-rejection-input">Rejection reason
+        <textarea required minLength={5} maxLength={1000} disabled={busy} value={reason} onChange={event => setReason(event.target.value)} />
+      </label>}
+      {error && <p className="certification-reason" role="alert">{error}</p>}
       <footer>
-        <DocumentLink url={certificate.document_url} />
-        <button onClick={onClose}>Close</button>
+        <button disabled={busy} onClick={onClose}>Close</button>
+        {pending && <div className="certificate-review-decisions">
+          {rejecting ? <>
+            <button disabled={busy} onClick={() => { setRejecting(false); setError('') }}>Cancel rejection</button>
+            <button className="reject" disabled={busy || reason.trim().length < 5} onClick={() => review('REJECTED')}>{busy ? 'Saving…' : 'Confirm reject'}</button>
+          </> : <>
+            <button className="reject" disabled={busy} onClick={() => setRejecting(true)}>Reject</button>
+            <button className="approve" disabled={busy || !safeDocumentUrl(certificate.document_url)} onClick={() => review('VERIFIED')}>{busy ? 'Saving…' : 'Approve'}</button>
+          </>}
+        </div>}
       </footer>
     </dialog>
   )
@@ -124,7 +156,6 @@ export function CertificationsPage() {
   const [refresh, setRefresh] = useState(0)
   const [selected, setSelected] = useState(null)
   const [compact, setCompact] = useState(false)
-  const [review, setReview] = useState(null)
   const [notice, setNotice] = useState('')
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -253,7 +284,7 @@ export function CertificationsPage() {
             <table className="certification-table">
               <thead>
                 <tr>
-                  <th>CERT ID</th>
+                  <th className="certification-numeric">ID</th>
                   <th>CERTIFICATE NAME</th>
                   <th>TECHNICIAN</th>
                   <th>STATUS</th>
@@ -270,17 +301,9 @@ export function CertificationsPage() {
                 />
                 {!loading &&
                   !error &&
-                  data.items.map((c) => (
+                  data.items.map((c, index) => (
                     <tr key={c.id}>
-                      <td>
-                        <button
-                          className={`certification-code ${c.status === 'EXPIRED' ? 'expired' : ''}`}
-                          title={c.id}
-                          onClick={() => setSelected(c)}
-                        >
-                          {c.certificate_number || c.id.slice(0, 8)}
-                        </button>
-                      </td>
+                      <td className="certification-numeric">{(page - 1) * limit + index + 1}</td>
                       <td>{c.certificate_name}</td>
                       <td>
                         <Link
@@ -303,68 +326,6 @@ export function CertificationsPage() {
                           >
                             <EyeIcon />
                           </button>
-                          {c.verification_status === 'PENDING' && (
-                            <>
-                              <button
-                                className="certification-action document"
-                                aria-label={`Approve ${c.certificate_name}`}
-                                title="Approve certification"
-                                onClick={() =>
-                                  setReview({
-                                    path: `/technicians/certifications/${c.id}/review`,
-                                    status: 'VERIFIED',
-                                    certificate: c,
-                                    name: `${c.certificate_name} — ${c.full_name}`,
-                                    kind: 'certification',
-                                    updatedAt: c.updated_at,
-                                  })
-                                }
-                              >
-                                <CheckIcon />
-                              </button>
-                              <button
-                                className="certification-action reject"
-                                aria-label={`Reject ${c.certificate_name}`}
-                                title="Reject certification"
-                                onClick={() =>
-                                  setReview({
-                                    path: `/technicians/certifications/${c.id}/review`,
-                                    status: 'REJECTED',
-                                    name: `${c.certificate_name} — ${c.full_name}`,
-                                    kind: 'certification',
-                                    updatedAt: c.updated_at,
-                                  })
-                                }
-                              >
-                                <CloseIcon />
-                              </button>
-                            </>
-                          )}
-                          {safeDocumentUrl(c.document_url) ? (
-                            <a
-                              className="certification-action document"
-                              href={safeDocumentUrl(c.document_url)}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              aria-label={`Open document — ${c.full_name}`}
-                              title="Open certificate document"
-                            >
-                              <svg viewBox="0 0 24 24" aria-hidden="true">
-                                <path d="M14 3h7v7m0-7L10 14M10 4H4v16h16v-6" />
-                              </svg>
-                            </a>
-                          ) : (
-                            <button
-                              className="certification-action document"
-                              disabled
-                              title="No document available"
-                              aria-label="No document available"
-                            >
-                              <svg viewBox="0 0 24 24" aria-hidden="true">
-                                <path d="M6 3h8l4 4v14H6V3Zm8 0v5h4" />
-                              </svg>
-                            </button>
-                          )}
                         </div>
                       </td>
                     </tr>
@@ -400,18 +361,16 @@ export function CertificationsPage() {
           </div>
         </div>
       </section>
-      {selected && <CertificateDialog certificate={selected} onClose={() => setSelected(null)} />}
-      {review && (
-        <ReviewDialog
-          target={review}
-          onClose={() => setReview(null)}
-          onSuccess={() => {
-            setNotice('Certification review saved.')
-            setReview(null)
-            retry()
-          }}
-        />
-      )}
+      {selected && <CertificateDialog
+        key={selected.id}
+        certificate={selected}
+        onClose={() => setSelected(null)}
+        onSuccess={status => {
+          setNotice(status === 'VERIFIED' ? 'Certification approved.' : 'Certification rejected.')
+          setSelected(null)
+          retry()
+        }}
+      />}
     </main>
   )
 }

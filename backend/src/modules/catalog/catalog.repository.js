@@ -48,8 +48,8 @@ export class CatalogRepository {
         : kind === 'services'
           ? 'r.*, c.name AS category_name'
           : kind === 'categories'
-            ? 'r.*, (SELECT count(*)::int FROM services s WHERE s.category_id=r.id) AS service_count'
-            : 'r.*, (SELECT count(*)::int FROM ac_models m WHERE m.brand_id=r.id) AS model_count'
+            ? 'r.*, (SELECT count(*)::int FROM services s WHERE s.category_id=r.id AND s.deleted_at IS NULL) AS service_count'
+            : 'r.*, (SELECT count(*)::int FROM ac_models m WHERE m.brand_id=r.id AND m.deleted_at IS NULL) AS model_count'
     // Count and rows share a snapshot so pagination remains consistent during edits.
     return this.transaction(async (client) => {
       await client.query('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY')
@@ -84,6 +84,24 @@ export class CatalogRepository {
           if (action === 'TRASH' || action === 'RESTORE' || action === 'DELETE') {
             const restoring = action === 'RESTORE'
             if (restoring && !existing.deleted_at || !restoring && existing.deleted_at) return existing
+            if (!restoring && kind === 'categories') {
+              // The category row lock also serializes service creation, reassignment and restore,
+              // which acquire a shared lock on their destination category.
+              const linked = await client.query(
+                'SELECT id FROM services WHERE category_id=$1 AND deleted_at IS NULL LIMIT 1',
+                [id]
+              )
+              if (linked.rows.length)
+                throw new AppError(409, 'CATEGORY_IN_USE', 'This category still contains services, including inactive services. Move them to another category or move them to Trash first. To temporarily hide the category, set it to Inactive in Edit.')
+            }
+            if (!restoring && kind === 'brands') {
+              // Model creation/reassignment/restore holds a shared lock on this brand.
+              const linked = await client.query(
+                'SELECT id FROM ac_models WHERE brand_id=$1 AND deleted_at IS NULL LIMIT 1', [id]
+              )
+              if (linked.rows.length)
+                throw new AppError(409, 'BRAND_IN_USE', 'This brand still contains models, including inactive models. Move them to another brand or move them to Trash first. To temporarily hide the brand, set it to Inactive in Edit.')
+            }
             if (restoring) {
               const parent = kind === 'services' ? ['service_categories', existing.category_id] : kind === 'models' ? ['ac_brands', existing.brand_id] : kind === 'skills' ? ['services', existing.service_id] : null
               if (parent && !(await client.query(`SELECT id FROM ${parent[0]} WHERE id=$1 AND deleted_at IS NULL FOR SHARE`, [parent[1]])).rowCount)

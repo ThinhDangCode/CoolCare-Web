@@ -13,8 +13,6 @@ function asPositiveNumber(value, fallback) {
 export const env = Object.freeze({
   nodeEnv: process.env.NODE_ENV ?? 'development',
   port: asPositiveNumber(process.env.PORT, 3000),
-  fptAiApiKey: process.env.FPT_AI_API_KEY?.trim() ?? '',
-  identityImageHosts: (process.env.IDENTITY_IMAGE_ALLOWED_HOSTS ?? 'res.cloudinary.com').split(',').map(value => value.trim().toLowerCase()).filter(Boolean),
   database: {
     host: process.env.DB_HOST ?? '127.0.0.1',
     port: asPositiveNumber(process.env.DB_PORT, 5432),

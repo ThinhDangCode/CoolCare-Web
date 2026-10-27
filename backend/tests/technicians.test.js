@@ -9,6 +9,23 @@ import { errorHandler } from '../src/middleware/error-handler.js'
 import { createTechnicianRouter } from '../src/modules/technicians/technician.routes.js'
 import { validateTechnicianQuery, validatePenaltyQuery, validateReview, validateTechnicianUpdate, validateTechnicianSkills } from '../src/modules/technicians/technician.validation.js'
 
+test('pending and rejected applicants cannot be activated as official technicians', async () => {
+  for (const verification_status of ['PENDING','REJECTED']) {
+    const queries = []
+    const audits = []
+    const mutations = new TechnicianMutations({
+      audit: event => audits.push(event),
+      transaction: work => work({query: async sql => {
+        queries.push(sql)
+        return {rows: [{verification_status}]}
+      }}),
+    })
+    await assert.rejects(mutations.activate('applicant','admin'),{status:409,code:'TECHNICIAN_NOT_VERIFIED'})
+    assert.equal(queries.some(sql => sql.startsWith('UPDATE')),false)
+    assert.equal(audits.length,0)
+  }
+})
+
 test('verified technicians cannot clear all skills or produce a successful audit', async () => {
   const queries = []
   const audits = []
@@ -31,6 +48,9 @@ test('technician mutations validate decisions, limits and unique skill assignmen
   assert.throws(()=>validateReview({status:'REJECTED',reason:'no'}),{status:422})
   assert.equal(validateReview({status:'REJECTED',reason:' Missing documents '}).reason,'Missing documents')
   assert.throws(()=>validateReview({status:'VERIFIED'},true),{status:422})
+  assert.deepEqual(validateReview({status:'VERIFIED',expected_updated_at:'2026-10-22T00:00:00.000Z'},true), {
+    status:'VERIFIED',reason:null,expected_updated_at:'2026-10-22T00:00:00.000Z',
+  })
   const input={full_name:'Tran Nhat Nam',phone:'0908341882',qualification_level:'EXPERT',years_experience:4,bio:''}
   assert.equal(validateTechnicianUpdate(input).years_experience,4)
   assert.throws(()=>validateTechnicianUpdate({...input,years_experience:-1}),{status:422})
@@ -111,6 +131,9 @@ test('technician routes protect identity, validate requests and audit successful
     assert.equal((await write(`/${targetId}/verification`,'ADMIN',{status:'VERIFIED'})).status,200)
     assert.equal(mutationCalls.at(-1).args[2],targetId)
     assert.equal((await write(`/certifications/${targetId}/review`,'ADMIN',{status:'REJECTED',reason:'Unreadable document',expected_updated_at:new Date().toISOString()})).status,200)
+    assert.equal((await write(`/certifications/${targetId}/review`,'ADMIN',{status:'VERIFIED',expected_updated_at:new Date().toISOString()})).status,200)
+    assert.equal(mutationCalls.at(-1).action,'certification')
+    assert.equal(mutationCalls.at(-1).args[1].status,'VERIFIED')
     assert.equal((await write(`/${targetId}/skills`,'ADMIN',{skills:[]})).status,200)
     assert.equal((await write(`/${targetId}/areas`,'CUSTOMER',{areas:[]})).status,403)
     assert.equal((await write(`/${targetId}/areas`,'ADMIN',{areas:[{city:'Can Tho',ward:''}]})).status,422)

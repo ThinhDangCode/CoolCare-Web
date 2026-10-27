@@ -26,37 +26,15 @@ function bodyObject(body,allowed) {
   if(!body || typeof body !== 'object' || Array.isArray(body) || Object.keys(body).some(k=>!allowed.includes(k))) throw new AppError(422,'VALIDATION_ERROR','Invalid request fields.')
 }
 export function validateReview(body,certification=false) {
-  bodyObject(body,['status','reason',...(certification?['expected_updated_at','verification_evidence']:[])])
+  bodyObject(body,['status','reason',...(certification?['expected_updated_at']:[])])
   const errors={}
   if(!['VERIFIED','REJECTED'].includes(body.status)) errors.status='Choose approve or reject.'
   const reason=typeof body.reason==='string'?body.reason.trim():''
   if(body.reason!==undefined && typeof body.reason!=='string') errors.reason='Invalid reason.'
   if(reason.length>1000 || (body.status==='REJECTED' && reason.length<5)) errors.reason='Rejection reason must contain 5–1000 characters.'
   if(certification && (typeof body.expected_updated_at!=='string' || Number.isNaN(Date.parse(body.expected_updated_at)))) errors.expected_updated_at='Refresh the certification before reviewing.'
-  let evidence = null
-  if (certification && body.status === 'VERIFIED') {
-    const value = body.verification_evidence
-    if (!value || typeof value !== 'object' || Array.isArray(value)) errors.verification_evidence = 'Issuer verification evidence is required before approval.'
-    else {
-      bodyObject(value, ['method','reference','notes','matched','serial_number','register_number'])
-      const serial = typeof value.serial_number === 'string' ? value.serial_number.trim() : ''
-      const register = typeof value.register_number === 'string' ? value.register_number.trim() : ''
-      if ((!serial && !register) || serial.length > 100 || register.length > 100) errors.lookup_number = 'Nhập số hiệu hoặc số vào sổ (tối đa 100 ký tự mỗi số).'
-      const reference = typeof value.reference === 'string' ? value.reference.trim() : ''
-      const notes = typeof value.notes === 'string' ? value.notes.trim() : ''
-      if (!['OFFICIAL_LOOKUP','ISSUER_CONTACT'].includes(value.method)) errors.method = 'Choose a verification method.'
-      if (reference.length < 5 || reference.length > 1000) errors.reference = 'Provide an issuer lookup URL or response reference (5–1000 characters).'
-      if (value.method === 'OFFICIAL_LOOKUP') {
-        try { const url = new URL(reference); if (url.protocol !== 'https:' || url.username || url.password) throw new Error() }
-        catch { errors.reference = 'Provide an HTTPS official lookup URL.' }
-      }
-      if (notes.length < 10 || notes.length > 2000) errors.notes = 'Describe the issuer confirmation and matching details (10–2000 characters).'
-      if (value.matched !== true) errors.matched = 'Confirm the holder and certificate match the issuer record.'
-      evidence = {method:value.method,reference,notes,matched:value.matched,serial_number:serial,register_number:register}
-    }
-  }
   requireValidBody(errors)
-  return {status:body.status,reason:body.status==='REJECTED'?reason:null,...(certification?{expected_updated_at:body.expected_updated_at,verification_evidence:evidence}:{})}
+  return {status:body.status,reason:body.status==='REJECTED'?reason:null,...(certification?{expected_updated_at:body.expected_updated_at}:{})}
 }
 export function validateTechnicianUpdate(body) {
   bodyObject(body,['full_name','phone','qualification_level','years_experience','bio'])

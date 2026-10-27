@@ -10,6 +10,22 @@ import {
   validateQuery,
 } from '../src/modules/catalog/catalog.validation.js'
 import { errorHandler, notFoundHandler } from '../src/middleware/error-handler.js'
+import { modelNameError, nameError } from '../../frontend/src/features/catalog/catalogValidation.js'
+
+test('model names accept numbers in create and edit with matching frontend validation', () => {
+  for (const model_name of ['FTKY25WAVMV','CS-XU9BKH-8','DEMO-PANASONIC-2','Model 123','123','AC_9000/2026']) {
+    assert.equal(modelNameError(model_name),'')
+    for (const partial of [false,true]) {
+      const input = {model_name:` ${model_name} `,brand_id:'12345678-1234-1234-1234-123456789012',ac_type:'WALL_MOUNTED',capacity_btu:9000,inverter:true}
+      assert.equal(validateInput('models',input,partial).model_name,model_name)
+    }
+  }
+  for (const model_name of ['', '---','😀','<script>','x'.repeat(101)]) {
+    assert.notEqual(modelNameError(model_name),'')
+    assert.throws(() => validateInput('models',{model_name},true),{status:422})
+  }
+  assert.notEqual(nameError('Skill 123'),'')
+})
 
 const id = '12345678-1234-1234-1234-123456789012'
 test('AC models require valid brand, name, AC type, positive BTU and explicit inverter', () => {
@@ -87,8 +103,8 @@ test('catalog validates names, writable fields, prices and optional intervals', 
   )
   assert.throws(() => validateId('invalid'), { status: 422 })
 })
-test('all catalog names reject numbers and symbols on create and edit', () => {
-  for (const kind of ['categories', 'services', 'brands', 'models', 'skills']) {
+test('non-model catalog names reject numbers and symbols on create and edit', () => {
+  for (const kind of ['categories', 'services', 'brands', 'skills']) {
     const key = kind === 'models' ? 'model_name' : 'name'
     const required = kind === 'services'
       ? { category_id: id, base_price: 0 }

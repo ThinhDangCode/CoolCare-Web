@@ -8,7 +8,7 @@ import { Modal } from '../components/Modal.jsx'
 import { CatalogTrash, CatalogTrashButton } from '../components/CatalogTrash.jsx'
 import './catalog.css'
 import './models.css'
-import { nameError, numberError } from '../catalogValidation.js'
+import { modelNameError, numberError } from '../catalogValidation.js'
 
 const types = [
   ['WALL_MOUNTED', 'Wall mounted', '▱'],
@@ -554,10 +554,6 @@ function AcModelForm({ row, onCancel, onSaved, onBusyChange }) {
   const [error, setError] = useState('')
   const [errors, setErrors] = useState({})
   const change = (key, value) => {
-    if (key === 'model_name' && /\p{N}/u.test(value)) {
-      setErrors((current) => ({ ...current, model_name: 'Names cannot contain numbers.' }))
-      return
-    }
     setValues((current) => ({ ...current, [key]: value }))
     setErrors((current) => ({ ...current, [key]: undefined }))
   }
@@ -571,7 +567,7 @@ function AcModelForm({ row, onCancel, onSaved, onBusyChange }) {
     event.preventDefault()
     if (busy || options.loading || options.error) return
     const fieldErrors = {
-      model_name: nameError(values.model_name),
+      model_name: modelNameError(values.model_name),
       capacity_btu: numberError(values.capacity_btu, { max: 2147483647 }),
       brand_id: options.brands.some((brand) => brand.id === values.brand_id)
         ? ''

@@ -175,15 +175,21 @@ export function TechniciansPage() {
           )}
           <div className="figma-users-table technician-table">
             <table>
+              <colgroup>
+                <col className="technician-col-id" />
+                <col className="technician-col-name" />
+                <col className="technician-col-phone" />
+                <col className="technician-col-area" />
+                <col className="technician-col-rating" />
+                <col className="technician-col-jobs" />
+                <col className="technician-col-status" />
+                <col className="technician-col-action" />
+              </colgroup>
               <thead>
                 <tr>
-                  <th>
-                    TECH
-                    <br />
-                    ID
-                  </th>
+                  <th className="technician-numeric">ID</th>
                   <th>TECHNICIAN</th>
-                  <th>
+                  <th className="technician-numeric">
                     PHONE
                     <br />
                     NUMBER
@@ -193,12 +199,8 @@ export function TechniciansPage() {
                     <br />
                     AREA
                   </th>
-                  <th>RATING</th>
-                  <th>
-                    COMPLETED
-                    <br />
-                    JOBS
-                  </th>
+                  <th className="technician-numeric">RATING</th>
+                  <th className="technician-numeric technician-jobs-heading">COMPLETED JOBS</th>
                   <th>STATUS</th>
                   <th>ACTION</th>
                 </tr>
@@ -215,15 +217,15 @@ export function TechniciansPage() {
                   !error &&
                   data.items.map((row, index) => (
                     <tr key={row.id}>
-                      <td>{(page - 1) * limit + index + 1}</td>
+                      <td className="technician-numeric">{(page - 1) * limit + index + 1}</td>
                       <td>
                         <Link className="technician-list-name" to={`/admin/technicians/${row.id}`}>
                           <strong>{row.full_name}</strong>
                         </Link>
                       </td>
-                      <td>{row.phone || '—'}</td>
-                      <td>{row.areas.map((a) => a.ward).join(', ') || '—'}</td>
-                      <td>
+                      <td className="technician-numeric technician-phone-number">{row.phone || '—'}</td>
+                      <td className="technician-assigned-area">{row.areas.map((a) => a.ward).join(', ') || '—'}</td>
+                      <td className={row.total_reviews ? 'technician-numeric' : ''}>
                         {row.total_reviews ? (
                           <strong className="technician-list-rating">
                             <span className="technician-rating">★</span>{' '}
@@ -231,13 +233,11 @@ export function TechniciansPage() {
                           </strong>
                         ) : (
                           <em className="technician-unrated">
-                            No reviews
-                            <br />
-                            yet
+                            No reviews yet
                           </em>
                         )}
                       </td>
-                      <td>{row.completed_jobs}</td>
+                      <td className="technician-numeric">{row.completed_jobs}</td>
                       <td>
                         <TechnicianBadge value={row.status} />
                       </td>

@@ -38,8 +38,8 @@ export class TechnicianMutations {
       if(before.verification_status!=='PENDING' || new Date(before.updated_at).getTime()!==new Date(input.expected_updated_at).getTime()) throw new AppError(409,'STALE_CERTIFICATION','This certification has changed or has already been reviewed. Refresh the page.')
       if(input.status==='VERIFIED' && (!before.document_url || before.expired)) throw new AppError(422,'INVALID_CERTIFICATION','A valid document and a non-expired certificate are required for approval.')
       const row=(await client.query(`UPDATE technician_certifications SET verification_status=$2,reviewed_by_id=$3,
-        reviewed_at=CURRENT_TIMESTAMP,rejection_reason=$4,verification_evidence=$5::jsonb,updated_at=CURRENT_TIMESTAMP
-        WHERE id=$1 RETURNING id,verification_status,reviewed_by_id,reviewed_at`,[id,input.status,actorId,input.reason,JSON.stringify(input.verification_evidence ?? null)])).rows[0]
+        reviewed_at=CURRENT_TIMESTAMP,rejection_reason=$4,updated_at=CURRENT_TIMESTAMP
+        WHERE id=$1 RETURNING id,verification_status,reviewed_by_id,reviewed_at`,[id,input.status,actorId,input.reason])).rows[0]
       await client.query(`UPDATE technician_certification_submissions SET verification_status=$2,reviewed_by_id=$3,
         reviewed_at=CURRENT_TIMESTAMP,rejection_reason=$4 WHERE id=(SELECT id FROM technician_certification_submissions
         WHERE certification_id=$1 ORDER BY submission_number DESC LIMIT 1) AND verification_status='PENDING'`,[id,input.status,actorId,input.reason])
@@ -77,6 +77,7 @@ export class TechnicianMutations {
   async activate(id,actorId) {
     await this.transaction(async client=>{
       const before=await this.lock(client,id)
+      if(before.verification_status!=='VERIFIED') throw new AppError(409,'TECHNICIAN_NOT_VERIFIED','Approve the technician profile before activating this technician.')
       const user=(await client.query('SELECT status FROM users WHERE id=$1 FOR UPDATE',[before.user_id])).rows[0]
       const balance=(await client.query(`SELECT ${remainingPointsSql('$1')} AS remaining_points`,[id])).rows[0]
       if(balance.remaining_points===0) throw new AppError(409,'POINTS_EXHAUSTED','This technician has no remaining points.')

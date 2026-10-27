@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../../../context/AuthContext.jsx'
 import { adminRequest } from '../../management/api/managementApi.js'
-import { DocumentLink } from './TechnicianShared.jsx'
-import { safeDocumentUrl } from './technicianFormat.js'
-import { IdentityOcrPanel } from './IdentityOcrPanel.jsx'
+import { CertificateTable, DocumentLink } from './TechnicianShared.jsx'
+import { formatDate, safeDocumentUrl } from './technicianFormat.js'
 
 export function IdentityReviewContent({ technicianId, onReady }) {
   const { token, logout } = useAuth()
@@ -27,21 +26,28 @@ export function IdentityReviewContent({ technicianId, onReady }) {
       })
     return () => controller.abort()
   },[technicianId,token,logout,onReady,retry])
-  if (error) return <div role="alert">{error} <button type="button" onClick={() => setRetry(n=>n+1)}>Tải lại hồ sơ</button></div>
-  if (!profile) return <p role="status">Đang tải ảnh căn cước đã nộp…</p>
+  if (error) return <div role="alert">{error} <button type="button" onClick={() => setRetry(n=>n+1)}>Retry loading profile</button></div>
+  if (!profile) return <p role="status">Loading submitted identity documents…</p>
   return <section>
-    <p>Số căn cước đã khai: <strong>{profile.identity_number || 'Chưa có'}</strong></p>
-    {profile.verification_status !== 'PENDING' && <p role="alert">Hồ sơ đã được xử lý. Đóng và tải lại danh sách.</p>}
+    <dl className="identity-review-summary">
+      <div><dt>Full name</dt><dd>{profile.full_name}</dd></div>
+      <div><dt>Phone number</dt><dd>{profile.phone || '—'}</dd></div>
+      <div><dt>Email</dt><dd>{profile.email || '—'}</dd></div>
+      <div><dt>Submitted on</dt><dd>{formatDate(profile.submitted_at)}</dd></div>
+    </dl>
+    <p>Submitted citizen ID number: <strong>{profile.identity_number || 'Not provided'}</strong></p>
+    {profile.verification_status !== 'PENDING' && <p role="alert">This application has already been reviewed. Close this dialog and refresh the list.</p>}
     <div className="identity-review-images">
       {['front','back'].map(side => {
         const url = safeDocumentUrl(profile[`identity_${side}_url`])
         return <div key={side}>
-          <h4>{side === 'front' ? 'Căn cước mặt trước' : 'Căn cước mặt sau'}</h4>
-          {url && <img src={url} alt={side === 'front' ? 'Ảnh căn cước mặt trước đã nộp' : 'Ảnh căn cước mặt sau đã nộp'} />}
-          <DocumentLink url={url}>Mở ảnh gốc</DocumentLink>
+          <h4>{side === 'front' ? 'Citizen ID — front' : 'Citizen ID — back'}</h4>
+          {url && <img src={url} alt={side === 'front' ? 'Submitted citizen ID front image' : 'Submitted citizen ID back image'} />}
+          <DocumentLink url={url}>Open original image</DocumentLink>
         </div>
       })}
     </div>
-    {profile.verification_status === 'PENDING' && <IdentityOcrPanel technicianId={profile.id} hasImages={Boolean(profile.identity_front_url || profile.identity_back_url)} />}
+    <h3>Submitted certificates</h3>
+    <CertificateTable items={profile.certifications || []} />
   </section>
 }

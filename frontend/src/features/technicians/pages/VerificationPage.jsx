@@ -7,8 +7,6 @@ import {
   SearchIcon,
   SlidersIcon,
   EyeIcon,
-  CheckIcon,
-  CloseIcon,
   Pagination,
   TableState,
 } from '../../management/components/ManagementShared.jsx'
@@ -187,9 +185,10 @@ export function VerificationPage() {
             <table>
               <thead>
                 <tr>
+                  <th className="verification-numeric">ID</th>
                   <th>TECHNICIAN</th>
-                  <th>CONTACT</th>
-                  <th>SUBMITTED</th>
+                  <th className="verification-numeric">PHONE NUMBER</th>
+                  <th className="verification-numeric">SUBMITTED</th>
                   <th>STATUS</th>
                   <th>ACTIONS</th>
                 </tr>
@@ -199,13 +198,14 @@ export function VerificationPage() {
                   loading={loading}
                   error={error}
                   empty={!data.items.length}
-                  colSpan={5}
+                  colSpan={6}
                   retry={retry}
                 />
                 {!loading &&
                   !error &&
-                  data.items.map((row) => (
+                  data.items.map((row, index) => (
                     <tr key={row.id}>
+                      <td className="verification-numeric">{(page - 1) * limit + index + 1}</td>
                       <td>
                         <Link
                           className="verification-person"
@@ -215,8 +215,8 @@ export function VerificationPage() {
                           <strong>{row.full_name}</strong>
                         </Link>
                       </td>
-                      <td className="verification-phone">{row.phone || '—'}</td>
-                      <td>{formatDate(row.submitted_at)}</td>
+                      <td className="verification-phone verification-numeric">{row.phone || '—'}</td>
+                      <td className="verification-numeric">{formatDate(row.submitted_at)}</td>
                       <td>
                         <span
                           className={`verification-status ${row.verification_status.toLowerCase()}`}
@@ -230,45 +230,11 @@ export function VerificationPage() {
                           <button
                             className="view"
                             aria-label={`View identity — ${row.full_name}`}
-                            title="Xem căn cước và kiểm tra AI trước khi duyệt"
-                            onClick={() => setReview({technicianId:row.id,path:`/technicians/${row.id}/verification`,status:'VERIFIED',name:row.full_name})}
+                            title="View application and documents for review"
+                            onClick={() => setReview({technicianId:row.id,path:`/technicians/${row.id}/verification`,chooseDecision:true,name:row.full_name})}
                           >
                             <EyeIcon />
                           </button>
-                          {row.verification_status === 'PENDING' && (
-                            <>
-                              <button
-                                className="approve"
-                                aria-label={`Approve ${row.full_name}`}
-                                title="Approve profile"
-                                onClick={() =>
-                                  setReview({
-                                    path: `/technicians/${row.id}/verification`,
-                                    status: 'VERIFIED',
-                                    technicianId: row.id,
-                                    name: row.full_name,
-                                  })
-                                }
-                              >
-                                <CheckIcon />
-                              </button>
-                              <button
-                                className="reject"
-                                aria-label={`Reject ${row.full_name}`}
-                                title="Reject profile"
-                                onClick={() =>
-                                  setReview({
-                                    path: `/technicians/${row.id}/verification`,
-                                    status: 'REJECTED',
-                                    technicianId: row.id,
-                                    name: row.full_name,
-                                  })
-                                }
-                              >
-                                <CloseIcon />
-                              </button>
-                            </>
-                          )}
                         </div>
                       </td>
                     </tr>
@@ -306,8 +272,8 @@ export function VerificationPage() {
           <ReviewDialog
             target={review}
             onClose={() => setReview(null)}
-            onSuccess={() => {
-              setNotice(review.status === 'VERIFIED' ? 'Profile approved.' : 'Profile rejected.')
+            onSuccess={(status) => {
+              setNotice(status === 'VERIFIED' ? 'Profile approved.' : 'Profile rejected.')
               setReview(null)
               setPage(1)
               retry()

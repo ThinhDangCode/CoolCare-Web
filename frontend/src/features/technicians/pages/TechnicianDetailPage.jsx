@@ -14,7 +14,7 @@ import '../../management/pages/management.css'
 import './technicians.css'
 import './technicianDetail.css'
 import { TechnicianAreasDialog } from '../components/TechnicianAreasDialog.jsx'
-import { EditTechnicianDialog, DeactivateDialog } from '../components/TechnicianActions.jsx'
+import { EditTechnicianDialog, DeactivateDialog, ReviewDialog } from '../components/TechnicianActions.jsx'
 
 const tabs = {
   overview: 'Overview',
@@ -47,6 +47,8 @@ export function TechnicianDetailPage() {
   const [action, setAction] = useState(null)
   const [notice, setNotice] = useState('')
   const canManage = data?.verification_status === 'VERIFIED'
+  const pending = data?.verification_status === 'PENDING'
+  const pageTitle = !data || canManage ? 'Technician Details' : 'Technician Application'
   useEffect(() => {
     const controller = new AbortController()
     adminRequest(`/technicians/${id}`, token, { signal: controller.signal })
@@ -75,9 +77,9 @@ export function TechnicianDetailPage() {
         <nav className="technician-breadcrumb" aria-label="Breadcrumb">
           <span>User Management</span>
           <span>›</span>
-          <Link to="/admin/technicians">Technicians</Link>
+          <Link to={data && !canManage ? '/admin/technicians/verification' : '/admin/technicians'}>{data && !canManage ? 'Application Review' : 'Technicians'}</Link>
           <span>›</span>
-          <strong>Technician Details</strong>
+          <strong>{pageTitle}</strong>
         </nav>
         <button
           className="technician-detail-refresh"
@@ -91,13 +93,17 @@ export function TechnicianDetailPage() {
       <section className="technician-content">
         <div className="technician-detail-heading">
           <div>
-            <h1>Technician Details</h1>
-            <p>Manage technician profile, verification documents, and service status</p>
+            <h1>{pageTitle}</h1>
+            <p>{canManage ? 'Manage technician profile, verification documents, and service status' : 'Review the application details and documents. Applicants cannot receive jobs until their profile is approved.'}</p>
           </div>
           <div className="technician-profile-actions">
-            <Link className="technician-view" to="/admin/technicians">
+            <Link className="technician-view" to={data && !canManage ? '/admin/technicians/verification' : '/admin/technicians'}>
               ← Back to list
             </Link>
+            {pending && !loading && !error && <>
+              <button className="danger" onClick={() => setAction('reject')}>Reject Application</button>
+              <button className="primary" onClick={() => setAction('approve')}>Approve Application</button>
+            </>}
             {canManage && !loading && !error && (
               <>
                 {(!data.is_active || data.account_status === 'INACTIVE') &&
@@ -135,20 +141,22 @@ export function TechnicianDetailPage() {
                 <div className="technician-person">
                   <div className="technician-detail-avatar">
                     <TechnicianAvatar name={data.full_name} url={data.avatar_url} />
-                    <i
+                    {canManage && <i
                       className={
                         data.is_active && data.availability_status === 'ONLINE' ? 'online' : ''
                       }
                       aria-label={label(data.availability_status)}
-                    />
+                    />}
                   </div>
                   <div>
                     <h2>{data.full_name}</h2>
-                    <TechnicianBadge value={data.status} />{' '}
-                    <TechnicianBadge value={data.availability_status} />
+                    {canManage ? <><TechnicianBadge value={data.status} />{' '}<TechnicianBadge value={data.availability_status} /></> : <>
+                      <span className={`figma-status ${pending ? 'pending' : 'blocked'}`}>{pending ? 'Pending Review' : 'Application Rejected'}</span>
+                      <p>Not eligible to receive jobs</p>
+                    </>}
                   </div>
                 </div>
-                <div className="technician-metrics">
+                {canManage && <div className="technician-metrics">
                   <div>
                     <small>REMAINING POINTS</small>
                     <strong>
@@ -175,7 +183,7 @@ export function TechnicianDetailPage() {
                     <small>COMPLETED JOBS</small>
                     <strong>{data.completed_jobs}</strong>
                   </div>
-                </div>
+                </div>}
               </section>
               <div className="technician-profile-actions technician-detail-review">
                 {data.verification_status === 'PENDING' && (
@@ -354,6 +362,15 @@ export function TechnicianDetailPage() {
           )
         )}
       </section>
+      {pending && ['approve','reject'].includes(action) && <ReviewDialog
+        target={{technicianId:data.id,path:`/technicians/${data.id}/verification`,status:action === 'approve' ? 'VERIFIED' : 'REJECTED',name:data.full_name}}
+        onClose={() => setAction(null)}
+        onSuccess={() => {
+          setAction(null)
+          setNotice(action === 'approve' ? 'Technician application approved.' : 'Application rejected.')
+          retry()
+        }}
+      />}
       {canManage &&
         action &&
         (action === 'areas' ? (

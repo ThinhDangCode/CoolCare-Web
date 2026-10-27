@@ -1,5 +1,6 @@
 import { useAuth } from '../../../context/AuthContext.jsx'
 import { BellIcon } from '../../management/components/ManagementShared.jsx'
+import './catalogTables.css'
 
 export function CatalogLayout({
   children,

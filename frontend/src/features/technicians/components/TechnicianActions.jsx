@@ -35,35 +35,24 @@ export function ReviewDialog({ target, onClose, onSuccess }) {
   const [reason, setReason] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
-  const approve = target.status === 'VERIFIED'
-  const certificateApproval = approve && target.kind === 'certification'
+  const [decision, setDecision] = useState(target.status || 'VERIFIED')
+  const approve = decision === 'VERIFIED'
   const [identityReady, setIdentityReady] = useState(false)
-  const [method, setMethod] = useState('OFFICIAL_LOOKUP')
-  const [reference, setReference] = useState('')
-  const [notes, setNotes] = useState('')
-  const [matched, setMatched] = useState(false)
-  const [serialNumber, setSerialNumber] = useState(target.certificate?.certificate_number || '')
-  const [registerNumber, setRegisterNumber] = useState('')
   async function submit(event) {
     event.preventDefault()
     if (target.technicianId && !identityReady) return
-    if (certificateApproval && !serialNumber.trim() && !registerNumber.trim()) {
-      setError('Nhập ít nhất một trong hai: số hiệu hoặc số vào sổ cấp chứng chỉ.')
-      return
-    }
     setBusy(true)
     setError('')
     try {
       await adminRequest(target.path, token, {
         method: 'PATCH',
         body: {
-          status: target.status,
-          ...(certificateApproval ? { verification_evidence: { method, reference, notes, matched, serial_number: serialNumber, register_number: registerNumber } } : {}),
+          status: decision,
           ...(!approve ? { reason } : {}),
           ...(target.updatedAt ? { expected_updated_at: target.updatedAt } : {}),
         },
       })
-      onSuccess()
+      onSuccess(decision)
     } catch (err) {
       setError(err.message)
       if (err.status === 401) logout()
@@ -73,7 +62,7 @@ export function ReviewDialog({ target, onClose, onSuccess }) {
   }
   return (
     <Dialog
-      title={`${approve ? 'Approve' : 'Reject'} ${target.kind || 'profile'}?`}
+      title={target.chooseDecision ? 'Review technician application' : `${approve ? 'Approve' : 'Reject'} ${target.kind || 'profile'}?`}
       busy={busy}
       onClose={onClose}
     >
@@ -82,43 +71,15 @@ export function ReviewDialog({ target, onClose, onSuccess }) {
         {target.technicianId && <IdentityReviewContent technicianId={target.technicianId} onReady={setIdentityReady} />}
         <p>
           {approve
-            ? 'Confirm that you have checked the submitted identity or certificate documents.'
-            : 'Provide a reason so the technician knows what needs to be corrected.'}
+            ? 'Review and compare the submitted documents before approving the application.'
+            : 'Provide a rejection reason so the applicant knows what to correct or resubmit.'}
         </p>
-        {certificateApproval && (
-          <fieldset disabled={busy} className="certificate-verification-fields">
-            <legend>Tra cứu chứng chỉ theo số</legend>
-            <p>Nhập số hiệu hoặc số vào sổ ghi trên chứng chỉ. Tra cứu tại đúng đơn vị cấp, đối chiếu họ tên, nghề và ngày cấp rồi xác nhận kết quả.</p>
-            <p>Đơn vị cấp: <strong>{target.certificate?.issued_by || 'Chưa có'}</strong><br />
-              Người sở hữu: <strong>{target.certificate?.full_name}</strong></p>
-            <DocumentLink url={target.certificate?.document_url}>Xem chứng chỉ</DocumentLink>
-            <label>Số hiệu chứng chỉ
-              <input maxLength={100} value={serialNumber} onChange={e => { setSerialNumber(e.target.value); setMatched(false) }} />
-            </label>
-            <label>Số vào sổ cấp chứng chỉ
-              <input maxLength={100} value={registerNumber} onChange={e => { setRegisterNumber(e.target.value); setMatched(false) }} />
-            </label>
-            <small>Chỉ cần một trong hai số; có thể nhập cả hai để đối chiếu.</small>
-            <a href={`https://www.google.com/search?q=${encodeURIComponent(`${target.certificate?.issued_by || ''} tra cứu chứng chỉ ${serialNumber} ${registerNumber}`)}`} target="_blank" rel="noopener noreferrer">Tìm trang tra cứu của đơn vị cấp ↗</a>
-            <small>Đây là tìm kiếm trên Google, chưa phải kết quả xác thực. Chọn đúng website chính thức của đơn vị cấp và nhập số tại đó.</small>
-            <label>Cách xác minh
-              <select value={method} onChange={e => { setMethod(e.target.value); setMatched(false) }}>
-                <option value="OFFICIAL_LOOKUP">Tra cứu trên website đơn vị cấp</option>
-                <option value="ISSUER_CONTACT">Đơn vị cấp xác nhận (không có trang tra cứu)</option>
-              </select>
-            </label>
-            <label>{method === 'OFFICIAL_LOOKUP' ? 'Link trang tra cứu chính thức (HTTPS)' : 'Kênh liên hệ đơn vị cấp và mã phản hồi'}
-              <input required type={method === 'OFFICIAL_LOOKUP' ? 'url' : 'text'} minLength={5} maxLength={1000} value={reference} onChange={e => { setReference(e.target.value); setMatched(false) }} />
-            </label>
-            {method === 'OFFICIAL_LOOKUP' && /^https:\/\//i.test(reference.trim()) && <DocumentLink url={reference.trim()}>Mở trang tra cứu</DocumentLink>}
-            <label>Kết quả đối chiếu
-              <textarea required minLength={10} maxLength={2000} value={notes} onChange={e => { setNotes(e.target.value); setMatched(false) }} placeholder="Ghi thông tin họ tên, số hiệu/số vào sổ, nghề và ngày cấp đã đối chiếu với nguồn cấp." />
-            </label>
-            <label className="certificate-match-confirmation">
-              <input type="checkbox" required checked={matched} onChange={e => setMatched(e.target.checked)} />
-              Tôi đã đối chiếu số tra cứu, người sở hữu và thông tin chứng chỉ với nguồn cấp; kết quả khớp hồ sơ.
-            </label>
-          </fieldset>
+        {target.kind === 'certification' && target.certificate && (
+          <section>
+            <p>Issuer: <strong>{target.certificate.issued_by || 'Not provided'}</strong></p>
+            <p>Certificate number: <strong>{target.certificate.certificate_number || 'Not provided'}</strong></p>
+            <DocumentLink url={target.certificate.document_url}>View submitted certificate document</DocumentLink>
+          </section>
         )}
         {!approve && (
           <label>
@@ -138,8 +99,11 @@ export function ReviewDialog({ target, onClose, onSuccess }) {
           <button type="button" disabled={busy} onClick={onClose}>
             Cancel
           </button>
+          {target.chooseDecision && <button type="button" disabled={busy || !identityReady} className={approve ? 'danger' : ''} onClick={() => { setDecision(approve ? 'REJECTED' : 'VERIFIED'); setError('') }}>
+            {approve ? 'Reject' : 'Back'}
+          </button>}
           <button className={approve ? 'primary' : 'danger'} disabled={busy || Boolean(target.technicianId && !identityReady)}>
-            {busy ? 'Saving…' : approve ? 'Approve' : 'Reject'}
+            {busy ? 'Saving…' : approve ? 'Approve' : target.chooseDecision ? 'Confirm reject' : 'Reject'}
           </button>
         </footer>
       </form>

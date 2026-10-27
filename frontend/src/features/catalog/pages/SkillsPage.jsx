@@ -535,7 +535,7 @@ export function SkillsPage() {
                   <th scope="col">CODE</th>
                   <th scope="col">SKILL NAME</th>
                   <th scope="col">APPLICABLE SERVICE</th>
-                  <th scope="col">TECHNICIANS</th>
+                  <th scope="col" className="catalog-numeric">TECHNICIANS</th>
                   <th scope="col">STATUS</th>
                   <th scope="col" className="catalog-actions-title">
                     ACTIONS
@@ -616,7 +616,7 @@ export function SkillsPage() {
                           <small className="skill-service-inactive">Inactive service</small>
                         )}
                       </td>
-                      <td>
+                      <td className="catalog-numeric">
                         <span
                           className="skill-technician-count"
                           title={`${row.technician_count} assigned technicians`}

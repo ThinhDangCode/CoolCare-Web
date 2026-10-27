@@ -1,0 +1,115 @@
+/* Shared alignment for all five service-catalog tables. Codes remain text. */
+.dashboard-main table:is(.catalog-resource-table, .skill-table, .models-table) {
+  width: 100%;
+  table-layout: fixed;
+}
+.dashboard-main table:is(.catalog-resource-table, .skill-table, .models-table) :is(th, td) {
+  padding: 16px;
+  text-align: left;
+  vertical-align: middle;
+}
+.dashboard-main table:is(.catalog-resource-table, .skill-table, .models-table) th {
+  white-space: nowrap;
+}
+.dashboard-main table:is(.catalog-resource-table, .skill-table, .models-table) td {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.dashboard-main table:is(.catalog-resource-table, .skill-table, .models-table) .catalog-numeric {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.dashboard-main table:is(.catalog-resource-table, .skill-table, .models-table) .catalog-row-actions {
+  justify-content: flex-start;
+}
+.dashboard-main table.catalog-resource-table { min-width: 1000px; }
+.dashboard-main table.catalog-resource-services { min-width: 0; }
+.dashboard-main .catalog-resource-table th:nth-child(1) { width: 5%; }
+.dashboard-main .catalog-resource-table th:nth-child(2) { width: 23%; }
+.dashboard-main .catalog-resource-table th:nth-child(3) { width: 28%; }
+.dashboard-main .catalog-resource-table th:nth-child(4) { width: 10%; }
+.dashboard-main .catalog-resource-table th:nth-child(5) { width: 12%; }
+.dashboard-main .catalog-resource-table th:nth-child(6) { width: 12%; }
+.dashboard-main .catalog-resource-table th:nth-child(7) { width: 10%; }
+.dashboard-main .catalog-resource-services th:nth-child(2) { width: 20%; }
+.dashboard-main .catalog-resource-services th:nth-child(3) { width: 14%; }
+.dashboard-main .catalog-resource-services th:nth-child(4) { width: 12%; }
+.dashboard-main .catalog-resource-services th:nth-child(5) { width: 9%; }
+.dashboard-main .catalog-resource-services th:nth-child(6) { width: 11%; }
+.dashboard-main .catalog-resource-services th:nth-child(7) { width: 9%; }
+.dashboard-main .catalog-resource-services th:nth-child(8) { width: 10%; }
+.dashboard-main .catalog-resource-services th:nth-child(9) { width: 10%; }
+.dashboard-main table.catalog-resource-services :is(th, td) {
+  box-sizing: border-box;
+  padding: 16px 12px;
+}
+.dashboard-main table.catalog-resource-services th {
+  white-space: normal;
+  overflow-wrap: normal;
+  letter-spacing: 0;
+}
+.dashboard-main table.catalog-resource-services :is(th, td):first-child { padding-left: 12px; }
+.dashboard-main table.catalog-resource-services :is(th, td):last-child { padding-right: 12px; }
+.dashboard-main table.catalog-resource-services .catalog-name { min-width: 0; }
+.dashboard-main table.catalog-resource-services .catalog-row-actions { gap: 2px; }
+.dashboard-main table.catalog-resource-services .catalog-row-actions button {
+  width: 26px;
+  height: 30px;
+  flex-basis: 26px;
+  padding: 4px;
+}
+@media (max-width: 700px) {
+  .dashboard-main table.catalog-resource-services { min-width: 960px; }
+}
+.dashboard-main table.models-table { min-width: 0; }
+.dashboard-main .models-table th:nth-child(1) { width: 13%; }
+.dashboard-main .models-table th:nth-child(2) { width: 24%; }
+.dashboard-main .models-table th:nth-child(3) { width: 18%; }
+.dashboard-main .models-table th:nth-child(4) { width: 19%; }
+.dashboard-main .models-table th:nth-child(5) { width: 12%; }
+.dashboard-main .models-table th:nth-child(6) { width: 14%; }
+.dashboard-main table.models-table :is(th, td):first-child { padding-left: 24px; }
+.dashboard-main table.models-table :is(th, td):last-child { padding-right: 24px; text-align: right; }
+.dashboard-main table.models-table .catalog-row-actions { justify-content: flex-end; }
+@media (max-width: 700px) {
+  .dashboard-main table.models-table { min-width: 900px; }
+}
+.dashboard-main table.skill-table { min-width: 1100px; }
+.dashboard-main .skill-table th:nth-child(1) { width: 16%; }
+.dashboard-main .skill-table th:nth-child(2) { width: 26%; }
+.dashboard-main .skill-table th:nth-child(3) { width: 25%; }
+.dashboard-main .skill-table th:nth-child(4) { width: 11%; }
+.dashboard-main .skill-table th:nth-child(5) { width: 10%; }
+.dashboard-main .skill-table th:nth-child(6) { width: 12%; }
+
+/* Match the outer table gutters and keep actions clear of the card edge. */
+.dashboard-main table.catalog-resource-categories { min-width: 1100px; }
+.dashboard-main .catalog-resource-categories th:nth-child(1) { width: 6%; }
+.dashboard-main .catalog-resource-categories th:nth-child(2) { width: 23%; }
+.dashboard-main .catalog-resource-categories th:nth-child(3) { width: 27%; }
+.dashboard-main .catalog-resource-categories th:nth-child(4) { width: 10%; }
+.dashboard-main .catalog-resource-categories th:nth-child(5) { width: 10%; }
+.dashboard-main .catalog-resource-categories th:nth-child(6) { width: 12%; }
+.dashboard-main .catalog-resource-categories th:nth-child(7) { width: 12%; }
+.dashboard-main table.catalog-resource-categories :is(th, td):first-child { padding-left: 24px; }
+.dashboard-main table.catalog-resource-categories :is(th, td):last-child {
+  padding-right: 24px;
+  text-align: right;
+}
+.dashboard-main table.catalog-resource-categories .catalog-row-actions { justify-content: flex-end; }
+
+.dashboard-main table.catalog-resource-brands { min-width: 0; }
+.dashboard-main .catalog-resource-brands th:nth-child(1) { width: 6%; }
+.dashboard-main .catalog-resource-brands th:nth-child(2) { width: 16%; }
+.dashboard-main .catalog-resource-brands th:nth-child(3) { width: 30%; }
+.dashboard-main .catalog-resource-brands th:nth-child(4) { width: 10%; }
+.dashboard-main .catalog-resource-brands th:nth-child(5) { width: 12%; }
+.dashboard-main .catalog-resource-brands th:nth-child(6) { width: 14%; }
+.dashboard-main .catalog-resource-brands th:nth-child(7) { width: 12%; }
+.dashboard-main table.catalog-resource-brands :is(th, td):first-child { padding-left: 24px; }
+.dashboard-main table.catalog-resource-brands :is(th, td):last-child { padding-right: 24px; text-align: right; }
+.dashboard-main table.catalog-resource-brands .catalog-row-actions { justify-content: flex-end; }
+@media (max-width: 700px) {
+  .dashboard-main table.catalog-resource-brands { min-width: 900px; }
+}

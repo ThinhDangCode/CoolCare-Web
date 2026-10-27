@@ -21,7 +21,7 @@ const types = {
   RULE_VIOLATION: 'Rule violation',
 }
 const statuses = {
-  ALL: 'All',
+  ALL: 'All statuses',
   ACTIVE: 'Active',
   EXPIRED: 'Expired',
   REVOKED: 'Revoked',
@@ -30,7 +30,7 @@ export function PenaltiesPage() {
   const { token, logout } = useAuth()
   const [search, setSearch] = useState('')
   const [keyword, setKeyword] = useState('')
-  const [status, setStatus] = useState('ACTIVE')
+  const [status, setStatus] = useState('ALL')
   const [type, setType] = useState('ALL')
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState(10)
@@ -149,8 +149,8 @@ export function PenaltiesPage() {
                 <th>TECHNICIAN</th>
                 <th>VIOLATION &amp; REASON</th>
                 <th>REFERENCE</th>
-                <th>DEDUCTION</th>
-                <th>APPLIED / EXPIRES</th>
+                <th className="penalty-numeric">DEDUCTION</th>
+                <th className="penalty-numeric">APPLIED / EXPIRES</th>
                 <th>STATUS</th>
                 <th>ACTION</th>
               </tr>
@@ -208,7 +208,7 @@ export function PenaltiesPage() {
                         {row.booking_code || 'No linked booking'}
                       </small>
                     </td>
-                    <td>
+                    <td className="penalty-numeric">
                       <span
                         className="penalty-points"
                         aria-label={`${row.penalty_points} points deducted`}
@@ -219,7 +219,7 @@ export function PenaltiesPage() {
                         {row.remaining_points ?? 12} / 12 left
                       </small>
                     </td>
-                    <td className="penalty-dates">
+                    <td className={`penalty-dates ${row.applied_at ? 'penalty-numeric' : ''}`}>
                       <span>{formatDate(row.applied_at)}</span>
                       <small className="technician-muted">
                         {row.expires_at ? 'Until ' + formatDate(row.expires_at) : 'No expiry'}

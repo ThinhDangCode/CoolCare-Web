@@ -29,8 +29,10 @@ export function CatalogTrashButton({ kind, row, onChanged }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const name = row.name || row.model_name
+  const categoryInUse = kind === 'categories' && Number(row.service_count) > 0
+  const brandInUse = kind === 'brands' && Number(row.model_count) > 0
   async function remove() {
-    if (busy) return
+    if (busy || categoryInUse || brandInUse) return
     setBusy(true)
     setError('')
     try {
@@ -61,7 +63,7 @@ export function CatalogTrashButton({ kind, row, onChanged }) {
       {open &&
         createPortal(
           <Modal
-            title="Move to trash?"
+            title={categoryInUse ? 'Category still contains services' : brandInUse ? 'Brand still contains models' : 'Move to trash?'}
             icon={<TrashIcon />}
             onClose={() => setOpen(false)}
             busy={busy}
@@ -73,6 +75,18 @@ export function CatalogTrashButton({ kind, row, onChanged }) {
               <p>
                 You can restore this item from Trash. Existing bookings and history are preserved.
               </p>
+              {kind === 'categories' && <p>
+                A category can only be moved to Trash after all its services, including inactive services,
+                have been moved to another category or to Trash. To temporarily hide the entire category,
+                set its status to Inactive in Edit.
+              </p>}
+              {categoryInUse && <p role="alert">This category has {row.service_count} service(s). Move or trash those services first.</p>}
+              {kind === 'brands' && <p>
+                A brand can only be moved to Trash after all its models, including inactive models,
+                have been moved to another brand or to Trash. To temporarily hide the brand,
+                set its status to Inactive in Edit.
+              </p>}
+              {brandInUse && <p role="alert">This brand has {row.model_count} model(s). Move or trash those models first.</p>}
               {error && (
                 <div className="catalog-error" role="alert">
                   {error}
@@ -91,7 +105,7 @@ export function CatalogTrashButton({ kind, row, onChanged }) {
               <button
                 type="button"
                 className="catalog-button danger"
-                disabled={busy}
+                disabled={busy || categoryInUse || brandInUse}
                 onClick={remove}
               >
                 {busy ? 'Moving...' : 'Move to trash'}

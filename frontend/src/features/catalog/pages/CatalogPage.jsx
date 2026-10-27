@@ -236,33 +236,33 @@ export function CatalogPage() {
             </Link>
           </div>
           <div className="catalog-table-scroll">
-            <table className="catalog-table">
+            <table className={`catalog-table catalog-resource-table catalog-resource-${kind}`}>
               <thead>
                 <tr>
-                  <th>#</th>
+                  <th className="catalog-numeric">ID</th>
                   <th>{kind === 'brands' ? 'BRAND NAME' : 'NAME'}</th>
                   {kind === 'services' ? (
                     <>
                       <th>CATEGORY</th>
-                      <th>BASE PRICE</th>
-                      <th>DURATION</th>
-                      <th>MAINTENANCE</th>
+                      <th className="catalog-numeric">BASE PRICE</th>
+                      <th className="catalog-numeric">DURATION</th>
+                      <th className="catalog-numeric">MAINTENANCE</th>
                     </>
                   ) : (
                     <>
                       <th>DESCRIPTION</th>
-                      <th>{kind === 'brands' ? 'MODELS' : 'SERVICES'}</th>
+                      <th className="catalog-numeric">{kind === 'brands' ? 'MODELS' : 'SERVICES'}</th>
                     </>
                   )}
                   <th>STATUS</th>
-                  <th>UPDATED</th>
+                  <th className="catalog-numeric">UPDATED</th>
                   <th className="catalog-actions-title">ACTIONS</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={kind === 'services' ? 10 : 8}>
+                    <td colSpan={kind === 'services' ? 9 : 7}>
                       <div className="catalog-state" role="status">
                         <span className="catalog-spinner" /> Loading catalog…
                       </div>
@@ -270,13 +270,13 @@ export function CatalogPage() {
                   </tr>
                 ) : error ? (
                   <tr>
-                    <td colSpan={10}>
+                    <td colSpan={kind === 'services' ? 9 : 7}>
                       <div className="catalog-state">Không thể tải dữ liệu.</div>
                     </td>
                   </tr>
                 ) : !result.items.length ? (
                   <tr>
-                    <td colSpan={10}>
+                    <td colSpan={kind === 'services' ? 9 : 7}>
                       <div className="catalog-state">
                         <span className="catalog-empty-icon">{config.icon}</span>
                         <strong>No {config.title.toLowerCase()} found</strong>
@@ -291,7 +291,7 @@ export function CatalogPage() {
                 ) : (
                   result.items.map((row, index) => (
                     <tr key={row.id}>
-                      <td className="catalog-index">
+                      <td className="catalog-index catalog-numeric">
                         {String((page - 1) * 10 + index + 1).padStart(2, '0')}
                       </td>
                       <td>
@@ -307,9 +307,9 @@ export function CatalogPage() {
                       {kind === 'services' ? (
                         <>
                           <td>{row.category_name}</td>
-                          <td className="catalog-price">{money(row.base_price)}</td>
-                          <td>{row.estimated_duration ? `${row.estimated_duration} min` : '—'}</td>
-                          <td>
+                          <td className="catalog-price catalog-numeric">{money(row.base_price)}</td>
+                          <td className="catalog-numeric">{row.estimated_duration ? `${row.estimated_duration} min` : '—'}</td>
+                          <td className="catalog-numeric">
                             {row.maintenance_interval_days
                               ? `${row.maintenance_interval_days} days`
                               : '—'}
@@ -320,7 +320,7 @@ export function CatalogPage() {
                           <td className="catalog-description" title={row.description}>
                             {row.description || '—'}
                           </td>
-                          <td>
+                          <td className="catalog-numeric">
                             <span className="catalog-number">
                               {kind === 'brands' ? row.model_count : row.service_count}
                             </span>
@@ -333,7 +333,7 @@ export function CatalogPage() {
                           {row.is_active ? 'Active' : 'Inactive'}
                         </span>
                       </td>
-                      <td className="catalog-date">{date(row.updated_at)}</td>
+                      <td className="catalog-date catalog-numeric">{date(row.updated_at)}</td>
                       <td>
                         <div className="catalog-row-actions">
                           <button

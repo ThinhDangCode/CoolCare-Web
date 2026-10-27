@@ -81,7 +81,9 @@ export function validateInput(kind, body, partial = false) {
         value.trim().length > (kind === 'services' ? 150 : 100)
       )
         errors[key] = 'Tên không được trống hoặc vượt quá độ dài cho phép.'
-      else if (!/\p{L}/u.test(value) || !/^[\p{L}\p{M} &'’()./-]+$/u.test(value.trim()))
+      else if (key === 'model_name' && (!/[\p{L}0-9]/u.test(value) || !/^[\p{L}\p{M}0-9 &'’()./_-]+$/u.test(value.trim())))
+        errors[key] = 'Use letters, numbers, spaces and standard model separators.'
+      else if (key !== 'model_name' && (!/\p{L}/u.test(value) || !/^[\p{L}\p{M} &'’()./-]+$/u.test(value.trim())))
         errors[key] = 'Use letters and spaces; numbers and special symbols are not allowed.'
       else value = value.trim()
     } else if (key === 'description' || key === 'image_url') {
