@@ -16,7 +16,8 @@ const certificateColumns = `c.id,c.technician_id,c.certificate_name,c.certificat
   to_char(c.issued_date,'YYYY-MM-DD') AS issued_date,
   to_char(c.expiry_date,'YYYY-MM-DD') AS expiry_date,c.document_url,c.verification_status,
   c.reviewed_at,c.rejection_reason,c.updated_at,
-  CASE WHEN c.verification_status <> 'VERIFIED' THEN c.verification_status
+  CASE WHEN c.verification_status = 'PENDING' THEN 'PENDING'
+       WHEN c.verification_status = 'REJECTED' THEN 'REJECTED'
        WHEN c.expiry_date < CURRENT_DATE THEN 'EXPIRED'
        WHEN c.expiry_date <= CURRENT_DATE + 30 THEN 'EXPIRING'
        ELSE 'VERIFIED' END AS status`
