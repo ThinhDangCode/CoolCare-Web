@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '../../../shared/context/AuthContext.jsx'
 import { adminRequest } from '../../../shared/api/adminApi.js'
 import './technicianActions.css'
-import { TechnicianNotification } from './TechnicianShared.jsx'
+import { DocumentLink, TechnicianNotification } from './TechnicianShared.jsx'
 import { IdentityReviewContent } from './IdentityReviewContent.jsx'
 import {
   localProfilePhone,
@@ -73,6 +73,13 @@ export function ReviewDialog({ target, onClose, onSuccess }) {
             ? 'Confirm that you have checked the submitted identity or certificate documents.'
             : 'Provide a reason so the technician knows what needs to be corrected.'}
         </p>
+        {target.kind === 'certification' && target.certificate && (
+          <section>
+            <p>Issuer: <strong>{target.certificate.issued_by || 'Not provided'}</strong></p>
+            <p>Certificate number: <strong>{target.certificate.certificate_number || 'Not provided'}</strong></p>
+            <DocumentLink url={target.certificate.document_url}>View submitted certificate document</DocumentLink>
+          </section>
+        )}
         {!approve && (
           <label>
             Rejection reason

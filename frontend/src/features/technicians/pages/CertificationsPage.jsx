@@ -94,6 +94,13 @@ function CertificateDialog({ certificate, onClose }) {
       {certificate.rejection_reason && (
         <p className="certification-reason">{certificate.rejection_reason}</p>
       )}
+      <section className="certificate-document-review">
+        <h3>{t('Submitted certificate document')}</h3>
+        <DocumentLink url={certificate.document_url}>{t('Open certificate document')}</DocumentLink>
+        {safeDocumentUrl(certificate.document_url) && /\.(png|jpe?g|webp|gif)([?#].*)?$/i.test(certificate.document_url) && (
+          <img src={safeDocumentUrl(certificate.document_url)} alt={t('Submitted certificate document')} />
+        )}
+      </section>
       <footer>
         <DocumentLink url={certificate.document_url} />
         <button onClick={onClose}>{t('Close')}</button>

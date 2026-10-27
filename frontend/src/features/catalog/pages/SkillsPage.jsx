@@ -614,7 +614,7 @@ export function SkillsPage() {
                           <small className="skill-service-inactive">{t('Inactive service')}</small>
                         )}
                       </td>
-                      <td>
+                      <td className="catalog-numeric">
                         <span
                           className="skill-technician-count"
                           title={`${row.technician_count} assigned technicians`}

@@ -52,65 +52,65 @@
 .penalty-toolbar .technician-filter span {
   font-size: 12px;
 }
-.penalty-table table {
-  min-width: 1100px;
+.penalty-page .penalty-table table {
+  min-width: 1180px;
   table-layout: fixed;
   width: 100%;
 }
-.penalty-table th:nth-child(1) {
+.penalty-page .penalty-table th:nth-child(1) {
+  width: 21%;
+}
+.penalty-page .penalty-table th:nth-child(2) {
   width: 22%;
 }
-.penalty-table th:nth-child(2) {
-  width: 25%;
+.penalty-page .penalty-table th:nth-child(3) {
+  width: 12%;
 }
-.penalty-table th:nth-child(3) {
-  width: 15%;
+.penalty-page .penalty-table th:nth-child(4) {
+  width: 12%;
 }
-.penalty-table th:nth-child(4) {
-  width: 10%;
+.penalty-page .penalty-table th:nth-child(5) {
+  width: 16%;
 }
-.penalty-table th:nth-child(5) {
-  width: 13%;
-}
-.penalty-table th:nth-child(6) {
+.penalty-page .penalty-table th:nth-child(6) {
   width: 9%;
 }
-.penalty-table th:nth-child(7) {
-  width: 6%;
+.penalty-page .penalty-table th:nth-child(7) {
+  width: 8%;
 }
-.penalty-table th,
-.penalty-table td {
+.penalty-page .penalty-table th,
+.penalty-page .penalty-table td {
   padding: 18px 16px;
   vertical-align: middle;
 }
-.penalty-table th {
+.penalty-page .penalty-table th {
   background: #f7f9fc;
   color: #52637a;
   white-space: nowrap;
 }
-.penalty-table .technician-person {
+.penalty-page .penalty-table .technician-person {
   gap: 12px;
   min-width: 0;
 }
-.penalty-table .technician-person > span {
+.penalty-page .penalty-table .technician-person > span {
   min-width: 0;
 }
-.penalty-table .technician-person > :first-child {
+.penalty-page .penalty-table .technician-person > :first-child {
   flex-shrink: 0;
 }
-.penalty-table .technician-person small {
+.penalty-page .penalty-table .technician-person small {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.penalty-table th {
+.penalty-page .penalty-table th {
   font-size: 12px;
 }
-.penalty-table td,
-.penalty-table td strong {
+.penalty-page .penalty-table td,
+.penalty-page .penalty-table td strong {
   font-size: 14px;
 }
-.penalty-table .technician-person strong {
+.penalty-page .penalty-table .technician-person strong {
   white-space: normal;
   overflow-wrap: normal;
   word-break: normal;
@@ -243,3 +243,10 @@
     flex-wrap: wrap;
   }
 }
+
+.penalty-page .penalty-table th,
+.penalty-page .penalty-table td { text-align: left; overflow-wrap: anywhere; }
+.penalty-page .penalty-table .penalty-numeric { text-align: right; font-variant-numeric: tabular-nums; }
+.penalty-page .penalty-table .penalty-numeric > small { display: block; margin-top: 5px; }
+.penalty-page .penalty-table .penalty-points { white-space: nowrap; }
+.penalty-page .penalty-table .penalty-reference { line-height: 1.6; }
