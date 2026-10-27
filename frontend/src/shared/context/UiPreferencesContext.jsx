@@ -236,7 +236,6 @@ const messages = {
     Profile: 'Hồ sơ',
     'Change password': 'Đổi mật khẩu',
     'MAIN NAVIGATION': 'ĐIỀU HƯỚNG CHÍNH',
-    'Fleet Director': 'Giám đốc vận hành',
     'Loading data…': 'Đang tải dữ liệu…',
     'Unable to load data': 'Không thể tải dữ liệu',
     'Try again': 'Thử lại',
