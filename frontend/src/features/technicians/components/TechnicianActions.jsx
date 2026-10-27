@@ -3,7 +3,7 @@ import { useAuth } from '../../../shared/context/AuthContext.jsx'
 import { useUiPreferences } from '../../../shared/context/UiPreferencesContext.jsx'
 import { adminRequest } from '../../../shared/api/adminApi.js'
 import './technicianActions.css'
-import { DocumentLink, TechnicianNotification } from './TechnicianShared.jsx'
+import { TechnicianNotification } from './TechnicianShared.jsx'
 import { IdentityReviewContent } from './IdentityReviewContent.jsx'
 import {
   localProfilePhone,
@@ -37,7 +37,8 @@ export function ReviewDialog({ target, onClose, onSuccess }) {
   const [reason, setReason] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
-  const approve = target.status === 'VERIFIED'
+  const [decision, setDecision] = useState(target.status || 'VERIFIED')
+  const approve = decision === 'VERIFIED'
   const [identityReady, setIdentityReady] = useState(false)
   async function submit(event) {
     event.preventDefault()
@@ -48,12 +49,12 @@ export function ReviewDialog({ target, onClose, onSuccess }) {
       await adminRequest(target.path, token, {
         method: 'PATCH',
         body: {
-          status: target.status,
+          status: decision,
           ...(!approve ? { reason } : {}),
           ...(target.updatedAt ? { expected_updated_at: target.updatedAt } : {}),
         },
       })
-      onSuccess()
+      onSuccess(decision)
     } catch (err) {
       setError(err.message)
       if (err.status === 401) logout()
@@ -63,7 +64,9 @@ export function ReviewDialog({ target, onClose, onSuccess }) {
   }
   return (
     <Dialog
-      title={t(approve ? 'Approve {kind}?' : 'Reject {kind}?', { kind: t(target.kind || 'profile') })}
+      title={target.chooseDecision
+        ? t('Review technician application')
+        : t(approve ? 'Approve {kind}?' : 'Reject {kind}?', { kind: t(target.kind || 'profile') })}
       busy={busy}
       onClose={onClose}
     >
@@ -75,13 +78,6 @@ export function ReviewDialog({ target, onClose, onSuccess }) {
             ? t('Confirm that you have checked the submitted identity or certificate documents.')
             : t('Provide a reason so the technician knows what needs to be corrected.')}
         </p>
-        {target.kind === 'certification' && target.certificate && (
-          <section>
-            <p>{t('Issuer')}: <strong>{target.certificate.issued_by || t('Not provided')}</strong></p>
-            <p>{t('Certificate number')}: <strong>{target.certificate.certificate_number || t('Not provided')}</strong></p>
-            <DocumentLink url={target.certificate.document_url}>{t('Open certificate document')}</DocumentLink>
-          </section>
-        )}
         {!approve && (
           <label>
             {t('Rejection reason')}
@@ -100,8 +96,21 @@ export function ReviewDialog({ target, onClose, onSuccess }) {
           <button type="button" disabled={busy} onClick={onClose}>
             {t('Cancel')}
           </button>
+          {target.chooseDecision && (
+            <button
+              type="button"
+              disabled={busy || !identityReady}
+              className={approve ? 'danger' : ''}
+              onClick={() => {
+                setDecision(approve ? 'REJECTED' : 'VERIFIED')
+                setError('')
+              }}
+            >
+              {t(approve ? 'Reject' : 'Back')}
+            </button>
+          )}
           <button className={approve ? 'primary' : 'danger'} disabled={busy || Boolean(target.technicianId && !identityReady)}>
-            {busy ? t('Saving…') : t(approve ? 'Approve' : 'Reject')}
+            {busy ? t('Saving…') : t(approve ? 'Approve' : target.chooseDecision ? 'Confirm reject' : 'Reject')}
           </button>
         </footer>
       </form>

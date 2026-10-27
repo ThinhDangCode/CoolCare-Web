@@ -616,6 +616,9 @@ const messages = {
     'Loading…': 'Đang tải…',
     'Approve {kind}?': 'Phê duyệt {kind}?',
     'Reject {kind}?': 'Từ chối {kind}?',
+    'Review technician application': 'Xét duyệt hồ sơ kỹ thuật viên',
+    'Confirm reject': 'Xác nhận từ chối',
+    Back: 'Quay lại',
     profile: 'hồ sơ',
     certificate: 'chứng chỉ',
     certification: 'chứng chỉ',
@@ -841,6 +844,13 @@ const messages = {
     'Reject certification': 'Từ chối chứng chỉ',
     'Open document': 'Mở tài liệu',
     'Open certificate document': 'Mở tài liệu chứng chỉ',
+    'Review the information and submitted document before approving or rejecting.':
+      'Kiểm tra thông tin và tài liệu đã nộp trước khi phê duyệt hoặc từ chối.',
+    'Enter a rejection reason containing at least 5 characters.':
+      'Nhập lý do từ chối có ít nhất 5 ký tự.',
+    'Cancel rejection': 'Hủy từ chối',
+    'Certification approved.': 'Đã phê duyệt chứng chỉ.',
+    'Certification rejected.': 'Đã từ chối chứng chỉ.',
     'Technician Application': 'Hồ sơ kỹ thuật viên',
     'Review the application and submitted documents': 'Xem xét hồ sơ và giấy tờ đã nộp',
     'Reject Application': 'Từ chối hồ sơ',
