@@ -28,17 +28,34 @@ export class AuthService {
     this.repository = repository
     this.emailSender = emailSender
     this.googleTokenVerifier = googleTokenVerifier
+    this.socketServer = null
   }
 
-  createAccessToken(user) {
+  setSocketServer(io) {
+    this.socketServer = io
+  }
+
+  createAccessToken(user, sessionId) {
     const tokenOptions = {
       subject: user.id,
-      jwtid: randomUUID(),
+      jwtid: sessionId,
     }
 
     if (user.role !== 'CUSTOMER') tokenOptions.expiresIn = env.jwtExpiresIn
 
     return jwt.sign({ role: user.role, purpose: 'access' }, env.jwtSecret, tokenOptions)
+  }
+
+  async startSession(user) {
+    const sessionId = await this.repository.startSession(user.id)
+    if (!sessionId) throw new AppError(404, 'PROFILE_NOT_FOUND', 'Không tìm thấy hồ sơ.')
+    this.socketServer?.to(`user:${user.id}`).emit('session:replaced')
+    this.socketServer?.in(`user:${user.id}`).disconnectSockets(true)
+    return { token: this.createAccessToken(user, sessionId), user: publicUser(user) }
+  }
+
+  async endSession(userId, sessionId) {
+    if (sessionId) await this.repository.endSession(userId, sessionId)
   }
 
   ensureEmailDelivery() {
@@ -111,8 +128,7 @@ export class AuthService {
       throw new AppError(401, 'INVALID_CREDENTIALS', 'Email hoặc mật khẩu không đúng.')
     }
 
-    await this.repository.updateLastLogin(user.id)
-    return { token: this.createAccessToken(user), user: publicUser(user) }
+    return this.startSession(user)
   }
 
   async getProfile(userId) {
@@ -129,10 +145,14 @@ export class AuthService {
     return publicUser(await this.repository.updateAvatar(userId, avatarUrl))
   }
 
-  async refreshSession(userId) {
+  async refreshSession(userId, sessionId) {
     const user = await this.repository.findUserById(userId)
     if (!user) throw new AppError(404, 'PROFILE_NOT_FOUND', 'Không tìm thấy hồ sơ.')
-    return { token: this.createAccessToken(user), user: publicUser(user) }
+    if (!sessionId) return this.startSession(user)
+    if (!(await this.repository.isCurrentSession(userId, sessionId))) {
+      throw new AppError(401, 'SESSION_REPLACED', 'Tài khoản đã đăng nhập trên thiết bị khác.')
+    }
+    return { token: this.createAccessToken(user, sessionId), user: publicUser(user) }
   }
 
   async changePassword(userId, { currentPassword, newPassword }) {
@@ -157,8 +177,7 @@ export class AuthService {
     if (user.status !== 'ACTIVE') {
       throw new AppError(403, 'ACCOUNT_UNAVAILABLE', 'Tài khoản hiện không thể đăng nhập.')
     }
-    await this.repository.updateLastLogin(user.id)
-    return { token: this.createAccessToken(user), user: publicUser(user) }
+    return this.startSession(user)
   }
 
   async requestPasswordReset({ email }) {
@@ -233,8 +252,7 @@ export class AuthService {
     if (result.user.status !== 'ACTIVE') {
       throw new AppError(403, 'ACCOUNT_UNAVAILABLE', 'Tài khoản hiện không thể đăng nhập.')
     }
-    await this.repository.updateLastLogin(result.user.id)
-    return { token: this.createAccessToken(result.user), user: publicUser(result.user) }
+    return this.startSession(result.user)
   }
 
   async verifyPasswordResetOtp({ email, otp }) {

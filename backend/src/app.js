@@ -78,6 +78,10 @@ const authService = new AuthService({
 })
 const authController = new AuthController(authService)
 
+export function setAuthSocketServer(io) {
+  authService.setSocketServer(io)
+}
+
 // ADDRESS
 const addressRepository = new AddressRepository()
 const addressService = new AddressService(addressRepository)

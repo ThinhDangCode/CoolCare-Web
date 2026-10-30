@@ -41,8 +41,35 @@ export class AuthRepository {
     return result.rows[0] ?? null
   }
 
-  async updateLastLogin(userId) {
-    await pool.query('UPDATE users SET last_login_at = CURRENT_TIMESTAMP WHERE id = $1', [userId])
+  async startSession(userId) {
+    const result = await pool.query(
+      `UPDATE users
+       SET last_login_at = GREATEST(
+         clock_timestamp(),
+         COALESCE(last_login_at + interval '1 microsecond', '-infinity'::timestamptz)
+       )
+       WHERE id = $1
+       RETURNING EXTRACT(EPOCH FROM last_login_at)::text AS session_id`,
+      [userId]
+    )
+    return result.rows[0]?.session_id ?? null
+  }
+
+  async isCurrentSession(userId, sessionId) {
+    const result = await pool.query(
+      'SELECT 1 FROM users WHERE id = $1 AND EXTRACT(EPOCH FROM last_login_at)::text = $2',
+      [userId, sessionId]
+    )
+    return result.rows.length > 0
+  }
+
+  async endSession(userId, sessionId) {
+    await pool.query(
+      `UPDATE users
+       SET last_login_at = GREATEST(clock_timestamp(), last_login_at + interval '1 microsecond')
+       WHERE id = $1 AND EXTRACT(EPOCH FROM last_login_at)::text = $2`,
+      [userId, sessionId]
+    )
   }
 
   async updateProfile(userId, { fullName, phone, dateOfBirth, gender }) {

@@ -1,6 +1,6 @@
 import { createServer } from 'node:http'
 import { Server } from 'socket.io'
-import { app } from './app.js'
+import { app, setAuthSocketServer } from './app.js'
 import { pool, verifyDatabaseConnection } from './config/database.js'
 import { env, validateRuntimeEnv } from './config/env.js'
 import { configureChatSocket } from './modules/chat/chat.socket.js'
@@ -30,6 +30,7 @@ async function start() {
     },
   })
   setChatIo(io)
+  setAuthSocketServer(io)
   configureChatSocket(io)
   const server = httpServer.listen(env.port, '0.0.0.0', () => {
     console.info(`CoolCare API is running at http://localhost:${env.port}`)

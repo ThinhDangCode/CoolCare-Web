@@ -15,6 +15,32 @@ export function verifyAccessToken(token) {
   }
 }
 
+export async function assertActiveSession(payload, db = pool) {
+  // Legacy test tokens without jti retain their existing behavior. Tokens
+  // issued by AuthService carry the login timestamp in jti.
+  if (!payload.jti) {
+    if (payload.role !== 'TECHNICIAN') return
+    const { rows } = await db.query('SELECT status FROM users WHERE id=$1', [payload.sub])
+    if (!rows[0] || rows[0].status !== 'ACTIVE') {
+      throw new AppError(403, 'ACCOUNT_UNAVAILABLE', 'This technician account is locked or inactive.')
+    }
+    return
+  }
+
+  const { rows } = await db.query(
+    'SELECT EXTRACT(EPOCH FROM last_login_at)::text AS session_id, status FROM users WHERE id=$1',
+    [payload.sub]
+  )
+  const user = rows[0]
+  if (!user) throw new AppError(401, 'INVALID_TOKEN', 'Phiên đăng nhập không hợp lệ.')
+  if (user.session_id !== payload.jti) {
+    throw new AppError(401, 'SESSION_REPLACED', 'Tài khoản đã đăng nhập trên thiết bị khác.')
+  }
+  if (payload.role === 'TECHNICIAN' && user.status !== 'ACTIVE') {
+    throw new AppError(403, 'ACCOUNT_UNAVAILABLE', 'This technician account is locked or inactive.')
+  }
+}
+
 export async function authenticate(request, _response, next) {
   const [scheme, token] = request.get('authorization')?.split(' ') ?? []
   if (scheme !== 'Bearer' || !token) {
@@ -26,20 +52,17 @@ export async function authenticate(request, _response, next) {
     if (payload.purpose !== 'access' || !payload.sub || !payload.role) {
       throw new Error('Invalid access token payload')
     }
-    request.auth = {
-      userId: payload.sub,
-      role: payload.role,
-      tokenId: payload.jti,
-    }
+    request.auth = { userId: payload.sub, role: payload.role, tokenId: payload.jti }
   } catch {
     return next(new AppError(401, 'INVALID_TOKEN', 'Phiên đăng nhập không hợp lệ hoặc đã hết hạn.'))
   }
-  if (request.auth.role === 'TECHNICIAN') {
-    try {
-      const user = (await pool.query('SELECT status FROM users WHERE id=$1', [request.auth.userId])).rows[0]
-      if (!user || user.status !== 'ACTIVE') return next(new AppError(403, 'ACCOUNT_UNAVAILABLE', 'This technician account is locked or inactive.'))
-    } catch (error) { return next(error) }
-  }
+  try {
+    await assertActiveSession({
+      sub: request.auth.userId,
+      role: request.auth.role,
+      jti: request.auth.tokenId,
+    })
+  } catch (error) { return next(error) }
   next()
 }
 

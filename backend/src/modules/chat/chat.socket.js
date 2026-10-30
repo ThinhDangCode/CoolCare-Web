@@ -1,4 +1,4 @@
-import { verifyAccessToken } from '../../middleware/authenticate.js'
+import { assertActiveSession, verifyAccessToken } from '../../middleware/authenticate.js'
 import { pool } from '../../config/database.js'
 import { ChatService } from './chat.service.js'
 
@@ -15,14 +15,11 @@ export function configureChatSocket(io, { db = pool } = {}) {
       if (payload.purpose !== 'access' || !payload.sub || !payload.role) {
         return next(new Error('INVALID_TOKEN'))
       }
-      if (payload.role === 'TECHNICIAN') {
-        const { rows } = await db.query('SELECT status FROM users WHERE id=$1', [payload.sub])
-        if (!rows[0] || rows[0].status !== 'ACTIVE') return next(new Error('ACCOUNT_UNAVAILABLE'))
-      }
-      socket.data.auth = { userId: payload.sub, role: payload.role }
+      await assertActiveSession(payload, db)
+      socket.data.auth = { userId: payload.sub, role: payload.role, sessionId: payload.jti }
       next()
-    } catch {
-      next(new Error('INVALID_TOKEN'))
+    } catch (error) {
+      next(new Error(error.code || 'INVALID_TOKEN'))
     }
   })
 
