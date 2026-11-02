@@ -1,3 +1,4 @@
+import { stripeWithdrawalRouter, stripeWebhook } from './modules/stripe-withdrawals/routes.js'
 import cors from 'cors'
 import express from 'express'
 import { pool } from './config/database.js'
@@ -125,6 +126,8 @@ app.use(
   })
 )
 
+app.get('/api/stripe/onboarding-return', (req, res) => res.type('html').send('<h2>Stripe test onboarding: return to CoolCare app.</h2>'))
+app.post('/api/stripe/webhook', express.raw({type:'application/json'}), stripeWebhook)
 app.use(express.json({ limit: '1mb' }))
 
 // HEALTH
@@ -191,6 +194,7 @@ app.use('/api/technician-portal', createTechnicianPortalRouter())
 // Gateway callbacks are public endpoints authenticated by provider signatures. Register before the authenticated wallet router.
 app.use('/api/technician-wallet/callbacks', createTechnicianWalletCallbackRouter())
 app.use('/api/technician-wallet', createTechnicianWalletRouter())
+app.use('/api/stripe-withdrawals', stripeWithdrawalRouter)
 app.use('/api/quotations', createQuotationRouter())
 
 // ADDRESS
