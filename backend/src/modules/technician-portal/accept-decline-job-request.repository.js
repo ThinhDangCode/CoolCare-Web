@@ -1,5 +1,6 @@
 import { withTransaction } from '../../config/database.js'
 import { AppError } from '../../utils.js'
+import { debtTier } from '../technician-wallet/debt-policy.js'
 
 export class AcceptDeclineJobRequestRepository {
   constructor({ transaction = withTransaction } = {}) {
@@ -37,7 +38,7 @@ export class AcceptDeclineJobRequestRepository {
       const requestResult = await client.query(
         `SELECT bt.id,bt.booking_id,bt.status,bt.expires_at,
                 (COALESCE(bt.expires_at,bt.requested_at+INTERVAL '10 minutes')<=CURRENT_TIMESTAMP) AS expired,
-                b.status AS booking_status,
+                b.status AS booking_status,b.scheduled_at,
                 b.booking_code,cp.user_id AS customer_user_id
          FROM booking_technicians bt
          JOIN bookings b ON b.id=bt.booking_id
@@ -52,6 +53,9 @@ export class AcceptDeclineJobRequestRepository {
       }
       if (jobRequest.status !== 'SELECTED') {
         throw new AppError(409, 'JOB_REQUEST_ALREADY_RESPONDED', 'Yêu cầu công việc đã được phản hồi hoặc không còn hoạt động.')
+      }
+      if (jobRequest.scheduled_at && new Date(jobRequest.scheduled_at).getTime() <= Date.now()) {
+        throw new AppError(409, 'BOOKING_SCHEDULE_EXPIRED', 'Đã đến giờ hẹn. Khách cần đặt lịch mới.')
       }
       if (jobRequest.expired) {
         throw new AppError(409, 'JOB_REQUEST_EXPIRED', 'Đã quá thời hạn phản hồi yêu cầu công việc.')
@@ -96,6 +100,15 @@ export class AcceptDeclineJobRequestRepository {
     if (overlap.rows[0]?.conflict) {
       throw new AppError(409, 'TECHNICIAN_SCHEDULE_CONFLICT',
         'Kỹ thuật viên có công việc trùng khung giờ đã đặt.')
+    }
+
+    const balance = await client.query(
+      'SELECT settlement_balance FROM technician_account_balances WHERE technician_id=$1 FOR UPDATE',
+      [technician.id],
+    )
+    if (debtTier(balance.rows[0]?.settlement_balance) === 'BLOCKED') {
+      throw new AppError(409, 'TECHNICIAN_DEBT_LIMIT',
+        'Ví đối soát đang nợ từ 1.000.000đ. Vui lòng giảm công nợ trước khi nhận việc mới.')
     }
 
     const eligibility = await client.query(
