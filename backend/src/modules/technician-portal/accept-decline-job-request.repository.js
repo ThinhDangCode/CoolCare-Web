@@ -102,8 +102,10 @@ export class AcceptDeclineJobRequestRepository {
         'Kỹ thuật viên có công việc trùng khung giờ đã đặt.')
     }
 
+    // technician_account_balances is a view; the base account row was locked
+    // above, and PostgreSQL cannot apply FOR UPDATE to this view's outer join.
     const balance = await client.query(
-      'SELECT settlement_balance FROM technician_account_balances WHERE technician_id=$1 FOR UPDATE',
+      'SELECT settlement_balance FROM technician_account_balances WHERE technician_id=$1',
       [technician.id],
     )
     if (debtTier(balance.rows[0]?.settlement_balance) === 'BLOCKED') {
