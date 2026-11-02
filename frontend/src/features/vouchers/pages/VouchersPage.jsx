@@ -460,7 +460,7 @@ export function VouchersPage() {
                         required
                         type="number"
                         min="1"
-                        max={editForm.discount_type === 'PERCENTAGE' ? 100 : undefined}
+                        max={editForm.discount_type === 'PERCENTAGE' ? 20 : 50000}
                         step="1"
                         value={editForm.discount_value}
                         onChange={(event) => editField('discount_value', event.target.value)}
@@ -474,7 +474,8 @@ export function VouchersPage() {
                     <div className="edit-input">
                       <input
                         type="number"
-                        min="0"
+                        min="1"
+                        max="50000"
                         step="1"
                         value={editForm.maximum_discount}
                         onChange={(event) => editField('maximum_discount', event.target.value)}

@@ -97,7 +97,7 @@ export function VoucherFields({ initial = blankVoucher, errors = {}, onChange, c
                 type="number"
                 inputMode="numeric"
                 min="1"
-                max={form.discount_type === 'PERCENTAGE' ? 100 : undefined}
+                max={form.discount_type === 'PERCENTAGE' ? 20 : 50000}
                 step="1"
                 placeholder={form.discount_type === 'PERCENTAGE' ? '20' : '50000'}
                 value={form.discount_value}
@@ -112,7 +112,8 @@ export function VoucherFields({ initial = blankVoucher, errors = {}, onChange, c
             <div>
               <input
                 type="number"
-                min="0"
+                min="1"
+                max="50000"
                 step="1"
                 value={form.maximum_discount}
                 onChange={(event) => change('maximum_discount', event.target.value)}
