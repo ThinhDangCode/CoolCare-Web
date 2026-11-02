@@ -12,6 +12,71 @@ import {
   createTechnicianWalletRouter,
 } from '../src/modules/technician-wallet/wallet.routes.js'
 
+test('simulated withdrawal requires the local flag and accepts a valid request', async () => {
+  const previous = process.env.MOCK_WITHDRAWALS_ENABLED
+  const userId = randomUUID()
+  const requestKey = randomUUID()
+  const calls = []
+  const repository = {
+    async createMockWithdrawal(ownerId, input) {
+      calls.push({ ownerId, input })
+      return { id: randomUUID(), amount: input.amount, status: 'SUCCESS', simulated: true }
+    },
+  }
+  const app = express()
+  app.use(express.json())
+  app.use('/api/technician-wallet', createTechnicianWalletRouter(repository))
+  app.use(errorHandler)
+  const server = app.listen(0, '127.0.0.1')
+
+  try {
+    await new Promise(resolve => server.once('listening', resolve))
+    const token = jwt.sign({ role: 'CUSTOMER', purpose: 'access' }, env.jwtSecret, {
+      subject: userId, expiresIn: '5m',
+    })
+    const url = `http://127.0.0.1:${server.address().port}/api/technician-wallet/withdrawals`
+    const submit = body => fetch(url, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+    const body = {
+      amount: 100000,
+      bankName: 'ZaloPay',
+      accountNumber: '0900000000',
+      accountHolder: 'Technician Test',
+      idempotencyKey: requestKey,
+    }
+
+    process.env.MOCK_WITHDRAWALS_ENABLED = 'false'
+    const disabled = await submit(body)
+    assert.equal(disabled.status, 503)
+    assert.equal((await disabled.json()).error.code, 'MOCK_WITHDRAWALS_DISABLED')
+    assert.equal(calls.length, 0)
+
+    process.env.MOCK_WITHDRAWALS_ENABLED = 'true'
+    const invalid = await submit({ ...body, accountNumber: 'invalid' })
+    assert.equal(invalid.status, 422)
+    assert.equal(calls.length, 0)
+
+    const accepted = await submit(body)
+    assert.equal(accepted.status, 201)
+    assert.equal((await accepted.json()).data.status, 'SUCCESS')
+    assert.deepEqual(calls, [{ ownerId: userId, input: {
+      amount: body.amount,
+      bankName: body.bankName,
+      accountNumber: body.accountNumber,
+      accountHolder: body.accountHolder,
+      key: requestKey,
+    } }])
+  } finally {
+    if (previous === undefined) delete process.env.MOCK_WITHDRAWALS_ENABLED
+    else process.env.MOCK_WITHDRAWALS_ENABLED = previous
+    server.closeAllConnections()
+    await new Promise(resolve => server.close(resolve))
+  }
+})
+
 test('sandbox checkout and signed callbacks preserve amount, ownership and idempotency', async () => {
   const config = {
     VNPAY_TMN_CODE: 'sandbox-merchant',
