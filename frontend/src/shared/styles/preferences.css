@@ -397,6 +397,11 @@ html[data-theme='dark'] .voucher-create-layout aside header {
   color: var(--app-text);
   border-color: var(--app-border);
 }
+html[data-theme='dark'] .voucher-policy-note {
+  color: #fed7aa;
+  background: #3b291e;
+  border-color: #9a4e19;
+}
 html[data-theme='dark'] .voucher-section label,
 html[data-theme='dark'] .voucher-section label > span:first-child,
 html[data-theme='dark'] .voucher-choice button,

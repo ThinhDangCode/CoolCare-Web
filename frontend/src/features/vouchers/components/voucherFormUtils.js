@@ -41,7 +41,7 @@ export function voucherPayload(form) {
   }
 }
 
-export function validateVoucherForm(form) {
+export function validateVoucherForm(form, translate = (message) => message) {
   const errors = {}
   const code = form.code.trim()
   const discount = Number(form.discount_value)
@@ -64,7 +64,7 @@ export function validateVoucherForm(form) {
     errors.discount_value = 'Percentage discount cannot exceed 20%.'
   else if (form.discount_type === 'FIXED_AMOUNT' && discount > 50000)
     errors.discount_value = 'Fixed discount cannot exceed 50,000 VND.'
-  if (!Number.isInteger(minimum) || minimum < 0)
+  if (form.minimum_order_amount === '' || !Number.isInteger(minimum) || minimum < 0)
     errors.minimum_order_amount = 'Minimum order amount must be a non-negative whole number.'
   else if (form.discount_type === 'FIXED_AMOUNT' && minimum < discount * 5)
     errors.minimum_order_amount = 'Eligible service amount must be at least five times the discount.'
@@ -85,5 +85,5 @@ export function validateVoucherForm(form) {
   if (!form.end_at || Number.isNaN(end.getTime())) errors.end_at = 'End date and time are required.'
   else if (!Number.isNaN(start.getTime()) && end <= start)
     errors.end_at = 'End date and time must be after the start.'
-  return errors
+  return Object.fromEntries(Object.entries(errors).map(([field, message]) => [field, translate(message)]))
 }

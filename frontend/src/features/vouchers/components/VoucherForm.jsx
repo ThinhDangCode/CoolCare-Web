@@ -124,7 +124,7 @@ export function VoucherFields({ initial = blankVoucher, errors = {}, onChange, c
           </label>
           <label>
             <span>
-              {t('Min Order Spend')} <em>*</em>
+              {t('Minimum eligible service amount')} <em>*</em>
             </span>
             <div>
               <input
@@ -140,6 +140,11 @@ export function VoucherFields({ initial = blankVoucher, errors = {}, onChange, c
             <small>{errors.minimum_order_amount}</small>
           </label>
         </div>
+        <p className="voucher-policy-note">
+          <strong>{t('Voucher creation rules')}</strong>
+          <span>{t('Discounts apply to eligible service charges, excluding parts. Percentage vouchers are limited to 20%, and every voucher is capped at 50,000 VND per booking.')}</span>
+          <span>{t('For a fixed discount, the minimum eligible service amount must be at least five times the discount. The final discount also cannot exceed the booking commission.')}</span>
+        </p>
       </section>
       <section className="voucher-section limits">
         <header>

@@ -126,10 +126,10 @@ export function VouchersPage() {
   async function saveEdit(event) {
     event.preventDefault()
     if (isExpired(editing)) return
-    const validationErrors = validateVoucherForm(editForm)
+    const validationErrors = validateVoucherForm(editForm, t)
     if (Object.keys(validationErrors).length) {
       setFieldErrors(validationErrors)
-      setError('Please review the highlighted fields.')
+      setError(t('Please check the highlighted voucher fields.'))
       return
     }
     setBusy(true)
@@ -347,7 +347,7 @@ export function VouchersPage() {
       </section>
       {editing && (
         <div className="figma-modal-backdrop">
-          <form className="voucher-edit-modal" onSubmit={saveEdit}>
+          <form className="voucher-edit-modal" noValidate onSubmit={saveEdit}>
             <header>
               <div>
                 <i>
@@ -485,7 +485,7 @@ export function VouchersPage() {
                     <small>{fieldErrors.maximum_discount}</small>
                   </label>
                   <label>
-                    <span>{t('Min Order Amount')}</span>
+                    <span>{t('Minimum eligible service amount')}</span>
                     <div className="edit-input">
                       <input
                         required
@@ -500,6 +500,11 @@ export function VouchersPage() {
                     <small>{fieldErrors.minimum_order_amount}</small>
                   </label>
                 </div>
+                <p className="voucher-policy-note">
+                  <strong>{t('Voucher rules')}</strong>
+                  <span>{t('Discounts apply to eligible service charges, excluding parts. Percentage vouchers are limited to 20%, and every voucher is capped at 50,000 VND per booking.')}</span>
+                  <span>{t('For a fixed discount, the minimum eligible service amount must be at least five times the discount. The final discount also cannot exceed the booking commission.')}</span>
+                </p>
                 <div className="voucher-edit-row three">
                   <label>
                     <span>{t('Start Date')}</span>
