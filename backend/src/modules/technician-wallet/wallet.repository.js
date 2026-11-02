@@ -219,8 +219,15 @@ export class TechnicianWalletRepository {
   balance: balance.rows[0],
 })
 
-    return {
-      balance: balance.rows[0] ?? {
+    const settlementBalance = Number(balance.rows[0]?.settlement_balance ?? 0)
+      const debtAmount = Math.max(0, -settlementBalance)
+      const debtStatus = debtAmount >= 1000000 ? 'BLOCKED'
+        : debtAmount >= 500000 ? 'DEMOTED'
+        : debtAmount >= 300000 ? 'WARNING' : 'NORMAL'
+      return {
+        debtPolicy: { amountVnd: debtAmount, status: debtStatus,
+          warningAtVnd: 300000, demotionAtVnd: 500000, blockAtVnd: 1000000 },
+        balance: balance.rows[0] ?? {
         settlement_balance: '0',
         reserved_amount: '0',
         available_balance: '0',

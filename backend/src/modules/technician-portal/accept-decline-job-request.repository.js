@@ -37,7 +37,7 @@ export class AcceptDeclineJobRequestRepository {
       const requestResult = await client.query(
         `SELECT bt.id,bt.booking_id,bt.status,bt.expires_at,
                 (COALESCE(bt.expires_at,bt.requested_at+INTERVAL '10 minutes')<=CURRENT_TIMESTAMP) AS expired,
-                b.status AS booking_status,
+                b.status AS booking_status,b.scheduled_at,
                 b.booking_code,cp.user_id AS customer_user_id
          FROM booking_technicians bt
          JOIN bookings b ON b.id=bt.booking_id
@@ -52,6 +52,9 @@ export class AcceptDeclineJobRequestRepository {
       }
       if (jobRequest.status !== 'SELECTED') {
         throw new AppError(409, 'JOB_REQUEST_ALREADY_RESPONDED', 'Yêu cầu công việc đã được phản hồi hoặc không còn hoạt động.')
+      }
+      if (new Date(jobRequest.scheduled_at).getTime() <= Date.now()) {
+        throw new AppError(409, 'BOOKING_SCHEDULE_EXPIRED', 'Đã đến giờ hẹn. Khách cần đặt lịch mới.')
       }
       if (jobRequest.expired) {
         throw new AppError(409, 'JOB_REQUEST_EXPIRED', 'Đã quá thời hạn phản hồi yêu cầu công việc.')

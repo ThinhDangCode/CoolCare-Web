@@ -206,6 +206,13 @@ app.use('/api/service-categories', createServiceCategoryRouter())
 
 app.use('/api/services', createServiceRouter())
 // CHAT (REST + Socket.IO realtime, same PostgreSQL tables)
+// TEMP DIAGNOSTIC: log every chat request. "→" without a matching "←" means the request hangs inside the server.
+app.use('/api/chat', (req, res, next) => {
+  const t = Date.now()
+  console.log('→', req.method, req.originalUrl)
+  res.on('finish', () => console.log('←', req.method, req.originalUrl, res.statusCode, Date.now() - t, 'ms'))
+  next()
+})
 app.use('/api/chat', createChatRouter())
 
 app.use(notFoundHandler)
