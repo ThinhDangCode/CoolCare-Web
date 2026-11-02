@@ -83,12 +83,6 @@ export function VerificationPage() {
       <PageHeader
         title="Technician Verification"
         subtitle={t('{count} pending verification requests', { count: data.total })}
-        headingAddon={
-          <span className="verification-live">
-            <i />
-            {t(loading ? 'Syncing' : error ? 'Unavailable' : 'Pipeline Live')}
-          </span>
-        }
         onRefresh={retry}
         refreshing={loading}
       />

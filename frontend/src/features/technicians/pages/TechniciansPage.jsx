@@ -91,6 +91,22 @@ export function TechniciansPage() {
     setLoading(true)
     setRefresh((n) => n + 1)
   }
+  const sortHeading = (key, title) => {
+    const active = key === 'NAME' ? ['NAME', 'NAME_DESC'].includes(filters.sort) : filters.sort.startsWith('ID_')
+    const descending = active && filters.sort.endsWith('_DESC')
+    const nextSort = key === 'NAME' ? (active && !descending ? 'NAME_DESC' : 'NAME') : (active && !descending ? 'ID_DESC' : 'ID_ASC')
+    return (
+      <th className={key === 'ID' ? 'technician-numeric' : undefined} aria-sort={active ? (descending ? 'descending' : 'ascending') : 'none'}>
+        <button type="button" className="technician-column-sort" onClick={() => change('sort', nextSort)}>
+          {title}
+          <svg viewBox="0 0 16 16" aria-hidden="true" className={active ? 'active' : ''}>
+            <path d="M8 2v12M5 5l3-3 3 3" opacity={descending ? '.35' : '1'} />
+            <path d="m5 11 3 3 3-3" opacity={active && !descending ? '.35' : '1'} />
+          </svg>
+        </button>
+      </th>
+    )
+  }
   const select = (key, title, items, placeholder = `All ${title}`) => (
     <label className="technician-filter">
       <span>{t(title)}</span>
@@ -156,6 +172,9 @@ export function TechniciansPage() {
                   }}
                 >
                   <option value="NAME">{t('Name')}</option>
+                  <option value="NAME_DESC">{t('Name')} ↓</option>
+                  <option value="ID_ASC">ID ↑</option>
+                  <option value="ID_DESC">ID ↓</option>
                   <option value="PRIORITY">{t('Job priority')}</option>
                 </select>
               </label>
@@ -189,8 +208,8 @@ export function TechniciansPage() {
               </colgroup>
               <thead>
                 <tr>
-                  <th className="technician-numeric">ID</th>
-                  <th>{t('TECHNICIAN')}</th>
+                  {sortHeading('ID', 'ID')}
+                  {sortHeading('NAME', t('TECHNICIAN'))}
                   <th className="technician-numeric">{t('PHONE NUMBER')}</th>
                   <th>{t('ASSIGNED AREA')}</th>
                   <th className="technician-numeric">{t('RATING')}</th>
@@ -209,9 +228,9 @@ export function TechniciansPage() {
                 />
                 {!loading &&
                   !error &&
-                  data.items.map((row, index) => (
+                  data.items.map((row) => (
                     <tr key={row.id}>
-                      <td className="technician-numeric">{(page - 1) * limit + index + 1}</td>
+                      <td className="technician-numeric">{row.display_id}</td>
                       <td>
                         <Link className="technician-list-name" to={`/admin/technicians/${row.id}`}>
                           <strong>{row.full_name}</strong>

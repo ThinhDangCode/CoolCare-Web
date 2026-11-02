@@ -833,3 +833,31 @@
     flex: 1 1 45%;
   }
 }
+
+.technician-directory-page .technician-column-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.technician-directory-page .technician-column-sort svg {
+  width: 12px;
+  height: 16px;
+  flex-shrink: 0;
+  fill: none;
+  stroke: #94a3b8;
+  stroke-width: 1.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.technician-directory-page .technician-column-sort svg.active { stroke: #ff7414; }
+.technician-directory-page .technician-column-sort:focus-visible {
+  outline: 2px solid #ff7414;
+  outline-offset: 4px;
+  border-radius: 2px;
+}
