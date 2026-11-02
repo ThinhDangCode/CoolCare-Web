@@ -214,6 +214,10 @@ export class TechnicianWalletRepository {
         [owner.technician_id],
       ),
     ])
+    console.log('[COOLCARE WALLET DEBUG]', {
+  technicianId: owner.technician_id,
+  balance: balance.rows[0],
+})
 
     return {
       balance: balance.rows[0] ?? {
