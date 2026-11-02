@@ -6,7 +6,6 @@ import {
   PageHeader,
   Pagination,
   SearchIcon,
-  FilterIcon,
   EyeIcon,
   TableState,
 } from '../../../shared/components/AdminUi.jsx'
@@ -39,7 +38,6 @@ export function TechniciansPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [refresh, setRefresh] = useState(0)
-  const [expandedFilters, setExpandedFilters] = useState(false)
   useEffect(() => {
     const timer = setTimeout(() => {
       setKeyword(search.trim())
@@ -91,6 +89,21 @@ export function TechniciansPage() {
     setLoading(true)
     setRefresh((n) => n + 1)
   }
+  const sortHeading = (key, title) => {
+    const active = key === 'NAME' ? ['NAME', 'NAME_DESC'].includes(filters.sort) : filters.sort.startsWith('ID_')
+    const descending = active && filters.sort.endsWith('_DESC')
+    return (
+      <th className={key === 'ID' ? 'technician-numeric' : undefined} aria-sort={active ? (descending ? 'descending' : 'ascending') : 'none'}>
+        <button type="button" className="technician-column-sort" onClick={() => change('sort', key === 'NAME' ? (active && !descending ? 'NAME_DESC' : 'NAME') : (active && !descending ? 'ID_DESC' : 'ID_ASC'))}>
+          {title}
+          <svg viewBox="0 0 16 16" aria-hidden="true" className={active ? 'active' : ''}>
+            <path d="M8 2v12M5 5l3-3 3 3" opacity={descending ? '.35' : '1'} />
+            <path d="m5 11 3 3 3-3" opacity={active && !descending ? '.35' : '1'} />
+          </svg>
+        </button>
+      </th>
+    )
+  }
   const select = (key, title, items, placeholder = `All ${title}`) => (
     <label className="technician-filter">
       <span>{t(title)}</span>
@@ -132,49 +145,7 @@ export function TechniciansPage() {
             {select('skill', 'Skills', options.skills)}
             {select('area', 'Service Areas', options.areas)}
             {select('qualification', 'Levels', ['BEGINNER', 'INTERMEDIATE', 'ADVANCED', 'EXPERT'])}
-            <button
-              className={`technician-filter-toggle ${expandedFilters ? 'active' : ''}`}
-              aria-label={t('Additional filters')}
-              aria-expanded={expandedFilters}
-              aria-controls="technician-extra-filters"
-              onClick={() => setExpandedFilters((open) => !open)}
-            >
-              <FilterIcon />
-              {filters.availability !== 'ALL' && <i />}
-            </button>
           </div>
-          {expandedFilters && (
-            <div className="technician-extra-filters" id="technician-extra-filters">
-              <label className="technician-filter">
-                <span>{t('Sort')}</span>
-                <select
-                  value={filters.sort}
-                  onChange={(e) => {
-                    setLoading(true)
-                    setPage(1)
-                    setFilters((current) => ({ ...current, sort: e.target.value }))
-                  }}
-                >
-                  <option value="NAME">{t('Name')}</option>
-                  <option value="PRIORITY">{t('Job priority')}</option>
-                </select>
-              </label>
-              {select('availability', 'Availability', ['ONLINE', 'OFFLINE', 'BUSY'])}
-              <button
-                className="technician-reset"
-                onClick={() => {
-                  setLoading(true)
-                  setSearch('')
-                  setKeyword('')
-                  setPage(1)
-                  setFilters(initialFilters)
-                  setRefresh((n) => n + 1)
-                }}
-              >
-                {t('Reset filters')}
-              </button>
-            </div>
-          )}
           <div className="figma-users-table technician-table">
             <table>
               <colgroup>
@@ -189,8 +160,8 @@ export function TechniciansPage() {
               </colgroup>
               <thead>
                 <tr>
-                  <th className="technician-numeric">ID</th>
-                  <th>{t('TECHNICIAN')}</th>
+                  {sortHeading('ID', 'ID')}
+                  {sortHeading('NAME', t('TECHNICIAN'))}
                   <th className="technician-numeric">{t('PHONE NUMBER')}</th>
                   <th>{t('ASSIGNED AREA')}</th>
                   <th className="technician-numeric">{t('RATING')}</th>
@@ -209,9 +180,9 @@ export function TechniciansPage() {
                 />
                 {!loading &&
                   !error &&
-                  data.items.map((row, index) => (
+                  data.items.map((row) => (
                     <tr key={row.id}>
-                      <td className="technician-numeric">{(page - 1) * limit + index + 1}</td>
+                      <td className="technician-numeric">{row.display_id}</td>
                       <td>
                         <Link className="technician-list-name" to={`/admin/technicians/${row.id}`}>
                           <strong>{row.full_name}</strong>

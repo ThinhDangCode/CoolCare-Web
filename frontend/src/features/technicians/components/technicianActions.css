@@ -175,3 +175,35 @@
 .certificate-verification-fields { display: grid; gap: 14px; margin: 16px 0; border: 1px solid #cbd5e1; border-radius: 8px; min-width: 0; }
 .technician-action-dialog .certificate-match-confirmation { display: flex; align-items: flex-start; gap: 10px; }
 .technician-action-dialog .certificate-match-confirmation input { width: 18px; flex: 0 0 18px; margin-top: 3px; }
+
+.technician-action-dialog.technician-review-dialog {
+  box-sizing: border-box;
+  width: min(900px, calc(100vw - 40px));
+  max-width: calc(100vw - 40px);
+}
+.technician-review-dialog .technician-table table {
+  width: 100%;
+  min-width: 0;
+  table-layout: fixed;
+}
+.technician-review-dialog .technician-table th,
+.technician-review-dialog .technician-table td {
+  width: auto;
+  padding: 12px 10px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.technician-review-dialog .technician-table th:first-child { width: 20%; }
+.technician-review-dialog .technician-table th:nth-child(3) { width: 18%; }
+.technician-review-dialog .technician-table th:nth-child(4),
+.technician-review-dialog .technician-table th:nth-child(5) { width: 12%; }
+.technician-review-dialog .technician-table .figma-status {
+  max-width: 100%;
+  box-sizing: border-box;
+  white-space: normal;
+}
+@media (max-width: 600px) {
+  .technician-action-dialog.technician-review-dialog { padding: 16px; }
+  .technician-review-dialog .technician-table th,
+  .technician-review-dialog .technician-table td { padding: 8px 4px; font-size: 11px; }
+}
