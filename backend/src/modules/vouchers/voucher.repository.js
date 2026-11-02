@@ -1,6 +1,7 @@
 import { withTransaction } from '../../config/database.js'
 import { AppError } from '../../utils.js'
 import { writeAdminAudit } from '../audit/admin-audit.js'
+import { bookingVoucherLimit, MAX_VOUCHER_DISCOUNT, voucherFitsBooking, voucherPolicyErrors } from './voucher-policy.js'
 import {
   isComplaintCompensationCode,
   verifyComplaintCompensationCode,
@@ -21,7 +22,7 @@ export class VoucherRepository {
   async available(userId, bookingId) {
     return this.transaction(async (client) => {
       const booking = (await client.query(`
-        SELECT b.id, b.status, b.subtotal, b.voucher_id, b.customer_id
+        SELECT b.id, b.status, b.subtotal, b.voucher_id, b.customer_id, b.commission_rate
         FROM bookings b JOIN customer_profiles cp ON cp.id=b.customer_id
         WHERE b.id=$1 AND cp.user_id=$2
       `, [bookingId, userId])).rows[0]
@@ -55,7 +56,7 @@ export class VoucherRepository {
           minimumOrderAmount: Number(v.minimum_order_amount),
           maximumDiscount: v.maximum_discount == null ? null : Number(v.maximum_discount),
           expiresAt: v.end_at,
-          eligible: eligibleAmount >= Number(v.minimum_order_amount)
+          eligible: voucherFitsBooking(v, eligibleAmount, booking.commission_rate)
             && (v.usage_limit == null || Number(v.usage_count) < Number(v.usage_limit))
             && (v.usage_limit_per_customer == null || v.customer_usage_count < Number(v.usage_limit_per_customer)),
         }))
@@ -71,7 +72,7 @@ export class VoucherRepository {
         throw new AppError(403, 'CUSTOMER_PROFILE_REQUIRED', 'Tài khoản chưa có hồ sơ khách hàng.')
 
       const booking = (
-        await client.query('SELECT id, status FROM bookings WHERE id=$1 AND customer_id=$2 FOR UPDATE', [
+        await client.query('SELECT id, status, commission_rate FROM bookings WHERE id=$1 AND customer_id=$2 FOR UPDATE', [
           bookingId,
           customer.id,
         ])
@@ -102,6 +103,13 @@ export class VoucherRepository {
           'Voucher này không thuộc tài khoản của bạn.'
         )
 
+      const eligibleAmount = Number((await client.query(`
+        SELECT COALESCE(SUM(subtotal - parts_amount), 0) AS amount
+        FROM quotations WHERE booking_id=$1 AND status='ACCEPTED'
+      `, [bookingId])).rows[0].amount)
+      if (!voucherFitsBooking(voucher, eligibleAmount, booking.commission_rate))
+        throw new AppError(409, 'VOUCHER_NOT_ELIGIBLE', 'Voucher vượt giới hạn giảm giá cho đơn này.')
+
       let priced
       try {
         priced = (
@@ -116,6 +124,8 @@ export class VoucherRepository {
           'VOUCHER_NOT_ELIGIBLE',
           'Voucher đã hết hạn, hết lượt hoặc không đáp ứng giá trị đơn tối thiểu.'
         )
+      if (Number(priced.discount_amount) > bookingVoucherLimit(eligibleAmount, booking.commission_rate))
+        throw new AppError(409, 'VOUCHER_NOT_ELIGIBLE', 'Voucher vượt giới hạn giảm giá cho đơn này.')
       return priced
     })
   }
@@ -189,12 +199,17 @@ export class VoucherRepository {
           )
         const type = data.discount_type ?? before?.discount_type
         const value = data.discount_value ?? Number(before?.discount_value)
-        if (type === 'PERCENTAGE' && (value > 100 || !Number.isInteger(Number(value))))
-          throw new AppError(
-            422,
-            'VALIDATION_ERROR',
-            'Phần trăm giảm phải là số nguyên từ 1 đến 100.'
-          )
+        if (data.maximum_discount === null || (!before && data.maximum_discount === undefined))
+          data.maximum_discount = type === 'FIXED_AMOUNT' ? value : MAX_VOUCHER_DISCOUNT
+        const policyErrors = voucherPolicyErrors({
+          discount_type: type,
+          discount_value: value,
+          minimum_order_amount: data.minimum_order_amount ?? before?.minimum_order_amount,
+          maximum_discount: data.maximum_discount === undefined
+            ? before?.maximum_discount : data.maximum_discount,
+        })
+        if (Object.keys(policyErrors).length && data.is_active !== false)
+          throw new AppError(422, 'VALIDATION_ERROR', 'Voucher vượt giới hạn giảm giá an toàn.', policyErrors)
         const start = data.start_at ?? before?.start_at
         const end = data.end_at ?? before?.end_at
         if (new Date(end) <= new Date(start))

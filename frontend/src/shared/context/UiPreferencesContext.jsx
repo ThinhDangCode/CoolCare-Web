@@ -1169,6 +1169,49 @@ const messages = {
     'Discount Percentage': 'Phần trăm giảm',
     'Discount Amount': 'Số tiền giảm',
     'Min Order Spend': 'Giá trị đơn tối thiểu',
+    'Minimum eligible service amount': 'Giá trị dịch vụ đủ điều kiện tối thiểu',
+    'Voucher creation rules': 'Điều kiện tạo voucher',
+    'Voucher rules': 'Điều kiện voucher',
+    'Discounts apply to eligible service charges, excluding parts. Percentage vouchers are limited to 20%, and every voucher is capped at 50,000 VND per booking.':
+      'Mức giảm tính trên tiền dịch vụ, không gồm linh kiện. Voucher phần trăm tối đa 20%; mỗi lịch đặt được giảm không quá 50.000đ.',
+    'For a fixed discount, the minimum eligible service amount must be at least five times the discount. The final discount also cannot exceed the booking commission.':
+      'Với voucher giảm tiền cố định, giá trị dịch vụ tối thiểu phải gấp ít nhất 5 lần số tiền giảm. Mức giảm thực tế không vượt hoa hồng của lịch đặt.',
+    'A voucher can be used when it is active, within its validity period, and the booking meets its conditions.':
+      'Voucher được sử dụng khi đang hoạt động, còn hiệu lực và lịch đặt đáp ứng các điều kiện áp dụng.',
+    'Eligible CoolCare services can use this voucher; the discount is calculated on service charges only.':
+      'Voucher áp dụng cho các dịch vụ CoolCare đủ điều kiện; mức giảm chỉ tính trên tiền dịch vụ.',
+    'Please check the highlighted voucher fields.': 'Vui lòng kiểm tra các trường voucher được đánh dấu.',
+    'Voucher preview': 'Xem trước voucher',
+    'Review the conditions before creating this voucher.': 'Kiểm tra các điều kiện trước khi tạo voucher.',
+    'Customer receives': 'Khách được giảm',
+    '{percent}% off eligible services': 'Giảm {percent}% tiền dịch vụ đủ điều kiện',
+    '{amount} VND off eligible services': 'Giảm {amount}đ tiền dịch vụ đủ điều kiện',
+    'Maximum discount': 'Mức giảm tối đa',
+    'Continue Editing': 'Tiếp tục chỉnh sửa',
+    'Use 3–20 letters, numbers, hyphens, or underscores.':
+      'Mã voucher cần 3–20 ký tự gồm chữ, số, dấu gạch ngang hoặc gạch dưới.',
+    'Description is required.': 'Vui lòng nhập mô tả chương trình.',
+    'Description must not exceed 100 characters.': 'Mô tả không được vượt quá 100 ký tự.',
+    'Enter a positive whole number.': 'Vui lòng nhập số nguyên lớn hơn 0.',
+    'Percentage discount cannot exceed 20%.': 'Phần trăm giảm không được vượt quá 20%.',
+    'Fixed discount cannot exceed 50,000 VND.': 'Số tiền giảm không được vượt quá 50.000đ.',
+    'Minimum order amount must be a non-negative whole number.':
+      'Giá trị dịch vụ tối thiểu phải là số nguyên từ 0 trở lên.',
+    'Eligible service amount must be at least five times the discount.':
+      'Giá trị dịch vụ tối thiểu phải gấp ít nhất 5 lần số tiền giảm.',
+    'Maximum discount must be a non-negative whole number.':
+      'Mức giảm tối đa phải là số nguyên từ 0 trở lên.',
+    'Maximum discount must be between 1 and 50,000 VND.':
+      'Mức giảm tối đa phải từ 1đ đến 50.000đ.',
+    'Select a valid discount type.': 'Vui lòng chọn loại giảm giá hợp lệ.',
+    'Usage limit must be a positive whole number.': 'Tổng lượt sử dụng phải là số nguyên lớn hơn 0.',
+    'Customer limit must be a positive whole number.':
+      'Lượt sử dụng mỗi khách phải là số nguyên lớn hơn 0.',
+    'Customer limit cannot exceed the total usage limit.':
+      'Lượt sử dụng mỗi khách không được vượt tổng lượt sử dụng.',
+    'Start date and time are required.': 'Vui lòng chọn ngày giờ bắt đầu.',
+    'End date and time are required.': 'Vui lòng chọn ngày giờ kết thúc.',
+    'End date and time must be after the start.': 'Ngày giờ kết thúc phải sau ngày giờ bắt đầu.',
     'Usage Limits & Governance': 'Giới hạn sử dụng',
     'Total Voucher Pool Limit': 'Tổng lượt sử dụng tối đa',
     'Customer Frequency Restriction': 'Giới hạn cho mỗi khách hàng',
@@ -1180,11 +1223,6 @@ const messages = {
     'Campaign Start Date & Time': 'Ngày giờ bắt đầu',
     'Campaign Expiration Date & Time': 'Ngày giờ kết thúc',
     'Inactive / Draft': 'Không hoạt động / Bản nháp',
-    'Status logic:': 'Quy tắc trạng thái:',
-    'Voucher only has two management states: Active or Inactive. The validity dates determine when an active voucher can be redeemed.':
-      'Voucher có hai trạng thái quản lý: Hoạt động hoặc Không hoạt động. Thời gian hiệu lực quyết định thời điểm voucher được phép sử dụng.',
-    'Availability applies to all eligible CoolCare services because the current database schema does not define per-service voucher targeting.':
-      'Voucher áp dụng cho mọi dịch vụ CoolCare đủ điều kiện vì dữ liệu hiện tại chưa hỗ trợ giới hạn theo từng dịch vụ.',
     'Creating…': 'Đang tạo…',
     'Organize your service catalog into clear, manageable categories.':
       'Sắp xếp danh mục dịch vụ rõ ràng và dễ quản lý.',

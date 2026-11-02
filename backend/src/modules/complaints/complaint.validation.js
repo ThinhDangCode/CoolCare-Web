@@ -1,4 +1,5 @@
 import { AppError, requireValidBody } from '../../utils.js'
+import { MAX_VOUCHER_DISCOUNT } from '../vouchers/voucher-policy.js'
 
 const uuidPattern = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i
 
@@ -143,10 +144,12 @@ export function validateCompensationVoucher(body = {}) {
   const validDays = Number(body.valid_days ?? 30)
   const notifyCustomer = body.notify_customer ?? true
   const errors = {}
-  if (!Number.isInteger(discountValue) || discountValue < 1 || discountValue > 10_000_000)
-    errors.discount_value = 'Số tiền bồi thường phải từ 1 đến 10.000.000 đồng.'
+  if (!Number.isInteger(discountValue) || discountValue < 1 || discountValue > MAX_VOUCHER_DISCOUNT)
+    errors.discount_value = 'Số tiền bồi thường phải từ 1 đến 50.000 đồng.'
   if (!Number.isInteger(minimumOrderAmount) || minimumOrderAmount < 0)
     errors.minimum_order_amount = 'Giá trị đơn tối thiểu không hợp lệ.'
+  else if (Number.isInteger(discountValue) && minimumOrderAmount < discountValue * 5)
+    errors.minimum_order_amount = 'Giá trị dịch vụ tối thiểu phải ít nhất gấp 5 lần số tiền giảm.'
   if (!Number.isInteger(validDays) || validDays < 1 || validDays > 365)
     errors.valid_days = 'Thời hạn voucher phải từ 1 đến 365 ngày.'
   if (typeof notifyCustomer !== 'boolean')
