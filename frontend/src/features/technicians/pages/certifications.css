@@ -41,8 +41,7 @@
 .certification-toolbar {
   display: grid;
   grid-template-columns:
-    minmax(230px, 2.2fr) minmax(140px, 1.2fr) minmax(110px, 0.8fr) minmax(130px, 1fr)
-    34px 34px;
+    minmax(230px, 2.2fr) minmax(140px, 1.2fr) minmax(110px, 0.8fr) minmax(130px, 1fr);
   gap: 8px;
   align-items: center;
   padding: 12px;
@@ -365,7 +364,7 @@
 }
 @media (max-width: 1150px) {
   .certification-toolbar {
-    grid-template-columns: repeat(3, minmax(0, 1fr)) 34px 34px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
   .certification-search {
     grid-column: 1 / -1;

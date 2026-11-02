@@ -192,7 +192,6 @@ export function CertificationsPage() {
   const [error, setError] = useState('')
   const [refresh, setRefresh] = useState(0)
   const [selected, setSelected] = useState(null)
-  const [compact, setCompact] = useState(false)
   const [notice, setNotice] = useState('')
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -234,7 +233,7 @@ export function CertificationsPage() {
   const last = Math.min(page * limit, data.total)
   return (
     <main
-      className={`figma-admin-main technician-main certification-page ${compact ? 'is-compact' : ''}`}
+      className="figma-admin-main technician-main certification-page"
     >
       <PageHeader
         title={t('Technician Certifications')}
@@ -292,27 +291,6 @@ export function CertificationsPage() {
                 <option key={value}>{value}</option>
               ))}
             </select>
-            <button
-              className="certification-tool"
-              disabled={loading}
-              aria-label="Refresh certifications"
-              title="Refresh certifications"
-              onClick={retry}
-            >
-              ↻
-            </button>
-            <button
-              className={`certification-tool ${compact ? 'active' : ''}`}
-              aria-label="Compact table"
-              title="Toggle compact rows"
-              aria-pressed={compact}
-              onClick={() => setCompact((value) => !value)}
-            >
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <rect x="4" y="5" width="16" height="14" rx="2" />
-                <path d="M9 5v14m6-14v14" />
-              </svg>
-            </button>
           </div>
           <div className="certification-table-scroll">
             <table className="certification-table">

@@ -67,7 +67,7 @@ test('rejects redirects, oversized images and bad upstream responses',async()=>{
     assert.equal(result.authenticity_verified,false)
   }
 })
-test('OCR route is admin only, returns no-store, and audits no identity content',async()=>{
+test('manual verification does not expose an OCR endpoint',async()=>{
   const app=express()
   const calls=[]
   const audits=[]
@@ -80,12 +80,12 @@ test('OCR route is admin only, returns no-store, and audits no identity content'
   try {
     assert.equal((await fetch(`${base}/${profile.id}/identity-ocr`,{method:'POST'})).status,401)
     assert.equal((await fetch(`${base}/${profile.id}/identity-ocr`,{method:'POST',headers:headers('CUSTOMER')})).status,403)
-    assert.equal((await fetch(`${base}/bad-id/identity-ocr`,{method:'POST',headers:headers('ADMIN')})).status,422)
+    assert.equal((await fetch(`${base}/bad-id/identity-ocr`,{method:'POST',headers:headers('ADMIN')})).status,404)
     assert.equal(calls.length,0)
     const response=await fetch(`${base}/${profile.id}/identity-ocr`,{method:'POST',headers:headers('ADMIN')})
-    assert.equal(response.status,200)
-    assert.equal(response.headers.get('cache-control'),'no-store')
-    assert.equal(calls.length,1)
+    assert.equal(response.status,404)
+    assert.equal(calls.length,0)
+    assert.equal(audits.length,0)
     assert.equal(JSON.stringify(audits).includes(profile.identity_number),false)
   } finally {server.closeAllConnections();await new Promise(resolve=>server.close(resolve))}
 })
