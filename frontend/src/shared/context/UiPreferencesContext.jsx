@@ -446,6 +446,11 @@ const messages = {
     'Technician Penalties': 'Vi phạm kỹ thuật viên',
     'Track technician penalties and penalty points':
       'Theo dõi vi phạm và điểm phạt của kỹ thuật viên',
+    'Technicians with penalty history': 'Kỹ thuật viên có lịch sử án phạt',
+    'Total penalties': 'Tổng án phạt',
+    'Includes expired and revoked penalties': 'Gồm cả đã hết hạn và đã thu hồi',
+    'Unexpired penalties only': 'Chỉ tính án phạt còn hiệu lực',
+    'Statistics cover all history; filters below apply to the list only.': 'Thống kê toàn bộ lịch sử; bộ lọc bên dưới chỉ áp dụng cho danh sách.',
     'Penalized technicians': 'Kỹ thuật viên bị phạt',
     'Active penalties': 'Vi phạm đang hiệu lực',
     'Active penalty points': 'Điểm phạt đang hiệu lực',

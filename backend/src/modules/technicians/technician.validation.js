@@ -82,7 +82,7 @@ export function validatePenaltyQuery(query) {
   const page = query.page === undefined ? 1 : Number(query.page)
   const limit = query.limit === undefined ? 10 : Number(query.limit)
   const search = query.search ?? ''
-  const status = query.status ?? 'ACTIVE'
+  const status = query.status ?? 'ALL'
   const type = query.type ?? 'ALL'
   if (!Number.isInteger(page) || page < 1 || page > 1000000) errors.page = 'Invalid page.'
   if (!Number.isInteger(limit) || limit < 1 || limit > 100) errors.limit = 'Invalid page size.'

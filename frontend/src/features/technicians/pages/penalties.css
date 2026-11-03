@@ -250,3 +250,5 @@
 .penalty-page .penalty-table .penalty-numeric > small { display: block; margin-top: 5px; }
 .penalty-page .penalty-table .penalty-points { white-space: nowrap; }
 .penalty-page .penalty-table .penalty-reference { line-height: 1.6; }
+
+.penalty-history-note { margin: -8px 0 20px; color: #64748b; font-size: 13px; }

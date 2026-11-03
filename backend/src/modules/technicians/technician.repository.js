@@ -23,6 +23,16 @@ const certificateColumns = `c.id,c.technician_id,c.certificate_name,c.certificat
        ELSE 'VERIFIED' END AS status`
 const likeValue = (value) => `%${value.replace(/[\\%_]/g, '\\$&')}%`
 
+// History includes expired and revoked records. Expiry never erases history.
+// Aggregate the penalty table directly; list filters and pagination do not apply.
+export const penaltySummarySql = `SELECT
+  count(*)::int AS total_penalties,
+  count(DISTINCT p.technician_id)::int AS historical_technicians,
+  count(*) FILTER (WHERE p.status=0 AND (p.expires_at IS NULL OR p.expires_at>CURRENT_TIMESTAMP))::int AS active_penalties,
+  count(DISTINCT p.technician_id) FILTER (WHERE p.status=0 AND (p.expires_at IS NULL OR p.expires_at>CURRENT_TIMESTAMP))::int AS penalized_technicians,
+  COALESCE(sum(p.penalty_points) FILTER (WHERE p.status=0 AND (p.expires_at IS NULL OR p.expires_at>CURRENT_TIMESTAMP)),0)::int AS active_points
+  FROM technician_penalties p`
+
 export class TechnicianRepository {
   async penalties(query) {
     const values = []
@@ -45,10 +55,7 @@ export class TechnicianRepository {
     const [count, rows, summary] = await Promise.all([
       pool.query(`SELECT count(*)::int AS total ${from}`,values),
       pool.query(`SELECT * ${from} ORDER BY applied_at DESC,id LIMIT $${values.length+1} OFFSET $${values.length+2}`,[...values,query.limit,(query.page-1)*query.limit]),
-      pool.query(`SELECT count(*) FILTER (WHERE status='ACTIVE')::int AS active_penalties,
-        count(DISTINCT technician_id) FILTER (WHERE status='ACTIVE')::int AS penalized_technicians,
-        COALESCE(sum(penalty_points) FILTER (WHERE status='ACTIVE'),0)::int AS active_points
-        FROM (${source}) penalties`),
+      pool.query(penaltySummarySql),
     ])
     return { items: rows.rows, total: count.rows[0].total, summary: summary.rows[0] }
   }
