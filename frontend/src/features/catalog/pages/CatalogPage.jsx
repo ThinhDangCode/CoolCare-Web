@@ -313,7 +313,19 @@ export function CatalogPage() {
                         <div className="catalog-name">
                           {kind === 'categories' && (
                             <span className={`catalog-row-icon tone-${index % 4}`}>
-                              {config.icon}
+                              {kind === 'categories' && row.image_url ? (
+                                <img
+                                  key={row.image_url}
+                                  src={row.image_url}
+                                  alt=""
+                                  loading="lazy"
+                                  onError={(event) => {
+                                    event.currentTarget.style.display = 'none'
+                                    event.currentTarget.nextElementSibling.hidden = false
+                                  }}
+                                />
+                              ) : null}
+                              <span hidden={kind === 'categories' && Boolean(row.image_url)}>{config.icon}</span>
                             </span>
                           )}
                           <strong>{row.name}</strong>
