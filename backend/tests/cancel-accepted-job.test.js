@@ -15,7 +15,7 @@ test('Cancel Accepted Job requires a trimmed reason of 5-500 characters', () => 
   }
 })
 
-function fixture({ requestStatus = 'ACCEPTED', bookingStatus = 'ACCEPTED', completedAt = null, penaltyApplies = true } = {}) {
+function fixture({ requestStatus = 'ACCEPTED', bookingStatus = 'ACCEPTED', completedAt = null, scheduledAt = '2026-11-15T10:00:00.000Z' } = {}) {
   const calls = []
   const repository = new CancelAcceptedJobRepository({
     transaction: async (operation) => operation({
@@ -29,7 +29,7 @@ function fixture({ requestStatus = 'ACCEPTED', bookingStatus = 'ACCEPTED', compl
           id: requestId, booking_id: 'booking-id', status: requestStatus,
           booking_status: bookingStatus, booking_code: 'BK-001',
           technician_completed_at: completedAt, customer_user_id: 'customer-id',
-          penalty_applies: penaltyApplies,
+          scheduled_at: scheduledAt,
         }] }
         if (sql.includes('UPDATE booking_technicians')) return { rows: [{
           id: requestId, booking_id: 'booking-id', status: 'CANCELLED',
@@ -41,9 +41,9 @@ function fixture({ requestStatus = 'ACCEPTED', bookingStatus = 'ACCEPTED', compl
           updated_at: '2026-10-15T10:00:00.000Z',
         }] }
         if (sql.includes('INSERT INTO technician_penalties')) return { rows: [{
-          id: 'penalty-id', penalty_type: 'CANCELLATION', penalty_points: 10,
+          id: 'penalty-id', penalty_type: 'CANCELLATION', penalty_points: params[2],
           status: 'ACTIVE', applied_at: '2026-10-15T10:00:00.000Z',
-          expires_at: '2026-11-14T10:00:00.000Z',
+          expires_at: null,
         }] }
         return { rows: [] }
       },
@@ -52,20 +52,24 @@ function fixture({ requestStatus = 'ACCEPTED', bookingStatus = 'ACCEPTED', compl
   return { repository, calls }
 }
 
-test('accepted job cancellation returns booking to pending and records a late penalty', async () => {
+test('accepted job cancellation returns booking to pending and records two points without expiry', async () => {
   const { repository, calls } = fixture()
   const result = await repository.cancel(userId, requestId, 'Family emergency')
   assert.equal(result.status, 'CANCELLED')
   assert.equal(result.booking.status, 'PENDING')
-  assert.equal(result.penalty.penalty_points, 10)
+  assert.equal(result.penalty.penalty_points, 2)
+  assert.equal(result.penalty.expires_at, null)
   assert.ok(calls.some(({ sql }) => sql.includes('booking_status_history') && sql.includes("'PENDING'")))
   assert.ok(calls.some(({ sql, params }) => sql.includes('INSERT INTO notifications') && params[0] === 'customer-id'))
+  assert.ok(calls.some(({ sql, params }) => sql.includes('INSERT INTO technician_penalties') && params[2] === 2 && sql.includes('CURRENT_TIMESTAMP,NULL')))
 })
 
-test('early cancellation does not create a penalty', async () => {
-  const { repository, calls } = fixture({ penaltyApplies: false })
-  assert.equal((await repository.cancel(userId, requestId, 'Family emergency')).penalty, null)
-  assert.equal(calls.some(({ sql }) => sql.includes('INSERT INTO technician_penalties')), false)
+test('cancellation applies the same penalty before or after the appointment', async () => {
+  for (const scheduledAt of ['2026-11-15T10:00:00.000Z', '2026-10-14T10:00:00.000Z']) {
+    const { repository, calls } = fixture({ scheduledAt })
+    assert.equal((await repository.cancel(userId, requestId, 'Family emergency')).penalty.penalty_points, 2)
+    assert.equal(calls.filter(({ sql }) => sql.includes('INSERT INTO technician_penalties')).length, 1)
+  }
 })
 
 test('non-accepted and completion-submitted jobs cannot be cancelled', async () => {
@@ -84,15 +88,15 @@ test('Cancel Accepted Job service formats cancellation and penalty', async () =>
         id: requestId, booking_id: 'booking-id', status: 'CANCELLED',
         cancelled_at: '2026-10-15T10:00:00.000Z', cancellation_reason: 'Emergency',
         booking: {
-          id: 'booking-id', booking_code: 'BK-001', status: 'CANCELLED',
+          id: 'booking-id', booking_code: 'BK-001', status: 'PENDING',
           cancelled_at: '2026-10-15T10:00:00.000Z', cancellation_reason: 'Emergency',
           updated_at: '2026-10-15T10:00:00.000Z',
         },
-        penalty: { id: 'penalty-id', penalty_type: 'CANCELLATION', penalty_points: 10, status: 'ACTIVE' },
+        penalty: { id: 'penalty-id', penalty_type: 'CANCELLATION', penalty_points: 2, status: 'ACTIVE' },
       }
     },
   })
   const result = await service.cancel(userId, requestId, { reason: 'Emergency' })
-  assert.equal(result.booking.status, 'CANCELLED')
-  assert.equal(result.penalty.points, 10)
+  assert.equal(result.booking.status, 'PENDING')
+  assert.equal(result.penalty.points, 2)
 })

@@ -117,10 +117,10 @@ export class TechnicianMatchingRepository {
    * - Required service skills and optional AC brands
    *
    * Ranking:
-   * - Rating first
+   * - Fewer active penalty points first
+   * - Rating
    * - Review count
    * - Historical completion performance
-   * - Active penalty points
    * - Experience
    * - Same-ward preference after quality/performance
    *
@@ -338,6 +338,7 @@ export class TechnicianMatchingRepository {
 
             ROW_NUMBER() OVER (
               ORDER BY
+                penalty_points ASC,
                 rating_average DESC,
                 total_reviews DESC,
 
@@ -349,7 +350,6 @@ export class TechnicianMatchingRepository {
                 END DESC,
 
                 CASE WHEN wallet_debt_vnd >= 500000 THEN 1 ELSE 0 END ASC,
-                penalty_points ASC,
                 CASE WHEN total_requests >= 3 THEN
                   (declined_jobs + expired_jobs)::numeric / NULLIF(total_requests, 0)
                 ELSE 0 END ASC,

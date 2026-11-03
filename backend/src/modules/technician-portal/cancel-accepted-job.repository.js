@@ -1,7 +1,7 @@
 import { withTransaction } from '../../config/database.js'
 import { AppError } from '../../utils.js'
 
-const LATE_CANCELLATION_POINTS = 10
+const ACCEPTED_JOB_CANCELLATION_POINTS = 2
 
 export class CancelAcceptedJobRepository {
   constructor({ transaction = withTransaction } = {}) {
@@ -30,8 +30,7 @@ export class CancelAcceptedJobRepository {
       await client.query('SELECT id FROM technician_accounts WHERE technician_id=$1 FOR UPDATE', [technician.id])
       const requestResult = await client.query(
         `SELECT bt.id,bt.booking_id,bt.status,b.status AS booking_status,b.booking_code,
-                b.scheduled_at,b.technician_completed_at,cp.user_id AS customer_user_id,
-                (b.scheduled_at<=CURRENT_TIMESTAMP+INTERVAL '24 hours') AS penalty_applies
+                b.technician_completed_at,cp.user_id AS customer_user_id
          FROM booking_technicians bt
          JOIN bookings b ON b.id=bt.booking_id
          JOIN customer_profiles cp ON cp.id=b.customer_id
@@ -80,17 +79,16 @@ export class CancelAcceptedJobRepository {
         [job.customer_user_id, `Booking ${job.booking_code}: kỹ thuật viên đã hủy. Bạn có thể chọn kỹ thuật viên khác.`, job.booking_id],
       )
 
-      let penalty = null
-      if (job.penalty_applies) {
-        const penaltyResult = await client.query(
-          `INSERT INTO technician_penalties(
-             technician_id,booking_id,penalty_type,penalty_points,reason,status,applied_at,expires_at
-           ) VALUES($1,$2,'CANCELLATION',$3,$4,'ACTIVE',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP+INTERVAL '30 days')
-           RETURNING id,penalty_type,penalty_points,status,applied_at,expires_at`,
-          [technician.id, job.booking_id, LATE_CANCELLATION_POINTS, reason],
-        )
-        penalty = penaltyResult.rows[0] ?? null
-      }
+      // Every accepted-job cancellation reduces recommendation priority, even
+      // when the appointment is more than 24 hours away. The points do not expire.
+      const penaltyResult = await client.query(
+        `INSERT INTO technician_penalties(
+           technician_id,booking_id,penalty_type,penalty_points,reason,status,applied_at,expires_at
+         ) VALUES($1,$2,'CANCELLATION',$3,$4,'ACTIVE',CURRENT_TIMESTAMP,NULL)
+         RETURNING id,penalty_type,penalty_points,status,applied_at,expires_at`,
+        [technician.id, job.booking_id, ACCEPTED_JOB_CANCELLATION_POINTS, reason],
+      )
+      const penalty = penaltyResult.rows[0]
 
       return { ...assignmentResult.rows[0], booking, penalty }
     })

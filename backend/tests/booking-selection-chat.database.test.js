@@ -6,6 +6,7 @@ import { validateCreateBookingBody } from '../src/modules/customer-bookings/cust
 import { CustomerBookingRepository } from '../src/modules/customer-bookings/customer-booking.repository.js'
 import { TechnicianMatchingRepository } from '../src/modules/customer-bookings/technician-matching.repository.js'
 import { AcceptDeclineJobRequestRepository } from '../src/modules/technician-portal/accept-decline-job-request.repository.js'
+import { CancelAcceptedJobRepository } from '../src/modules/technician-portal/cancel-accepted-job.repository.js'
 import { ChatService } from '../src/modules/chat/chat.service.js'
 
 const enabled = process.env.RUN_JOB_REQUEST_DB_TESTS === '1'
@@ -71,12 +72,13 @@ test('customer booking input and database writes remain compatible with the live
   assert.equal((await pool.query('SELECT 1 FROM bookings WHERE id=$1', [bookingId])).rowCount, 0)
 })
 
-test('customer selects a technician, technician accepts, and both can chat without persisting test data', {
+test('customer selects a technician, technician accepts and chats, then cancellation applies a permanent two-point penalty', {
   skip: !enabled,
 }, async (context) => {
   const db = await pool.connect()
   let requestId
   let messageId
+  let penaltyId
   try {
     await db.query('BEGIN')
     const pending = (await db.query(`
@@ -162,10 +164,26 @@ test('customer selects a technician, technician accepts, and both can chat witho
     const technicianMessages = await chat.listMessages(room.id, technician.user_id, 'CUSTOMER')
     assert.equal(technicianMessages.at(-1).content, 'Rollback flow check')
     assert.ok((await chat.listRooms(technician.user_id)).some(item => item.id === room.id))
+
+    const cancellation = await new CancelAcceptedJobRepository({ transaction: work => work(db) })
+      .cancel(technician.user_id, request.id, 'Rollback flow check')
+    penaltyId = cancellation.penalty.id
+    assert.equal(cancellation.status, 'CANCELLED')
+    assert.equal(cancellation.booking.status, 'PENDING')
+    assert.equal(cancellation.penalty.penalty_points, 2)
+    assert.equal(cancellation.penalty.expires_at, null)
+    const afterCancellation = await matching.findRecommendedTechnicians(booking.id, { limit: 50 }, db)
+    const selectedAfter = afterCancellation.find(item => item.id === technician.id)
+    assert.ok(selectedAfter, 'The cancelled technician remains eligible but has lower priority')
+    assert.equal(Number(selectedAfter.penalty_points), Number(technician.penalty_points) + 2)
+    const selectedIndex = afterCancellation.indexOf(selectedAfter)
+    assert.ok(afterCancellation.slice(0, selectedIndex).every(item =>
+      Number(item.penalty_points) <= Number(selectedAfter.penalty_points)))
   } finally {
     await db.query('ROLLBACK')
     db.release()
   }
   assert.equal((await pool.query('SELECT 1 FROM booking_technicians WHERE id=$1', [requestId])).rowCount, 0)
   assert.equal((await pool.query('SELECT 1 FROM chat_messages WHERE id=$1', [messageId])).rowCount, 0)
+  assert.equal((await pool.query('SELECT 1 FROM technician_penalties WHERE id=$1', [penaltyId])).rowCount, 0)
 })
