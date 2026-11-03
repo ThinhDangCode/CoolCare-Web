@@ -117,10 +117,10 @@ export class TechnicianMatchingRepository {
    * - Required service skills and optional AC brands
    *
    * Ranking:
-   * - Rating first
+   * - Fewer active penalty points first
+   * - Rating
    * - Review count
    * - Historical completion performance
-   * - Active penalty points
    * - Experience
    * - Same-ward preference after quality/performance
    *
@@ -247,7 +247,8 @@ export class TechnicianMatchingRepository {
             COALESCE(
               penalties.penalty_points,
               0
-            ) AS penalty_points
+            ) AS penalty_points,
+            GREATEST(0, -COALESCE(wallet.settlement_balance, 0)) AS wallet_debt_vnd
 
           FROM technician_profiles tp
 
@@ -262,9 +263,13 @@ export class TechnicianMatchingRepository {
           LEFT JOIN active_penalties penalties
             ON penalties.technician_id = tp.id
 
+          LEFT JOIN technician_account_balances wallet
+            ON wallet.technician_id = tp.id
+
           WHERE u.status = 'ACTIVE'
 
             AND can_recommend_technician(tp.id)
+            AND COALESCE(wallet.settlement_balance, 0) > -1000000
             AND NOT EXISTS (
               SELECT 1 FROM booking_technicians assigned
               JOIN bookings existing ON existing.id=assigned.booking_id
@@ -333,6 +338,7 @@ export class TechnicianMatchingRepository {
 
             ROW_NUMBER() OVER (
               ORDER BY
+                penalty_points ASC,
                 rating_average DESC,
                 total_reviews DESC,
 
@@ -343,7 +349,7 @@ export class TechnicianMatchingRepository {
                   ELSE 0
                 END DESC,
 
-                penalty_points ASC,
+                CASE WHEN wallet_debt_vnd >= 500000 THEN 1 ELSE 0 END ASC,
                 CASE WHEN total_requests >= 3 THEN
                   (declined_jobs + expired_jobs)::numeric / NULLIF(total_requests, 0)
                 ELSE 0 END ASC,
@@ -369,6 +375,7 @@ export class TechnicianMatchingRepository {
           ranked.declined_jobs,
           ranked.cancelled_jobs,
           ranked.penalty_points,
+            ranked.wallet_debt_vnd,
 
           COALESCE(
             (

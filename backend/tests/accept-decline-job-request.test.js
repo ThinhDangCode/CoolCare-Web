@@ -31,7 +31,7 @@ test('Accept / Decline Job Request validation accepts strict actions and an opti
   ]) assert.throws(() => validateAcceptDeclineJobRequest(body), { status: 422 })
 })
 
-function repositoryFixture({ status = 'SELECTED', expiresAt = null, bookingStatus = 'TECHNICIAN_SELECTED', hasOverlappingJob = false } = {}) {
+function repositoryFixture({ status = 'SELECTED', expiresAt = null, bookingStatus = 'TECHNICIAN_SELECTED', hasOverlappingJob = false, settlementBalance = 0, scheduledAt = '2099-01-01T00:00:00.000Z' } = {}) {
   const calls = []
   const repository = new AcceptDeclineJobRequestRepository({
     transaction: async (operation) => operation({
@@ -46,11 +46,15 @@ function repositoryFixture({ status = 'SELECTED', expiresAt = null, bookingStatu
         if (sql.includes('WITH windows AS')) {
           return { rows: [{ conflict: hasOverlappingJob }] }
         }
+        if (sql.includes('SELECT settlement_balance FROM technician_account_balances')) {
+          return { rows: [{ settlement_balance: settlementBalance }] }
+        }
         if (sql.includes('FROM booking_technicians bt')) {
           return { rows: [{
             id: requestId, booking_id: 'booking-id', status, expires_at: expiresAt,
             expired: expiresAt !== null,
             booking_status: bookingStatus, booking_code: 'BK-001', customer_user_id: 'customer-id',
+            scheduled_at: scheduledAt,
           }] }
         }
         if (sql.includes('can_recommend_technician')) return { rows: [{ allowed: true }] }
@@ -125,6 +129,24 @@ test('technician cannot accept another request in an overlapping service window'
   )
   assert.equal(calls.some(({ sql }) => sql.includes('UPDATE booking_technicians')), false)
   assert.equal(calls.some(({ sql }) => sql.includes('UPDATE bookings')), false)
+})
+
+test('technician with debt at the blocking threshold cannot accept a job', async () => {
+  const { repository, calls } = repositoryFixture({ settlementBalance: -1000000 })
+  await assert.rejects(
+    repository.respond(userId, requestId, { action: 'ACCEPT', reason: null }),
+    { status: 409, code: 'TECHNICIAN_DEBT_LIMIT' },
+  )
+  assert.equal(calls.some(({ sql }) => sql.includes('UPDATE booking_technicians')), false)
+})
+
+test('technician cannot respond after the booking appointment time', async () => {
+  const { repository, calls } = repositoryFixture({ scheduledAt: '2020-01-01T00:00:00.000Z' })
+  await assert.rejects(
+    repository.respond(userId, requestId, { action: 'ACCEPT', reason: null }),
+    { status: 409, code: 'BOOKING_SCHEDULE_EXPIRED' },
+  )
+  assert.equal(calls.some(({ sql }) => sql.includes('UPDATE booking_technicians')), false)
 })
 
 test('response API requires CUSTOMER auth, validates IDs, and returns the new state', async () => {

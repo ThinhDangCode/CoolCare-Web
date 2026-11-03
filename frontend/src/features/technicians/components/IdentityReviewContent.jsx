@@ -4,7 +4,6 @@ import { useUiPreferences } from '../../../shared/context/UiPreferencesContext.j
 import { adminRequest } from '../../../shared/api/adminApi.js'
 import { CertificateTable, DocumentLink } from './TechnicianShared.jsx'
 import { formatDate, safeDocumentUrl } from './technicianFormat.js'
-import { IdentityOcrPanel } from './IdentityOcrPanel.jsx'
 
 export function IdentityReviewContent({ technicianId, onReady }) {
   const { token, logout } = useAuth()
@@ -32,6 +31,7 @@ export function IdentityReviewContent({ technicianId, onReady }) {
   if (error) return <div role="alert">{error} <button type="button" onClick={() => setRetry(n=>n+1)}>{t('Retry loading profile')}</button></div>
   if (!profile) return <p role="status">{t('Loading submitted identity documents…')}</p>
   return <section>
+    <p>{t('Review the information and submitted document before approving or rejecting.')}</p>
     <dl className="identity-review-summary">
       <div><dt>{t('Full name')}</dt><dd>{profile.full_name}</dd></div>
       <div><dt>{t('Phone number')}</dt><dd>{profile.phone || '—'}</dd></div>
@@ -50,7 +50,6 @@ export function IdentityReviewContent({ technicianId, onReady }) {
         </div>
       })}
     </div>
-    {profile.verification_status === 'PENDING' && <IdentityOcrPanel technicianId={profile.id} hasImages={Boolean(profile.identity_front_url || profile.identity_back_url)} />}
     <h3>{t('Submitted certificates')}</h3>
     <CertificateTable items={profile.certifications || []} />
   </section>

@@ -11,7 +11,7 @@ import {
   validateTechnicianProfile,
 } from './technicianProfileValidation.js'
 
-export function Dialog({ title, children, onClose, busy }) {
+export function Dialog({ title, children, onClose, busy, className = '' }) {
   const ref = useRef(null)
   useEffect(() => {
     ref.current.showModal()
@@ -19,7 +19,7 @@ export function Dialog({ title, children, onClose, busy }) {
   return (
     <dialog
       ref={ref}
-      className="technician-action-dialog"
+      className={`technician-action-dialog ${className}`}
       aria-labelledby="technician-action-title"
       onCancel={(e) => {
         e.preventDefault()
@@ -64,6 +64,7 @@ export function ReviewDialog({ target, onClose, onSuccess }) {
   }
   return (
     <Dialog
+      className={target.technicianId ? 'technician-review-dialog' : ''}
       title={target.chooseDecision
         ? t('Review technician application')
         : t(approve ? 'Approve {kind}?' : 'Reject {kind}?', { kind: t(target.kind || 'profile') })}

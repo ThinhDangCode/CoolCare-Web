@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto'
 import { pool, withTransaction } from '../../config/database.js'
 import { validateUuid } from '../../utils.js'
 import { walletError } from './wallet.domain.js'
+import { DEBT_WARNING_VND, DEBT_DEMOTION_VND, DEBT_BLOCK_VND, debtFromBalance, debtTier } from './debt-policy.js'
 
 const TOPUP_STATUSES = [
   'PENDING',
@@ -215,7 +216,15 @@ export class TechnicianWalletRepository {
       ),
     ])
 
+    const settlementBalance = balance.rows[0]?.settlement_balance ?? 0
     return {
+      debtPolicy: {
+        amountVnd: debtFromBalance(settlementBalance),
+        status: debtTier(settlementBalance),
+        warningAtVnd: DEBT_WARNING_VND,
+        demotionAtVnd: DEBT_DEMOTION_VND,
+        blockAtVnd: DEBT_BLOCK_VND,
+      },
       balance: balance.rows[0] ?? {
         settlement_balance: '0',
         reserved_amount: '0',

@@ -82,7 +82,7 @@ export function validatePenaltyQuery(query) {
   const page = query.page === undefined ? 1 : Number(query.page)
   const limit = query.limit === undefined ? 10 : Number(query.limit)
   const search = query.search ?? ''
-  const status = query.status ?? 'ACTIVE'
+  const status = query.status ?? 'ALL'
   const type = query.type ?? 'ALL'
   if (!Number.isInteger(page) || page < 1 || page > 1000000) errors.page = 'Invalid page.'
   if (!Number.isInteger(limit) || limit < 1 || limit > 100) errors.limit = 'Invalid page size.'
@@ -107,7 +107,7 @@ export function validateTechnicianQuery(query, certifications = false) {
   }
   const result = { page, limit }
   result.sort = query.sort ?? 'NAME'
-  if (!['NAME', 'LATEST', 'OLDEST', 'PRIORITY'].includes(result.sort)) errors.sort = 'Invalid sort order.'
+  if (!['NAME', 'NAME_DESC', 'ID_ASC', 'ID_DESC', 'LATEST', 'OLDEST', 'PRIORITY'].includes(result.sort)) errors.sort = 'Invalid sort order.'
   for (const [key, options] of Object.entries(choices)) {
     const value = query[key] ?? 'ALL'
     if (!options.includes(value)) errors[key] = 'Invalid filter.'
