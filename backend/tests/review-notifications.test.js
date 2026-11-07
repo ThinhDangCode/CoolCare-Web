@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { ReviewRepository } from '../src/modules/reviews/review.repository.js'
+import { adaptDatabaseQuery } from '../src/config/database-codebook-adapter.js'
 
 const userId = '12345678-1234-1234-1234-123456789012'
 const customerId = '22345678-1234-1234-1234-123456789012'
@@ -43,4 +44,17 @@ test('a star-only review still creates a useful technician notification', async 
   await repository.create(userId, { booking_id: bookingId, rating: 4, comment: null })
   const notification = queries.find(({ sql }) => sql.includes('INSERT INTO notifications'))
   assert.equal(notification.params[1], 'Bạn nhận được đánh giá 4/5 sao cho booking BK-002.')
+})
+
+test('review eligibility converts the assignment completion status for the numeric database schema', async () => {
+  const { repository, queries } = repositoryFixture('BK-003')
+  await repository.create(userId, { booking_id: bookingId, rating: 5, comment: null })
+
+  const eligibility = queries.find(({ sql }) => sql.includes('JOIN LATERAL'))
+  assert.ok(eligibility)
+  const adapted = adaptDatabaseQuery(eligibility.sql, eligibility.params)
+  // Assignments use 6 for COMPLETED; bookings use a different code (9).
+  assert.match(adapted.query, /\bstatus\s*=\s*6\b/)
+  assert.doesNotMatch(adapted.query, /'COMPLETED'/)
+  assert.deepEqual(adapted.params, [bookingId, customerId])
 })
