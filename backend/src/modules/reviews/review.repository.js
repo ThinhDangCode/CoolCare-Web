@@ -53,9 +53,9 @@ export class ReviewRepository {
           await client.query(
             `SELECT b.id,b.booking_code,b.status,bt.technician_id FROM bookings b
                JOIN LATERAL (
-                    SELECT technician_id FROM booking_technicians
-                     WHERE booking_id=b.id AND status='COMPLETED'
-                     ORDER BY responded_at DESC NULLS LAST LIMIT 1
+                    SELECT completed_bt.technician_id FROM booking_technicians completed_bt
+                     WHERE completed_bt.booking_id=b.id AND completed_bt.status='COMPLETED'
+                     ORDER BY completed_bt.responded_at DESC NULLS LAST LIMIT 1
                ) bt ON true
               WHERE b.id=$1 AND b.customer_id=$2 FOR UPDATE OF b`,
             [data.booking_id, customerId]
