@@ -106,6 +106,15 @@ Provider address/hotline stay blank until real business details are configured;
 the document does not invent a tax code, tax rate or electronic-tax-invoice
 registration. It is a system service invoice, not a declared VAT invoice.
 
+The final page contains the approved two-column signing area: `KHÁCH HÀNG` and
+`KỸ THUẬT VIÊN THỰC HIỆN`, each with `(Ký và ghi rõ họ tên)` and blank signing
+space. There is no signing date, prefilled signer name or claim of a completed
+signature. If either content column leaves insufficient room, the whole signing
+area moves to one additional A4 page. Multi-page documents show page numbers in
+the header. The service-document disclaimer appears in `GHI CHÚ` instead of a
+fixed footer, keeping the signing area clear. PDF download does not collect or
+persist signatures.
+
 Money comes from stored exact decimal strings. Parts already belong to subtotal;
 they are shown separately without being added twice. The existing grouping rule
 combines only compatible service/labor snapshots and preserves quantities,

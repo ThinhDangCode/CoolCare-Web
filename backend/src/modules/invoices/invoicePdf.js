@@ -12,6 +12,7 @@ const PAGE = { width: 794, height: 1123, bottom: 1018 }
 const MARGIN = 28
 const LEFT = { x: MARGIN, width: 264 }
 const RIGHT = { x: 308, width: 458 }
+const SIGNATURE = { top: 943, height: 150, columnWidth: 337, gap: 64 }
 const COLORS = {
   orange: '#FF6B00', tint: '#FFF1E5', ink: '#0F172A', muted: '#697586',
   border: '#DCE1E7', table: '#F3F4F6', white: '#FFFFFF',
@@ -197,6 +198,7 @@ export async function buildInvoicePdf(invoice, { supplier = {} } = {}) {
 
     const panel = (column, title, paragraphs) => {
       const pad = 17
+      const verticalPad = 12
       const titleLines = wrap(title, column.width - 2 * pad, 20, 'bold')
       const initialHeadingHeight = titleLines.length * 20 * 1.24 + 17
       const lines = []
@@ -208,7 +210,7 @@ export async function buildInvoicePdf(invoice, { supplier = {} } = {}) {
         lines.push({ text: '', size: 0, weight, color: COLORS.ink, height: paragraph.gap ?? 6 })
       }
       if (lines.at(-1)?.size === 0) lines.pop()
-      const fullHeight = initialHeadingHeight + 2 * pad + lines.reduce((sum, item) => sum + item.height, 0)
+      const fullHeight = initialHeadingHeight + 2 * verticalPad + lines.reduce((sum, item) => sum + item.height, 0)
       // Keep normal panels whole; exceptionally long fields flow onto the next
       // page with the heading repeated instead of shrinking or truncating data.
       if (fullHeight <= PAGE.bottom - continuationTop) fit(column, fullHeight)
@@ -217,17 +219,17 @@ export async function buildInvoicePdf(invoice, { supplier = {} } = {}) {
       do {
         const currentTitle = continued ? wrap(`${title} (tiếp)`, column.width - 2 * pad, 20, 'bold') : titleLines
         const headingHeight = currentTitle.length * 20 * 1.24 + 17
-        fit(column, headingHeight + 2 * pad + 25)
-        const available = PAGE.bottom - column.y - headingHeight - 2 * pad
+        fit(column, headingHeight + 2 * verticalPad + 25)
+        const available = PAGE.bottom - column.y - headingHeight - 2 * verticalPad
         let end = offset
         let bodyHeight = 0
         while (end < lines.length && bodyHeight + lines[end].height <= available) bodyHeight += lines[end++].height
         if (end === offset && lines.length) { nextPage(column); continue }
-        const height = headingHeight + 2 * pad + bodyHeight
+        const height = headingHeight + 2 * verticalPad + bodyHeight
         rect(column.x, column.y, column.width, height)
         rect(column.x, column.y, column.width, headingHeight, COLORS.tint, null)
         textLines(currentTitle, column.x + pad, column.y + 10, column.width - 2 * pad, 20, 'bold', COLORS.orange)
-        let y = column.y + headingHeight + pad
+        let y = column.y + headingHeight + verticalPad
         for (const item of lines.slice(offset, end)) {
           if (item.size) textLines([item.text], column.x + pad, y, column.width - 2 * pad, item.size, item.weight, item.color)
           y += item.height
@@ -262,7 +264,7 @@ export async function buildInvoicePdf(invoice, { supplier = {} } = {}) {
       paymentParagraphs.push({ text: 'Phương thức: Chưa xác định' }, { text: 'Thời gian: Chưa xác định' })
     }
     panel(left, 'THÔNG TIN THANH TOÁN', paymentParagraphs)
-    panel(left, 'GHI CHÚ', [{ text: 'Vui lòng liên hệ CoolCare nếu cần hỗ trợ về hóa đơn.', size: 16 }])
+    panel(left, 'GHI CHÚ', [{ text: 'Chứng từ dịch vụ từ hệ thống - không dùng để kê khai thuế.', size: 14 }])
 
     const invoiceItems = groupInvoiceItems(Array.isArray(invoice.items) ? invoice.items : [])
     const needsWideAmounts = invoiceItems.some((item) =>
@@ -355,12 +357,32 @@ export async function buildInvoicePdf(invoice, { supplier = {} } = {}) {
     summaryRow('Đã thanh toán', paid ? formatInvoicePdfAmount(invoice.totals?.totalAmount) : 'Chưa xác định')
     summaryRow('Còn phải trả', paid ? formatInvoicePdfAmount('0') : 'Chưa xác định')
 
-    for (let index = 0; index < pageCount; index += 1) {
+    // The two columns paginate independently. Only cursors on the last content
+    // page can determine whether that page has room for the whole signing area.
+    // Panels already include their trailing 18px gap; the totals do not.
+    const lastContentPage = Math.max(left.page, right.page)
+    const contentBottom = Math.max(
+      left.page === lastContentPage ? left.y : 0,
+      right.page === lastContentPage ? right.y + 18 : 0,
+    )
+    const signaturePage = contentBottom <= SIGNATURE.top ? lastContentPage : lastContentPage + 1
+    ensurePage(signaturePage)
+    const signatureColumns = [
+      { x: MARGIN, label: 'KHÁCH HÀNG' },
+      { x: MARGIN + SIGNATURE.columnWidth + SIGNATURE.gap, label: 'KỸ THUẬT VIÊN THỰC HIỆN' },
+    ]
+    for (const column of signatureColumns) {
+      text(column.label, column.x, SIGNATURE.top, SIGNATURE.columnWidth, 18, 'bold', COLORS.ink, 'center')
+      doc.save().fillOpacity(0.72)
+      text('(Ký và ghi rõ họ tên)', column.x, SIGNATURE.top + 26, SIGNATURE.columnWidth, 14, 'regular', COLORS.ink, 'center')
+      doc.restore()
+    }
+
+    // Count pages after adding the signing page. Page numbers belong in the
+    // header so the blank 150px signing area stays clear on the final page.
+    if (pageCount > 1) for (let index = 0; index < pageCount; index += 1) {
       ensurePage(index)
-      line(MARGIN, 1041, 766, 1041, COLORS.orange)
-      text('Cảm ơn quý khách đã sử dụng dịch vụ CoolCare.', MARGIN, 1055, 640, 15)
-      text('Chứng từ dịch vụ từ hệ thống - không dùng để kê khai thuế.', MARGIN, 1079, 640, 13, 'regular', COLORS.muted)
-      text(`${index + 1}/${pageCount}`, 693, 1079, 73, 13, 'regular', COLORS.muted, 'right')
+      text(`${index + 1}/${pageCount}`, 693, 14, 73, 13, 'regular', COLORS.muted, 'right')
     }
     doc.end()
   } catch (error) {
