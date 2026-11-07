@@ -6,6 +6,7 @@ import { useAutoDismiss } from '../../../shared/hooks/useAutoDismiss.js'
 import { adminRequest } from '../../../shared/api/adminApi.js'
 import { ArrowLeftIcon, CheckIcon, CloseIcon, PageHeader } from '../../../shared/components/AdminUi.jsx'
 import '../../../shared/styles/admin.css'
+import { PenaltyReference } from './PenaltyReference.jsx'
 
 const label = (value) =>
   value
@@ -489,7 +490,7 @@ export function ComplaintDetailPage() {
               </aside>
               {showResolution && (
                 <div className="figma-modal-backdrop complaint-resolution-backdrop">
-                  <section className="complaint-resolution-dialog" role="dialog" aria-modal="true">
+                  <section className="complaint-resolution-dialog complaint-resolution-with-reference" role="dialog" aria-modal="true">
                     <header>
                       <span>
                         <CheckIcon />
@@ -510,6 +511,7 @@ export function ComplaintDetailPage() {
                         <CloseIcon />
                       </button>
                     </header>
+                    <div className="complaint-resolution-workspace">
                     <div className="complaint-resolution-dialog-body">
                       {error && (
                         <p role="alert" className="figma-table-state error">
@@ -589,6 +591,8 @@ export function ComplaintDetailPage() {
                         />
                         {t('Notify customer via in-app notification immediately')}
                       </label>
+                    </div>
+                    <PenaltyReference />
                     </div>
                     <footer>
                       {['OPEN', 'IN_PROGRESS'].includes(complaint.status) && (

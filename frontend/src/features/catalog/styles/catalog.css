@@ -1240,3 +1240,8 @@
 }
 
 .catalog-row-icon img { width: 100%; height: 100%; object-fit: cover; border-radius: inherit; display: block; }
+
+.catalog-id-sort { display: inline-flex; align-items: center; gap: 6px; padding: 0; border: 0; background: transparent; color: inherit; font: inherit; letter-spacing: inherit; cursor: pointer; }
+.catalog-id-sort svg { color: #8ca0bd; }
+.catalog-id-sort.active svg { color: #ff7415; }
+.catalog-id-sort:focus-visible { outline: 2px solid #ff9a52; outline-offset: 4px; }

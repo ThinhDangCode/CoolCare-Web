@@ -198,9 +198,6 @@
   font-size: 12px;
   cursor: pointer;
 }
-.skill-sort select {
-  max-width: 125px;
-}
 .skill-list-panel {
   border-radius: 12px;
   border-color: #e4ebf4;

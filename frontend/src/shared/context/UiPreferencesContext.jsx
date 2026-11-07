@@ -396,6 +396,8 @@ const messages = {
     'Super Admin': 'Quản trị viên cấp cao',
     'Technician Verification': 'Xác minh kỹ thuật viên',
     '{count} pending verification requests': '{count} yêu cầu xác minh đang chờ xử lý',
+    '{count} verification requests': '{count} hồ sơ xét duyệt',
+    'Filter by status': 'Lọc theo trạng thái',
     Syncing: 'Đang đồng bộ',
     Unavailable: 'Không khả dụng',
     'Pipeline Live': 'Đang xử lý trực tiếp',

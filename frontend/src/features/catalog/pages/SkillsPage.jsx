@@ -36,11 +36,6 @@ function SkillIcon({ name, ...props }) {
     next: <path d="m10 5 7 7-7 7" />,
     bolt: <path d="m13 2-9 12h7l-1 8 10-13h-7Z" />,
     filter: <path d="M3 5h18l-7 8v6l-4-2v-4Z" />,
-    sort: (
-      <>
-        <path d="M5 5v14m-3-3 3 3 3-3M11 5h10M11 10h7M11 15h4" />
-      </>
-    ),
     close: <path d="m6 6 12 12M6 18 18 6" />,
   }
   return (
@@ -326,11 +321,10 @@ export function SkillsPage() {
   const [keyword, setKeyword] = useState('')
   const [status, setStatus] = useState('all')
   const [service, setService] = useState('')
-  const [sort, setSort] = useState('newest')
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState(10)
   const [refresh, setRefresh] = useState(0)
-  const query = new URLSearchParams({ search: keyword, status, sort, page, limit })
+  const query = new URLSearchParams({ search: keyword, status, page, limit })
   if (service) query.set('service_id', service)
   const queryString = query.toString()
   const key = `${token}:${queryString}:${refresh}`
@@ -503,18 +497,6 @@ export function SkillsPage() {
                   {item.is_active ? '' : ` (${t('Inactive')})`}
                 </option>
               ))}
-            </select>
-          </label>
-          <label className="skill-select skill-sort">
-            <SkillIcon name="sort" />
-            <select
-              aria-label={t('Sort skills')}
-              value={sort}
-              onChange={(e) => filter(setSort, e.target.value)}
-            >
-              <option value="newest">{t('Newest')}</option>
-              <option value="oldest">{t('Oldest')}</option>
-              <option value="name">{t('Name A–Z')}</option>
             </select>
           </label>
           <CatalogTrash kind="skills" onChanged={reload} />

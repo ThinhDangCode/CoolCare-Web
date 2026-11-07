@@ -18,10 +18,8 @@ import './technicians.css'
 const initialFilters = {
   status: 'ALL',
   verification: 'VERIFIED',
-  qualification: 'ALL',
   availability: 'ALL',
   area: '',
-  skill: '',
   sort: 'NAME',
 }
 
@@ -33,7 +31,7 @@ export function TechniciansPage() {
   const [filters, setFilters] = useState(initialFilters)
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState(10)
-  const [options, setOptions] = useState({ areas: [], skills: [] })
+  const [options, setOptions] = useState({ areas: [] })
   const [data, setData] = useState({ items: [], total: 0 })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -108,7 +106,7 @@ export function TechniciansPage() {
     <label className="technician-filter">
       <span>{t(title)}</span>
       <select aria-label={t(title)} value={filters[key]} onChange={(e) => change(key, e.target.value)}>
-        <option value={key === 'skill' || key === 'area' ? '' : 'ALL'}>{t(placeholder)}</option>
+        <option value={key === 'area' ? '' : 'ALL'}>{t(placeholder)}</option>
         {items.map((item) => (
           <option key={item} value={item}>
             {t(label(item))}
@@ -142,9 +140,7 @@ export function TechniciansPage() {
               />
             </label>
             {select('status', 'Statuses', ['ACTIVE', 'INACTIVE', 'LOCKED'])}
-            {select('skill', 'Skills', options.skills)}
             {select('area', 'Service Areas', options.areas)}
-            {select('qualification', 'Levels', ['BEGINNER', 'INTERMEDIATE', 'ADVANCED', 'EXPERT'])}
           </div>
           <div className="figma-users-table technician-table">
             <table>

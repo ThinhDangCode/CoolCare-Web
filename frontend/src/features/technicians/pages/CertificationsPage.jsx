@@ -183,7 +183,6 @@ export function CertificationsPage() {
   const [search, setSearch] = useState('')
   const [keyword, setKeyword] = useState('')
   const [status, setStatus] = useState('ALL')
-  const [type, setType] = useState('ALL')
   const [issuer, setIssuer] = useState('')
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState(10)
@@ -203,7 +202,7 @@ export function CertificationsPage() {
   }, [search])
   useEffect(() => {
     const controller = new AbortController()
-    const query = new URLSearchParams({ search: keyword, status, type, issuer, page, limit })
+    const query = new URLSearchParams({ search: keyword, status, issuer, page, limit })
     adminRequest(`/technicians/certifications?${query}`, token, { signal: controller.signal })
       .then((result) => {
         setData(result)
@@ -219,7 +218,7 @@ export function CertificationsPage() {
         if (!controller.signal.aborted) setLoading(false)
       })
     return () => controller.abort()
-  }, [token, logout, keyword, status, type, issuer, page, limit, refresh])
+  }, [token, logout, keyword, status, issuer, page, limit, refresh])
   const retry = () => {
     setLoading(true)
     setRefresh((n) => n + 1)
@@ -258,17 +257,6 @@ export function CertificationsPage() {
                 }}
               />
             </label>
-            <select
-              aria-label="Document type"
-              title="Filter by certificate document format"
-              value={type}
-              onChange={(e) => filter(setType, e.target.value)}
-            >
-              <option value="ALL">{t('All Document Types')}</option>
-              <option value="PDF">PDF</option>
-              <option value="IMAGE">{t('Image')}</option>
-              <option value="OTHER">{t('Other / No document')}</option>
-            </select>
             <select
               aria-label="Certification status"
               value={status}
