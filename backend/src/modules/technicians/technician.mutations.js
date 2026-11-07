@@ -115,6 +115,7 @@ export class TechnicianMutations {
   async activate(id,actorId) {
     await this.transaction(async client=>{
       const before=await this.lock(client,id)
+      if(before.verification_status!=='VERIFIED') throw new AppError(409,'TECHNICIAN_NOT_VERIFIED','Approve the technician profile before activating this technician.')
       const user=(await client.query('SELECT status FROM users WHERE id=$1 FOR UPDATE',[before.user_id])).rows[0]
       const balance=(await client.query(`SELECT ${remainingPointsSql('$1')} AS remaining_points`,[id])).rows[0]
       if(balance.remaining_points===0) throw new AppError(409,'POINTS_EXHAUSTED','This technician has no remaining points.')

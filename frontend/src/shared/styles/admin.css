@@ -830,6 +830,21 @@
   color: #be123c;
   font-size: 8px;
 }
+.voucher-policy-note {
+  display: grid;
+  gap: 6px;
+  margin: 16px 0 0;
+  padding: 12px 14px;
+  border: 1px solid #fed7aa;
+  border-radius: 8px;
+  color: #7c2d12;
+  background: #fff7ed;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.voucher-policy-note strong {
+  color: inherit;
+}
 .input-with-icon,
 .voucher-field-grid label > div {
   display: flex;

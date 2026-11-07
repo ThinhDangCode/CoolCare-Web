@@ -365,16 +365,6 @@
   color: #f97316;
   border-color: #fdba74;
 }
-.verification-actions .approve {
-  color: #059669;
-  border-color: #a7f3d0;
-  background: #ecfdf5;
-}
-.verification-actions .reject {
-  color: #e11d48;
-  border-color: #fecdd3;
-  background: #fff1f2;
-}
 .verification-actions button:disabled {
   opacity: 0.55;
   cursor: not-allowed;
@@ -495,16 +485,4 @@ html[data-theme='dark'] .verification-footer .figma-pagination button.active:dis
   background: #f97316;
   border-color: #f97316;
   opacity: 1;
-}
-
-html[data-theme='dark'] .verification-actions .approve {
-  color: #6ee7b7;
-  background: #0b3b35;
-  border-color: #176b5d;
-}
-
-html[data-theme='dark'] .verification-actions .reject {
-  color: #fda4af;
-  background: #451a2b;
-  border-color: #7f2946;
 }

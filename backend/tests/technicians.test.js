@@ -55,6 +55,26 @@ test('approving a technician repairs the receiving account and activates the pro
   assert.equal(notification.params[1], 'Đăng ký kỹ thuật viên đã được duyệt')
 })
 
+test('pending and rejected applicants cannot be activated as official technicians', async () => {
+  for (const verification_status of ['PENDING', 'REJECTED']) {
+    const queries = []
+    const audits = []
+    const mutations = new TechnicianMutations({
+      audit: (event) => audits.push(event),
+      transaction: (work) => work({ query: async (sql) => {
+        queries.push(sql)
+        return { rows: [{ verification_status }] }
+      } }),
+    })
+    await assert.rejects(mutations.activate('applicant', 'admin'), {
+      status: 409,
+      code: 'TECHNICIAN_NOT_VERIFIED',
+    })
+    assert.equal(queries.some((sql) => sql.startsWith('UPDATE')), false)
+    assert.equal(audits.length, 0)
+  }
+})
+
 test('verified technicians cannot clear all skills or produce a successful audit', async () => {
   const queries = []
   const audits = []
@@ -88,8 +108,8 @@ test('technician mutations validate decisions, limits and unique skill assignmen
   assert.deepEqual(validateTechnicianSkills({skills:[]}),{skills:[]})
 })
 
-test('penalty queries default to active penalties and reject invalid filters', () => {
-  assert.equal(validatePenaltyQuery({}).status, 'ACTIVE')
+test('penalty queries default to all history and reject invalid filters', () => {
+  assert.equal(validatePenaltyQuery({}).status, 'ALL')
   assert.equal(validatePenaltyQuery({ search: ' Linh ' }).search, 'Linh')
   for (const query of [{status:'PENDING'}, {type:'OTHER'}, {page:0}, {limit:101}, {search:[]}]) assert.throws(() => validatePenaltyQuery(query), {status:422})
 })
@@ -151,7 +171,7 @@ test('technician routes protect identity, validate requests and audit successful
     assert.equal(JSON.stringify(audits).includes('000000000001'), false)
     const penalties = await fetch(`${base}/penalties`, { headers: headers('ADMIN') })
     assert.equal(penalties.status, 200)
-    assert.equal((await penalties.json()).data.status, 'ACTIVE')
+    assert.equal((await penalties.json()).data.status, 'ALL')
     assert.equal(audits.at(-1).action, 'VIEW_TECHNICIAN_PENALTIES')
     const write = (path,role,body,method='PATCH') => fetch(base+path,{method,headers:{...headers(role),'Content-Type':'application/json'},body:JSON.stringify(body)})
     assert.equal((await write(`/${targetId}/verification`,'CUSTOMER',{status:'VERIFIED'})).status,403)
@@ -159,6 +179,9 @@ test('technician routes protect identity, validate requests and audit successful
     assert.equal((await write(`/${targetId}/verification`,'ADMIN',{status:'VERIFIED'})).status,200)
     assert.equal(mutationCalls.at(-1).args[2],targetId)
     assert.equal((await write(`/certifications/${targetId}/review`,'ADMIN',{status:'REJECTED',reason:'Unreadable document',expected_updated_at:new Date().toISOString()})).status,200)
+    assert.equal((await write(`/certifications/${targetId}/review`,'ADMIN',{status:'VERIFIED',expected_updated_at:new Date().toISOString()})).status,200)
+    assert.equal(mutationCalls.at(-1).action,'certification')
+    assert.equal(mutationCalls.at(-1).args[1].status,'VERIFIED')
     assert.equal((await write(`/${targetId}/skills`,'ADMIN',{skills:[]})).status,200)
     assert.equal((await write(`/${targetId}/areas`,'CUSTOMER',{areas:[]})).status,403)
     assert.equal((await write(`/${targetId}/areas`,'ADMIN',{areas:[{city:'Can Tho',ward:''}]})).status,422)

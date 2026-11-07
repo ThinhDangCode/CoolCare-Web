@@ -22,7 +22,7 @@ const types = {
   RULE_VIOLATION: 'Rule violation',
 }
 const statuses = {
-  ALL: 'All',
+  ALL: 'All statuses',
   ACTIVE: 'Active',
   EXPIRED: 'Expired',
   REVOKED: 'Revoked',
@@ -32,14 +32,14 @@ export function PenaltiesPage() {
   const { t } = useUiPreferences()
   const [search, setSearch] = useState('')
   const [keyword, setKeyword] = useState('')
-  const [status, setStatus] = useState('ACTIVE')
+  const [status, setStatus] = useState('ALL')
   const [type, setType] = useState('ALL')
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState(10)
   const [data, setData] = useState({
     items: [],
     total: 0,
-    summary: { active_penalties: 0, penalized_technicians: 0, active_points: 0 },
+    summary: { total_penalties: 0, historical_technicians: 0, active_penalties: 0 },
   })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -91,23 +91,22 @@ export function PenaltiesPage() {
       <section className="technician-content">
         <div className="penalty-summary" aria-label={t('System-wide penalty statistics')}>
           {[
-            ['penalized_technicians', 'Penalized technicians'],
-            ['active_penalties', 'Active penalties'],
-            ['active_points', 'Points deducted (active)'],
-          ].map(([key, title]) => (
+            ['historical_technicians', 'Technicians with penalty history', 'Includes expired and revoked penalties'],
+            ['total_penalties', 'Total penalties', 'Includes expired and revoked penalties'],
+            ['active_penalties', 'Active penalties', 'Unexpired penalties only'],
+          ].map(([key, title, note]) => (
             <div key={key}>
               <span>{t(title)}</span>
               <strong>
                 {loading || error
                   ? '—'
-                  : key === 'active_points' && data.summary[key] > 0
-                    ? `−${data.summary[key]}`
-                    : data.summary[key]}
+                  : data.summary[key]}
               </strong>
-              <small>{t('System-wide')}</small>
+              <small>{t('System-wide')} · {t(note)}</small>
             </div>
           ))}
         </div>
+        <p className="penalty-history-note">{t('Statistics cover all history; filters below apply to the list only.')}</p>
         <div className="penalty-toolbar">
           <label className="technician-search">
             <SearchIcon />
@@ -151,8 +150,8 @@ export function PenaltiesPage() {
                 <th>{t('TECHNICIAN')}</th>
                 <th>{t('VIOLATION & REASON')}</th>
                 <th>{t('REFERENCE')}</th>
-                <th>{t('DEDUCTION')}</th>
-                <th>{t('APPLIED / EXPIRES')}</th>
+                <th className="penalty-numeric">{t('DEDUCTION')}</th>
+                <th className="penalty-numeric">{t('APPLIED / EXPIRES')}</th>
                 <th>{t('STATUS')}</th>
                 <th>{t('ACTION')}</th>
               </tr>
@@ -210,7 +209,7 @@ export function PenaltiesPage() {
                         {row.booking_code || t('No linked booking')}
                       </small>
                     </td>
-                    <td>
+                    <td className="penalty-numeric">
                       <span
                         className="penalty-points"
                         aria-label={`${row.penalty_points} points deducted`}
@@ -221,7 +220,7 @@ export function PenaltiesPage() {
                         {row.remaining_points ?? 12} / 12 {t('left')}
                       </small>
                     </td>
-                    <td className="penalty-dates">
+                    <td className={`penalty-dates ${row.applied_at ? 'penalty-numeric' : ''}`}>
                       <span>{formatDate(row.applied_at)}</span>
                       <small className="technician-muted">
                         {row.expires_at ? `${t('Until')} ${formatDate(row.expires_at)}` : t('No expiry')}

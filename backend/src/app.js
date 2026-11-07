@@ -1,3 +1,4 @@
+import { stripeWithdrawalRouter, stripeWebhook } from './modules/stripe-withdrawals/routes.js'
 import cors from 'cors'
 import express from 'express'
 import { pool } from './config/database.js'
@@ -78,6 +79,10 @@ const authService = new AuthService({
 })
 const authController = new AuthController(authService)
 
+export function setAuthSocketServer(io) {
+  authService.setSocketServer(io)
+}
+
 // ADDRESS
 const addressRepository = new AddressRepository()
 const addressService = new AddressService(addressRepository)
@@ -121,6 +126,8 @@ app.use(
   })
 )
 
+app.get('/api/stripe/onboarding-return', (req, res) => res.type('html').send('<h2>Stripe test onboarding: return to CoolCare app.</h2>'))
+app.post('/api/stripe/webhook', express.raw({type:'application/json'}), stripeWebhook)
 app.use(express.json({ limit: '1mb' }))
 
 // HEALTH
@@ -165,9 +172,9 @@ app.use('/api/customer/ac-units', createCustomerAcUnitRouter())
 app.use('/api/technician/notifications', createTechnicianNotificationsRouter())
 app.use('/api/admin', createAdminVoucherRouter(voucherController))
 app.use('/api/admin/payments', createPaymentsRouter())
-app.use('/api/admin/invoices', createInvoicesRouter())
 // Invoice routes first: they only claim /:paymentId/invoice* and fall through otherwise.
 app.use('/api/payments', createInvoiceRouter())
+app.use('/api/admin/invoices', createInvoicesRouter())
 app.use('/api/payments', createCustomerPaymentRouter())
 app.use('/api/admin/revenue', createRevenueRouter())
 app.use('/api/admin/reports', createReportsRouter())
@@ -187,6 +194,7 @@ app.use('/api/technician-portal', createTechnicianPortalRouter())
 // Gateway callbacks are public endpoints authenticated by provider signatures. Register before the authenticated wallet router.
 app.use('/api/technician-wallet/callbacks', createTechnicianWalletCallbackRouter())
 app.use('/api/technician-wallet', createTechnicianWalletRouter())
+app.use('/api/stripe-withdrawals', stripeWithdrawalRouter)
 app.use('/api/quotations', createQuotationRouter())
 
 // ADDRESS

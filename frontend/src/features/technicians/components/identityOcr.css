@@ -13,4 +13,14 @@
 .identity-ocr-sides small { display:block; color:#64748b; font-size:12px; }
 .identity-ocr-note { color:#854d0e; font-size:13px; }
 .identity-ocr-error, .identity-ocr-sides [role=alert] { color:#b91c1c; }
+html[data-theme='dark'] .identity-ocr-panel,
+html[data-theme='dark'] .identity-ocr-sides section {
+  color: var(--app-text);
+  background: var(--app-surface-soft);
+  border-color: var(--app-border);
+}
+html[data-theme='dark'] .identity-ocr-sides :is(dt, small) { color: var(--app-muted); }
+html[data-theme='dark'] .identity-ocr-note { color: #fbbf24; }
+html[data-theme='dark'] .identity-ocr-error,
+html[data-theme='dark'] .identity-ocr-sides [role=alert] { color: #fda4af; }
 @media(max-width:700px) { .identity-ocr-sides { grid-template-columns:1fr; } }

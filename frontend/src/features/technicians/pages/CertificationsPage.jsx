@@ -8,7 +8,6 @@ import {
   Pagination,
   SearchIcon,
   EyeIcon,
-  CheckIcon,
   CloseIcon,
   TableState,
 } from '../../../shared/components/AdminUi.jsx'
@@ -17,7 +16,6 @@ import { formatDate, safeDocumentUrl } from '../components/technicianFormat.js'
 import '../../../shared/styles/admin.css'
 import './technicians.css'
 import './certifications.css'
-import { ReviewDialog } from '../components/TechnicianActions.jsx'
 
 const statusLabels = {
   VERIFIED: 'Active',
@@ -35,19 +33,53 @@ function CertificateStatus({ value }) {
     </span>
   )
 }
-function CertificateDialog({ certificate, onClose }) {
+function CertificateDialog({ certificate, onClose, onSuccess }) {
+  const { token, logout } = useAuth()
   const { t } = useUiPreferences()
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const [rejecting, setRejecting] = useState(false)
+  const [reason, setReason] = useState('')
+  const pending = certificate.verification_status === 'PENDING'
   const ref = useRef(null)
   useEffect(() => {
     ref.current.showModal()
   }, [])
+  async function review(decision) {
+    if (busy) return
+    if (decision === 'REJECTED' && reason.trim().length < 5) {
+      setError(t('Enter a rejection reason containing at least 5 characters.'))
+      return
+    }
+    setBusy(true)
+    setError('')
+    try {
+      await adminRequest(`/technicians/certifications/${certificate.id}/review`, token, {
+        method: 'PATCH',
+        body: {
+          status: decision,
+          expected_updated_at: certificate.updated_at,
+          ...(decision === 'REJECTED' ? { reason: reason.trim() } : {}),
+        },
+      })
+      onSuccess(decision)
+    } catch (cause) {
+      setError(cause.message)
+      if (cause.status === 401) logout()
+    } finally {
+      setBusy(false)
+    }
+  }
   return (
     <dialog
       ref={ref}
       className="certification-dialog"
-      onCancel={onClose}
+      onCancel={(event) => {
+        event.preventDefault()
+        if (!busy) onClose()
+      }}
       onClick={(event) => {
-        if (event.target === event.currentTarget) onClose()
+        if (!busy && event.target === event.currentTarget) onClose()
       }}
       aria-labelledby="certificate-title"
     >
@@ -56,7 +88,7 @@ function CertificateDialog({ certificate, onClose }) {
           <small>{t('CERTIFICATION DETAILS')}</small>
           <h2 id="certificate-title">{certificate.certificate_name}</h2>
         </div>
-        <button autoFocus aria-label="Close details" onClick={onClose}>
+        <button disabled={busy} autoFocus aria-label={t('Close details')} onClick={onClose}>
           <CloseIcon />
         </button>
       </header>
@@ -94,9 +126,53 @@ function CertificateDialog({ certificate, onClose }) {
       {certificate.rejection_reason && (
         <p className="certification-reason">{certificate.rejection_reason}</p>
       )}
+      <section className="certificate-document-review">
+        <h3>{t('Submitted certificate document')}</h3>
+        <DocumentLink url={certificate.document_url}>{t('Open certificate document')}</DocumentLink>
+        {safeDocumentUrl(certificate.document_url) && /\.(png|jpe?g|webp|gif)([?#].*)?$/i.test(certificate.document_url) && (
+          <img src={safeDocumentUrl(certificate.document_url)} alt={t('Submitted certificate document')} />
+        )}
+      </section>
+      {pending && <p>{t('Review the information and submitted document before approving or rejecting.')}</p>}
+      {rejecting && (
+        <label className="certificate-rejection-input">
+          {t('Rejection reason')}
+          <textarea
+            required
+            minLength={5}
+            maxLength={1000}
+            disabled={busy}
+            value={reason}
+            onChange={(event) => setReason(event.target.value)}
+          />
+        </label>
+      )}
+      {error && <p className="certification-reason" role="alert">{t(error)}</p>}
       <footer>
-        <DocumentLink url={certificate.document_url} />
-        <button onClick={onClose}>{t('Close')}</button>
+        <button disabled={busy} onClick={onClose}>{t('Close')}</button>
+        {pending && (
+          <div className="certificate-review-decisions">
+            {rejecting ? (
+              <>
+                <button disabled={busy} onClick={() => { setRejecting(false); setError('') }}>
+                  {t('Cancel rejection')}
+                </button>
+                <button className="reject" disabled={busy || reason.trim().length < 5} onClick={() => review('REJECTED')}>
+                  {busy ? t('Saving…') : t('Confirm reject')}
+                </button>
+              </>
+            ) : (
+              <>
+                <button className="reject" disabled={busy} onClick={() => setRejecting(true)}>
+                  {t('Reject')}
+                </button>
+                <button className="approve" disabled={busy || !safeDocumentUrl(certificate.document_url)} onClick={() => review('VERIFIED')}>
+                  {busy ? t('Saving…') : t('Approve')}
+                </button>
+              </>
+            )}
+          </div>
+        )}
       </footer>
     </dialog>
   )
@@ -107,7 +183,6 @@ export function CertificationsPage() {
   const [search, setSearch] = useState('')
   const [keyword, setKeyword] = useState('')
   const [status, setStatus] = useState('ALL')
-  const [type, setType] = useState('ALL')
   const [issuer, setIssuer] = useState('')
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState(10)
@@ -116,8 +191,6 @@ export function CertificationsPage() {
   const [error, setError] = useState('')
   const [refresh, setRefresh] = useState(0)
   const [selected, setSelected] = useState(null)
-  const [compact, setCompact] = useState(false)
-  const [review, setReview] = useState(null)
   const [notice, setNotice] = useState('')
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -129,7 +202,7 @@ export function CertificationsPage() {
   }, [search])
   useEffect(() => {
     const controller = new AbortController()
-    const query = new URLSearchParams({ search: keyword, status, type, issuer, page, limit })
+    const query = new URLSearchParams({ search: keyword, status, issuer, page, limit })
     adminRequest(`/technicians/certifications?${query}`, token, { signal: controller.signal })
       .then((result) => {
         setData(result)
@@ -145,7 +218,7 @@ export function CertificationsPage() {
         if (!controller.signal.aborted) setLoading(false)
       })
     return () => controller.abort()
-  }, [token, logout, keyword, status, type, issuer, page, limit, refresh])
+  }, [token, logout, keyword, status, issuer, page, limit, refresh])
   const retry = () => {
     setLoading(true)
     setRefresh((n) => n + 1)
@@ -159,7 +232,7 @@ export function CertificationsPage() {
   const last = Math.min(page * limit, data.total)
   return (
     <main
-      className={`figma-admin-main technician-main certification-page ${compact ? 'is-compact' : ''}`}
+      className="figma-admin-main technician-main certification-page"
     >
       <PageHeader
         title={t('Technician Certifications')}
@@ -185,17 +258,6 @@ export function CertificationsPage() {
               />
             </label>
             <select
-              aria-label="Document type"
-              title="Filter by certificate document format"
-              value={type}
-              onChange={(e) => filter(setType, e.target.value)}
-            >
-              <option value="ALL">{t('All Document Types')}</option>
-              <option value="PDF">PDF</option>
-              <option value="IMAGE">{t('Image')}</option>
-              <option value="OTHER">{t('Other / No document')}</option>
-            </select>
-            <select
               aria-label="Certification status"
               value={status}
               onChange={(e) => filter(setStatus, e.target.value)}
@@ -217,27 +279,6 @@ export function CertificationsPage() {
                 <option key={value}>{value}</option>
               ))}
             </select>
-            <button
-              className="certification-tool"
-              disabled={loading}
-              aria-label="Refresh certifications"
-              title="Refresh certifications"
-              onClick={retry}
-            >
-              ↻
-            </button>
-            <button
-              className={`certification-tool ${compact ? 'active' : ''}`}
-              aria-label="Compact table"
-              title="Toggle compact rows"
-              aria-pressed={compact}
-              onClick={() => setCompact((value) => !value)}
-            >
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <rect x="4" y="5" width="16" height="14" rx="2" />
-                <path d="M9 5v14m6-14v14" />
-              </svg>
-            </button>
           </div>
           <div className="certification-table-scroll">
             <table className="certification-table">
@@ -287,49 +328,12 @@ export function CertificationsPage() {
                         <div className="certification-actions">
                           <button
                             className="certification-action view"
-                            aria-label={`View ${c.certificate_name} — ${c.full_name}`}
-                            title="View certificate details"
+                            aria-label={`${t('View certificate details')}: ${c.certificate_name} — ${c.full_name}`}
+                            title={t('View certificate details')}
                             onClick={() => setSelected(c)}
                           >
                             <EyeIcon />
                           </button>
-                          {c.verification_status === 'PENDING' && (
-                            <>
-                              <button
-                                className="certification-action document"
-                                aria-label={`Approve ${c.certificate_name}`}
-                                title="Approve certification"
-                                onClick={() =>
-                                  setReview({
-                                    path: `/technicians/certifications/${c.id}/review`,
-                                    status: 'VERIFIED',
-                                    certificate: c,
-                                    name: `${c.certificate_name} — ${c.full_name}`,
-                                    kind: 'certification',
-                                    updatedAt: c.updated_at,
-                                  })
-                                }
-                              >
-                                <CheckIcon />
-                              </button>
-                              <button
-                                className="certification-action reject"
-                                aria-label={`Reject ${c.certificate_name}`}
-                                title="Reject certification"
-                                onClick={() =>
-                                  setReview({
-                                    path: `/technicians/certifications/${c.id}/review`,
-                                    status: 'REJECTED',
-                                    name: `${c.certificate_name} — ${c.full_name}`,
-                                    kind: 'certification',
-                                    updatedAt: c.updated_at,
-                                  })
-                                }
-                              >
-                                <CloseIcon />
-                              </button>
-                            </>
-                          )}
                           {safeDocumentUrl(c.document_url) ? (
                             <a
                               className="certification-action document"
@@ -390,14 +394,14 @@ export function CertificationsPage() {
           </div>
         </div>
       </section>
-      {selected && <CertificateDialog certificate={selected} onClose={() => setSelected(null)} />}
-      {review && (
-        <ReviewDialog
-          target={review}
-          onClose={() => setReview(null)}
-          onSuccess={() => {
-            setNotice(t('Certification review saved.'))
-            setReview(null)
+      {selected && (
+        <CertificateDialog
+          key={selected.id}
+          certificate={selected}
+          onClose={() => setSelected(null)}
+          onSuccess={(decision) => {
+            setNotice(t(decision === 'VERIFIED' ? 'Certification approved.' : 'Certification rejected.'))
+            setSelected(null)
             retry()
           }}
         />

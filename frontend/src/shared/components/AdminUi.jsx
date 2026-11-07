@@ -199,7 +199,7 @@ export function AdminHeaderControls({ onRefresh, refreshing = false, actions, cl
         </Link>
         <small>
           <strong>{user?.fullName || 'Admin User'}</strong>
-          <em>{t('Fleet Director')}</em>
+          <em>Admin</em>
         </small>
       </div>
   )

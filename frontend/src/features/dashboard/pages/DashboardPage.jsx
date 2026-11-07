@@ -1,57 +1,104 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useAuth } from '../../../shared/context/AuthContext.jsx'
 import { AdminSidebar, DashboardIcon } from '../../../shared/components/AdminSidebar.jsx'
 import { PageHeader } from '../../../shared/components/AdminUi.jsx'
 import { useUiPreferences } from '../../../shared/context/UiPreferencesContext.jsx'
+import { getReports } from '../../reports/api/reportsApi.js'
+import {
+  reportBucketLabel, reportChartSeries, reportCount, reportErrorKey,
+  reportMoney, reportPercent, reportRangeQuery, vietnamToday,
+} from '../../reports/reportPresentation.js'
 import '../../../shared/styles/admin.css'
 
-const metrics = [
-  {
-    label: 'TOTAL REVENUE',
-    value: '$248,500',
-    trend: '+14.8%',
-    note: 'vs last month',
-    tone: 'orange',
-    icon: 'revenue',
-  },
-  {
-    label: 'TOTAL BOOKINGS',
-    value: '3,842',
-    trend: '+8.2%',
-    note: 'vs last month',
-    tone: 'blue',
-    icon: 'booking',
-  },
-  {
-    label: 'COMPLETED SERVICES',
-    value: '3,618',
-    trend: '+2.1%',
-    note: 'improvement benchmark',
-    tone: 'green',
-    icon: 'complete',
-  },
-  {
-    label: 'ACTIVE TECHNICIANS',
-    value: '148',
-    trend: null,
-    note: 'Out of 163 registered',
-    tone: 'purple',
-    icon: 'technician',
-  },
-]
+function dashboardRange() {
+  const to = vietnamToday()
+  const firstMonth = new Date(`${to.slice(0, 7)}-01T00:00:00Z`)
+  firstMonth.setUTCMonth(firstMonth.getUTCMonth() - 5)
+  return { from: firstMonth.toISOString().slice(0, 10), to }
+}
 
-const bookingRows = [
-  ['Pending', '142 bookings', '3.7%', 'yellow'],
-  ['Confirm', '384 bookings', '10.0%', 'blue'],
-  ['In Progress', '258 bookings', '6.7%', 'purple'],
-  ['Completed', '3,010 bookings', '78.3%', 'green'],
-  ['Customer Cancelled', '50 bookings', '1.3%', 'red'],
-]
+const bookingLabels = {
+  completed: 'Completed',
+  processing: 'Pending / in progress',
+  cancelled: 'Cancelled',
+}
+
+function commissionPath(trend) {
+  if (!trend?.length || trend.some((row) => row.commissionAmount === null)) return null
+  const series = reportChartSeries(trend, 'commission')
+  const points = trend.map((_, index) => {
+    const x = 28 + (index * 497) / Math.max(1, trend.length - 1)
+    const y = 190 - series.ratio(series.values[index]) * 150
+    return [x, y]
+  })
+  return {
+    points,
+    line: points.map(([x, y], index) => `${index ? 'L' : 'M'}${x} ${y}`).join(' '),
+  }
+}
 
 export function DashboardPage() {
-  const { user, logout } = useAuth()
-  const { t } = useUiPreferences()
+  const { user, token, logout } = useAuth()
+  const { t, locale } = useUiPreferences()
   const [showLogout, setShowLogout] = useState(false)
+  const [report, setReport] = useState(null)
+  const [error, setError] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [refreshKey, setRefreshKey] = useState(0)
+
+  useEffect(() => {
+    const controller = new AbortController()
+    getReports(reportRangeQuery(dashboardRange()), token, controller.signal)
+      .then((data) => {
+        setReport(data)
+        setError(null)
+      })
+      .catch((cause) => {
+        if (cause.name !== 'AbortError') {
+          setReport(null)
+          setError(reportErrorKey(cause))
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false)
+      })
+    return () => controller.abort()
+  }, [token, refreshKey])
+
+  const refresh = () => {
+    setLoading(true)
+    setError(null)
+    setRefreshKey((key) => key + 1)
+  }
+  const summary = report?.summary
+  const completed = report?.bookingOverview.find((row) => row.key === 'completed')?.count ?? 0
+  const metrics = [
+    {
+      label: 'Platform Commission',
+      value: reportMoney(summary?.commissionAmount, locale),
+      note: 'Successful payments settled in this period',
+      tone: 'orange', icon: 'revenue',
+    },
+    {
+      label: 'TOTAL BOOKINGS',
+      value: reportCount(summary?.bookings, locale),
+      note: 'Created in the selected period',
+      tone: 'blue', icon: 'booking',
+    },
+    {
+      label: 'COMPLETED BOOKINGS',
+      value: report ? reportCount(completed, locale) : '—',
+      note: 'Current status of bookings created in this period.',
+      tone: 'green', icon: 'complete',
+    },
+    {
+      label: 'Total Technicians',
+      value: reportCount(summary?.technicians, locale),
+      note: 'Current total · All registered technician profiles',
+      tone: 'purple', icon: 'technician',
+    },
+  ]
+  const chart = commissionPath(report?.trend)
 
   return (
     <div className="dashboard-shell">
@@ -60,10 +107,19 @@ export function DashboardPage() {
       <main className="dashboard-main" id="overview">
         <PageHeader
           title="Dashboard Overview"
-          subtitle="Live operations"
+          subtitle="Reports for the last six months · Vietnam time (UTC+7)"
+          onRefresh={refresh}
+          refreshing={loading}
         />
 
         <section className="dashboard-content">
+          {error && (
+            <div className="dashboard-load-error" role="alert">
+              <span>{t(error)}</span>
+              <button type="button" onClick={refresh}>{t('Try again')}</button>
+            </div>
+          )}
+          {loading && !report && <p role="status">{t('Loading reports…')}</p>}
           <div className="metric-grid">
             {metrics.map((metric) => (
               <article className="metric-card" key={metric.label}>
@@ -73,7 +129,6 @@ export function DashboardPage() {
                 <small>{t(metric.label)}</small>
                 <strong>{metric.value}</strong>
                 <p>
-                  {metric.trend && <b>↑ {metric.trend}</b>}
                   <span>{t(metric.note)}</span>
                 </p>
               </article>
@@ -85,53 +140,50 @@ export function DashboardPage() {
               <header>
                 <div>
                   <h2>{t('Booking Overview')}</h2>
-                  <p>{t('Progress distribution of scheduled and fulfilled services')}</p>
+                  <p>{t('Current status of bookings created in this period.')}</p>
                 </div>
-                <strong>3,842 Total</strong>
-                <button type="button">⌘</button>
+                <strong>{t('Bookings: {count}', { count: reportCount(summary?.bookings, locale) })}</strong>
               </header>
-              <div className="booking-progress" aria-label="Phân bổ booking">
-                <i className="yellow" />
-                <i className="blue" />
-                <i className="purple" />
-                <i className="green" />
-                <i className="red" />
+              <div className="booking-progress" aria-label={t('Booking Overview')}>
+                {report?.bookingOverview.map((row) => (
+                  <i key={row.key} className={row.key} style={{ width: `${row.percentage}%` }} />
+                ))}
               </div>
               <div className="booking-rows">
-                {bookingRows.map(([label, value, percent, tone]) => (
-                  <div key={label}>
+                {report?.bookingOverview.map((row) => (
+                  <div key={row.key}>
                     <span>
-                      <i className={tone} />
-                      {t(label)}
+                      <i className={row.key} />
+                      {t(bookingLabels[row.key])}
                     </span>
-                    <strong>{value}</strong>
-                    <em>{percent}</em>
+                    <strong>{reportCount(row.count, locale)}</strong>
+                    <em>{reportPercent(row.percentage, locale)}</em>
                   </div>
                 ))}
               </div>
+              {report && summary.bookings === 0 && <p>{t('No bookings were created in this period.')}</p>}
             </article>
 
             <article className="dashboard-panel revenue-overview">
               <header>
                 <div>
-                  <h2>{t('Revenue Overview')}</h2>
-                  <p>{t('Monthly revenue trend & growth trajectory')}</p>
+                  <h2>{t('Platform Commission')}</h2>
+                  <p>{t('Monthly commission from settled payments')}</p>
                 </div>
-                <strong>2024 YTD</strong>
+                <strong>{report ? `${report.period.from} – ${report.period.to}` : '—'}</strong>
               </header>
               <div className="revenue-summary">
                 <span>
-                  $248,500 <small>{t('Total revenue')}</small>
+                  {reportMoney(summary?.commissionAmount, locale)}
+                  <small>{t('Platform Commission')}</small>
                 </span>
-                <b>
-                  ↑ +16.4% <small>{t('vs. MoM')}</small>
-                </b>
               </div>
-              <svg
-                className="revenue-chart"
+              {chart ? (<>
+                <svg
+                className="dashboard-revenue-chart"
                 viewBox="0 0 560 220"
                 role="img"
-                aria-label="Biểu đồ doanh thu từ tháng 5 đến tháng 10"
+                aria-label={t('Monthly commission from settled payments')}
               >
                 <defs>
                   <linearGradient id="revenue-fill" x1="0" y1="0" x2="0" y2="1">
@@ -140,30 +192,26 @@ export function DashboardPage() {
                   </linearGradient>
                 </defs>
                 <path className="chart-grid" d="M20 45h520M20 95h520M20 145h520M20 195h520" />
-                <path
-                  className="chart-area"
-                  d="M28 178 126 132 225 98 324 75 422 62 525 38V205H28Z"
-                />
-                <path className="chart-line" d="M28 178 126 132 225 98 324 75 422 62 525 38" />
-                {[
-                  ['28', '178'],
-                  ['126', '132'],
-                  ['225', '98'],
-                  ['324', '75'],
-                  ['422', '62'],
-                  ['525', '38'],
-                ].map(([cx, cy]) => (
+                <path className="chart-area" d={`${chart.line} L525 205 H28 Z`} />
+                <path className="chart-line" d={chart.line} />
+                {chart.points.map(([cx, cy]) => (
                   <circle key={cx} cx={cx} cy={cy} r="5" />
                 ))}
               </svg>
               <div className="chart-months">
-                <span>May</span>
-                <span>Jun</span>
-                <span>Jul</span>
-                <span>Aug</span>
-                <span>Sep</span>
-                <span className="active">Oct</span>
+                {report.trend.map((row, index) => (
+                  <span key={row.date} className={index === report.trend.length - 1 ? 'active' : ''}>
+                    {reportBucketLabel(row.date, 'month')}
+                  </span>
+                ))}
               </div>
+              </>) : report ? (
+                <p className="dashboard-chart-note">
+                  {report.summary.missingCommissionPayments
+                    ? t('Commission is unavailable for some settled payments.')
+                    : t('No commission data is available.')}
+                </p>
+              ) : null}
             </article>
           </div>
         </section>

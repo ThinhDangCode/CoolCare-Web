@@ -42,7 +42,8 @@ export class AuthController {
     response.json({ data: result })
   }
 
-  logout = async (_request, response) => {
+  logout = async (request, response) => {
+    await this.service.endSession(request.auth.userId, request.auth.tokenId)
     response.status(204).send()
   }
 
@@ -63,7 +64,7 @@ export class AuthController {
       ),
     })
   refresh = async (request, response) =>
-    response.json({ data: await this.service.refreshSession(request.auth.userId) })
+    response.json({ data: await this.service.refreshSession(request.auth.userId, request.auth.tokenId) })
   changePassword = async (request, response) => {
     await this.service.changePassword(
       request.auth.userId,

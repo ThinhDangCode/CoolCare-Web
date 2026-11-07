@@ -1,4 +1,5 @@
 import { AppError, requireValidBody } from '../../utils.js'
+import { voucherPolicyErrors } from './voucher-policy.js'
 
 const uuidPattern = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i
 
@@ -149,12 +150,7 @@ export function validateVoucherInput(body, partial = false) {
     if (Number.isNaN(date.getTime())) errors[key] = 'Thời gian không hợp lệ.'
     else output[key] = date.toISOString()
   }
-  if (
-    (output.discount_type ?? body.discount_type) === 'PERCENTAGE' &&
-    output.discount_value !== undefined &&
-    output.discount_value > 100
-  )
-    errors.discount_value = 'Phần trăm giảm không được vượt quá 100.'
+  if (!partial) Object.assign(errors, voucherPolicyErrors(output))
   if (output.start_at && output.end_at && new Date(output.end_at) <= new Date(output.start_at))
     errors.end_at = 'Thời gian kết thúc phải sau thời gian bắt đầu.'
   if (

@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto'
 import { pool, withTransaction } from '../../config/database.js'
 import { validateUuid } from '../../utils.js'
 import { walletError } from './wallet.domain.js'
+import { DEBT_WARNING_VND, DEBT_DEMOTION_VND, DEBT_BLOCK_VND, debtFromBalance, debtTier } from './debt-policy.js'
 
 const TOPUP_STATUSES = [
   'PENDING',
@@ -90,7 +91,7 @@ export class TechnicianWalletRepository {
     return row
   }
 
-  async overview(userId) {
+  async overview(userId, fromDate = null, toDate = null) {
     const owner = await this.owner(userId)
 
     const [balance, earnings, ledger, weekly] = await Promise.all([
@@ -143,8 +144,10 @@ export class TechnicianWalletRepository {
         FROM payments
         WHERE technician_id = $1
           AND UPPER(payment_status::text) IN ('2', 'SUCCESS')
+          AND ($2::date IS NULL OR created_at >= $2::date)
+          AND ($3::date IS NULL OR created_at < ($3::date + INTERVAL '1 day'))
         `,
-        [owner.technician_id],
+        [owner.technician_id, fromDate, toDate],
       ),
 
       this.db.query(
@@ -173,8 +176,10 @@ export class TechnicianWalletRepository {
 
         FROM settlement_transactions
         WHERE technician_account_id = $1
+          AND ($2::date IS NULL OR created_at >= $2::date)
+          AND ($3::date IS NULL OR created_at < ($3::date + INTERVAL '1 day'))
         `,
-        [owner.account_id],
+        [owner.account_id, fromDate, toDate],
       ),
 
       this.db.query(
@@ -211,7 +216,15 @@ export class TechnicianWalletRepository {
       ),
     ])
 
+    const settlementBalance = balance.rows[0]?.settlement_balance ?? 0
     return {
+      debtPolicy: {
+        amountVnd: debtFromBalance(settlementBalance),
+        status: debtTier(settlementBalance),
+        warningAtVnd: DEBT_WARNING_VND,
+        demotionAtVnd: DEBT_DEMOTION_VND,
+        blockAtVnd: DEBT_BLOCK_VND,
+      },
       balance: balance.rows[0] ?? {
         settlement_balance: '0',
         reserved_amount: '0',

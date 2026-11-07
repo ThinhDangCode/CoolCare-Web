@@ -31,8 +31,10 @@ export function CatalogTrashButton({ kind, row, onChanged }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const name = row.name || row.model_name
+  const categoryInUse = kind === 'categories' && Number(row.service_count) > 0
+  const brandInUse = kind === 'brands' && Number(row.model_count) > 0
   async function remove() {
-    if (busy) return
+    if (busy || categoryInUse || brandInUse) return
     setBusy(true)
     setError('')
     try {
@@ -63,7 +65,7 @@ export function CatalogTrashButton({ kind, row, onChanged }) {
       {open &&
         createPortal(
           <Modal
-            title={t('Move to trash?')}
+            title={t(categoryInUse ? 'Category still contains services' : brandInUse ? 'Brand still contains models' : 'Move to trash?')}
             icon={<TrashIcon />}
             onClose={() => setOpen(false)}
             busy={busy}
@@ -75,6 +77,10 @@ export function CatalogTrashButton({ kind, row, onChanged }) {
               <p>
                 {t('You can restore this item from Trash. Existing bookings and history are preserved.')}
               </p>
+              {kind === 'categories' && <p>{t('Move the services in this category before moving it to Trash. Use Inactive to hide the category temporarily.')}</p>}
+              {categoryInUse && <p role="alert">{t('This category has {count} services. Move or trash them first.', { count: row.service_count })}</p>}
+              {kind === 'brands' && <p>{t('Move the models in this brand before moving it to Trash. Use Inactive to hide the brand temporarily.')}</p>}
+              {brandInUse && <p role="alert">{t('This brand has {count} models. Move or trash them first.', { count: row.model_count })}</p>}
               {error && (
                 <div className="catalog-error" role="alert">
                   {error}
@@ -93,7 +99,7 @@ export function CatalogTrashButton({ kind, row, onChanged }) {
               <button
                 type="button"
                 className="catalog-button danger"
-                disabled={busy}
+                disabled={busy || categoryInUse || brandInUse}
                 onClick={remove}
               >
                 {t(busy ? 'Moving...' : 'Move to trash')}

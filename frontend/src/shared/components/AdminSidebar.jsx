@@ -192,7 +192,7 @@ export function AdminSidebar({
         </span>
         <span>
           <strong>{user?.fullName ?? 'Marcus Vance'}</strong>
-          <small>{t('Fleet Director')}</small>
+          <small>Admin</small>
         </span>
         <i aria-label="Đang hoạt động" />
       </Link>

@@ -1,3 +1,28 @@
+.certification-page .certification-table { width: 100%; min-width: 900px; table-layout: fixed; }
+.certification-page .certification-table th:nth-child(1) { width: 12%; }
+.certification-page .certification-table th:nth-child(2) { width: 32%; }
+.certification-page .certification-table th:nth-child(3) { width: 26%; }
+.certification-page .certification-table th:nth-child(4) { width: 19%; }
+.certification-page .certification-table th:nth-child(5) { width: 11%; }
+.certification-page .certification-table th,
+.certification-page .certification-table td { padding: 18px 12px; text-align: left; overflow-wrap: anywhere; }
+.certification-page .certification-table th { white-space: nowrap; }
+.certification-page .certification-table td:first-child { white-space: nowrap; overflow-wrap: normal; }
+.certification-page .certification-code { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.certification-page .certification-table .certification-numeric { text-align: right; font-variant-numeric: tabular-nums; }
+.certification-page .certification-actions { justify-content: center; }
+.certification-page .certification-table th:last-child,
+.certification-page .certification-table td:last-child { text-align: center; }
+.certificate-document-review { margin-block: 20px; }
+.certificate-document-review h3 { font-size: 14px; }
+.certificate-document-review img { display: block; max-width: 100%; max-height: 360px; object-fit: contain; margin-top: 14px; }
+.certificate-rejection-input { display: grid; gap: 8px; margin-block: 18px; }
+.certificate-rejection-input textarea { width: 100%; box-sizing: border-box; min-height: 100px; resize: vertical; padding: 10px; font: inherit; border: 1px solid #cbd5e1; border-radius: 6px; }
+.certificate-review-decisions { display: flex; gap: 8px; flex-wrap: wrap; }
+.certification-dialog footer { gap: 12px; flex-wrap: wrap; }
+.certification-dialog button.approve { background: #f97316; border-color: #f97316; color: white; }
+.certification-dialog button.reject { background: #fff1f2; border-color: #fecdd3; color: #be123c; }
+.certification-dialog button:disabled { opacity: .5; cursor: default; }
 .certification-content {
   padding: 24px 32px 32px;
 }
@@ -16,8 +41,7 @@
 .certification-toolbar {
   display: grid;
   grid-template-columns:
-    minmax(230px, 2.2fr) minmax(140px, 1.2fr) minmax(110px, 0.8fr) minmax(130px, 1fr)
-    34px 34px;
+    minmax(230px, 1fr) 170px 200px;
   gap: 8px;
   align-items: center;
   padding: 12px;
@@ -221,10 +245,6 @@
   color: #059669;
   background: #ecfdf5;
 }
-.certification-action.reject {
-  color: #e11d48;
-  background: #fff1f2;
-}
 .certification-action.document:hover {
   background: #d1fae5;
 }
@@ -344,7 +364,7 @@
 }
 @media (max-width: 1150px) {
   .certification-toolbar {
-    grid-template-columns: repeat(3, minmax(0, 1fr)) 34px 34px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .certification-search {
     grid-column: 1 / -1;

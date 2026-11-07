@@ -6,6 +6,7 @@ import { useAutoDismiss } from '../../../shared/hooks/useAutoDismiss.js'
 import { adminRequest } from '../../../shared/api/adminApi.js'
 import { ArrowLeftIcon, CheckIcon, CloseIcon, PageHeader } from '../../../shared/components/AdminUi.jsx'
 import '../../../shared/styles/admin.css'
+import { PenaltyReference } from './PenaltyReference.jsx'
 
 const label = (value) =>
   value
@@ -83,8 +84,8 @@ export function ComplaintDetailPage() {
   const [showResolution, setShowResolution] = useState(false)
   const [notifyCustomer, setNotifyCustomer] = useState(true)
   const [showVoucher, setShowVoucher] = useState(false)
-  const [voucherAmount, setVoucherAmount] = useState('100000')
-  const [voucherMinimum, setVoucherMinimum] = useState('0')
+  const [voucherAmount, setVoucherAmount] = useState('50000')
+  const [voucherMinimum, setVoucherMinimum] = useState('250000')
   const [voucherDays, setVoucherDays] = useState('30')
   const [createdVoucher, setCreatedVoucher] = useState(null)
   const savedHover = useAutoDismiss(saved, setSaved)
@@ -204,10 +205,10 @@ export function ComplaintDetailPage() {
     const amount = Number(voucherAmount)
     const minimum = Number(voucherMinimum)
     const days = Number(voucherDays)
-    if (!Number.isInteger(amount) || amount < 1 || amount > 10000000)
-      return setError('Compensation amount must be a whole number from 1 to 10,000,000 VND.')
-    if (!Number.isInteger(minimum) || minimum < 0)
-      return setError('Minimum order amount must be a non-negative whole number.')
+    if (!Number.isInteger(amount) || amount < 1 || amount > 50000)
+      return setError('Compensation amount must be a whole number from 1 to 50,000 VND.')
+    if (!Number.isInteger(minimum) || minimum < amount * 5)
+      return setError('Eligible service amount must be at least five times the discount.')
     if (!Number.isInteger(days) || days < 1 || days > 365)
       return setError('Voucher validity must be a whole number from 1 to 365 days.')
     setBusy(true)
@@ -489,7 +490,7 @@ export function ComplaintDetailPage() {
               </aside>
               {showResolution && (
                 <div className="figma-modal-backdrop complaint-resolution-backdrop">
-                  <section className="complaint-resolution-dialog" role="dialog" aria-modal="true">
+                  <section className="complaint-resolution-dialog complaint-resolution-with-reference" role="dialog" aria-modal="true">
                     <header>
                       <span>
                         <CheckIcon />
@@ -510,6 +511,7 @@ export function ComplaintDetailPage() {
                         <CloseIcon />
                       </button>
                     </header>
+                    <div className="complaint-resolution-workspace">
                     <div className="complaint-resolution-dialog-body">
                       {error && (
                         <p role="alert" className="figma-table-state error">
@@ -590,6 +592,8 @@ export function ComplaintDetailPage() {
                         {t('Notify customer via in-app notification immediately')}
                       </label>
                     </div>
+                    <PenaltyReference />
+                    </div>
                     <footer>
                       {['OPEN', 'IN_PROGRESS'].includes(complaint.status) && (
                         <button
@@ -643,7 +647,7 @@ export function ComplaintDetailPage() {
                       {error && <p role="alert" className="figma-table-state error">{error}</p>}
                       <label>
                         COMPENSATION AMOUNT (VND)
-                        <input type="number" min="1" max="10000000" step="1" required value={voucherAmount}
+                        <input type="number" min="1" max="50000" step="1" required value={voucherAmount}
                           onChange={(event) => setVoucherAmount(event.target.value)} />
                       </label>
                       <label>

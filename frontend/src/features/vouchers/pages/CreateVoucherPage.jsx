@@ -42,7 +42,7 @@ export function CreateVoucherPage() {
         discount_type: 'PERCENTAGE',
         discount_value: '10',
         minimum_order_amount: '200000',
-        maximum_discount: '100000',
+        maximum_discount: '50000',
         usage_limit: '500',
         usage_limit_per_customer: '1',
         is_active: true,
@@ -57,7 +57,7 @@ export function CreateVoucherPage() {
         discount_type: 'PERCENTAGE',
         discount_value: '20',
         minimum_order_amount: '500000',
-        maximum_discount: '200000',
+        maximum_discount: '50000',
         usage_limit: '200',
         usage_limit_per_customer: '1',
         is_active: true,
@@ -72,7 +72,7 @@ export function CreateVoucherPage() {
         discount_type: 'FIXED_AMOUNT',
         discount_value: '50000',
         minimum_order_amount: '300000',
-        maximum_discount: '',
+        maximum_discount: '50000',
         usage_limit: '300',
         usage_limit_per_customer: '1',
         is_active: true,
@@ -99,22 +99,18 @@ export function CreateVoucherPage() {
     setDialog('')
   }
   const openPreview = () => {
-    const validationErrors = validateVoucherForm(form)
+    const validationErrors = validateVoucherForm(form, t)
     setErrors(validationErrors)
-    setError(
-      Object.keys(validationErrors).length
-        ? 'Please review the highlighted fields before previewing.'
-        : ''
-    )
+    setError(Object.keys(validationErrors).length ? t('Please check the highlighted voucher fields.') : '')
     if (!Object.keys(validationErrors).length) setDialog('preview')
   }
 
   async function submit(event) {
     event.preventDefault()
-    const validationErrors = validateVoucherForm(form)
+    const validationErrors = validateVoucherForm(form, t)
     if (Object.keys(validationErrors).length) {
       setErrors(validationErrors)
-      setError('Please review the highlighted fields.')
+      setError(t('Please check the highlighted voucher fields.'))
       return
     }
     setBusy(true)
@@ -133,7 +129,7 @@ export function CreateVoucherPage() {
       navigate('/admin/vouchers', { replace: true })
     } catch (err) {
       setError(err.message)
-      setErrors(err.details)
+      setErrors(err.details ?? {})
       if (err.status === 401) logout()
     } finally {
       setBusy(false)
@@ -161,7 +157,7 @@ export function CreateVoucherPage() {
           </button>
         </div>
       )}
-      <form onSubmit={submit}>
+      <form noValidate onSubmit={submit}>
         <div className="voucher-create-heading">
           <div className="voucher-create-context">
             <Link className="voucher-back-button" to="/admin/vouchers">
@@ -204,13 +200,8 @@ export function CreateVoucherPage() {
               >
                 {t('Inactive / Draft')} <i />
               </button>
-              <p>
-                <strong>{t('Status logic:')}</strong>{' '}
-                {t('Voucher only has two management states: Active or Inactive. The validity dates determine when an active voucher can be redeemed.')}
-              </p>
-              <p>
-                {t('Availability applies to all eligible CoolCare services because the current database schema does not define per-service voucher targeting.')}
-              </p>
+              <p>{t('A voucher can be used when it is active, within its validity period, and the booking meets its conditions.')}</p>
+              <p>{t('Eligible CoolCare services can use this voucher; the discount is calculated on service charges only.')}</p>
             </section>
           </aside>
         </div>
@@ -268,8 +259,8 @@ export function CreateVoucherPage() {
               <div>
                 <EyeIcon />
                 <span>
-                  <h2 id="preview-title">Live Voucher Rule</h2>
-                  <p>Review the effective rule before creating this voucher.</p>
+                  <h2 id="preview-title">{t('Voucher preview')}</h2>
+                  <p>{t('Review the conditions before creating this voucher.')}</p>
                 </span>
               </div>
               <button type="button" aria-label="Close preview" onClick={() => setDialog('')}>
@@ -281,29 +272,27 @@ export function CreateVoucherPage() {
                 <small>CODE</small>
                 <strong>{form.code.trim().toUpperCase()}</strong>
                 <span className={form.is_active ? 'active' : 'inactive'}>
-                  {form.is_active ? 'Active' : 'Inactive'}
+                  {t(form.is_active ? 'Active' : 'Inactive')}
                 </span>
               </div>
               <p>{form.name.trim()}</p>
               <dl>
                 <div>
-                  <dt>Customer receives</dt>
+                  <dt>{t('Customer receives')}</dt>
                   <dd>
                     {form.discount_type === 'PERCENTAGE'
-                      ? `${form.discount_value}% discount`
-                      : `${Number(form.discount_value).toLocaleString('vi-VN')}₫ discount`}
+                      ? t('{percent}% off eligible services', { percent: form.discount_value })
+                      : t('{amount} VND off eligible services', { amount: Number(form.discount_value).toLocaleString('vi-VN') })}
                   </dd>
                 </div>
                 <div>
-                  <dt>Minimum order</dt>
+                  <dt>{t('Minimum eligible service amount')}</dt>
                   <dd>{Number(form.minimum_order_amount).toLocaleString('vi-VN')}₫</dd>
                 </div>
-                {form.maximum_discount !== '' && (
-                  <div>
-                    <dt>Maximum discount</dt>
-                    <dd>{Number(form.maximum_discount).toLocaleString('vi-VN')}₫</dd>
-                  </div>
-                )}
+                <div>
+                  <dt>{t('Maximum discount')}</dt>
+                  <dd>{Number(form.maximum_discount || 50000).toLocaleString('vi-VN')}₫</dd>
+                </div>
                 <div>
                   <dt>Usage</dt>
                   <dd>
@@ -322,7 +311,7 @@ export function CreateVoucherPage() {
             </div>
             <footer>
               <button type="button" onClick={() => setDialog('')}>
-                Continue Editing
+                {t('Continue Editing')}
               </button>
             </footer>
           </section>
