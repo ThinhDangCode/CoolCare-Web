@@ -1,0 +1,53 @@
+.complaint-resolution-dialog.complaint-resolution-with-reference {
+  width: min(1180px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  display: flex;
+  flex-direction: column;
+}
+.complaint-resolution-with-reference > header,
+.complaint-resolution-with-reference > footer { flex-shrink: 0; }
+.complaint-resolution-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  min-height: 0;
+  overflow: auto;
+}
+.complaint-resolution-workspace > .complaint-resolution-dialog-body {
+  align-content: start;
+  grid-auto-rows: max-content;
+  max-height: none;
+  overflow: auto;
+  min-width: 0;
+}
+.penalty-reference {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+  background: #f8fafc;
+  border-left: 1px solid #e2e8f0;
+  color: #334155;
+}
+.penalty-reference > header { padding: 18px 20px 12px; }
+.penalty-reference h3 { margin: 0 0 8px; font-size: 16px; color: #17233b; }
+.penalty-reference header p { margin: 0; font-size: 13px; line-height: 1.6; }
+.penalty-reference-scroll { overflow: auto; padding: 0 20px 20px; }
+.penalty-reference table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.penalty-reference caption { text-align: left; padding: 8px 0; color: #64748b; }
+.penalty-reference th { text-align: left; background: #edf2f7; padding: 10px; }
+.penalty-reference td { padding: 12px 10px; vertical-align: top; border-bottom: 1px solid #e2e8f0; background: #fff; }
+.penalty-reference th:last-child { width: 75px; }
+.penalty-reference td:last-child { white-space: nowrap; color: #c45309; }
+.penalty-reference td strong { font-weight: 600; }
+.penalty-reference td strong span { color: #c45309; }
+.penalty-reference td p { margin: 6px 0 0; line-height: 1.6; }
+html[data-theme='dark'] .penalty-reference { background: #101c30; color: #d6e1f0; border-color: #334155; }
+html[data-theme='dark'] .penalty-reference h3 { color: #f1f5f9; }
+html[data-theme='dark'] .penalty-reference th { background: #24334b; }
+html[data-theme='dark'] .penalty-reference td { background: #18263b; border-color: #334155; }
+@media (max-width: 850px) {
+  .complaint-resolution-workspace { grid-template-columns: minmax(0, 1fr); }
+  .complaint-resolution-workspace > .complaint-resolution-dialog-body { overflow: visible; }
+  .penalty-reference { border-left: 0; border-top: 1px solid #e2e8f0; }
+  .penalty-reference-scroll { overflow: visible; }
+}
