@@ -224,12 +224,11 @@ export function CatalogPage() {
                 ))}
               </select>
             )}
-            <select
+            {!hasIdSort && <select
               aria-label={t('Sort records')}
               value={sort}
               onChange={(event) => {
                 setSort(event.target.value)
-                setIdSortActive(false)
                 setPage(1)
                 setLoading(true)
               }}
@@ -244,7 +243,7 @@ export function CatalogPage() {
                   <option value="PRICE_DESC">{t('Price high to low')}</option>
                 </>
               )}
-            </select>
+            </select>}
             <div className="catalog-toolbar-actions">
               <span className="catalog-count">{result.total} {t('records')}</span>
               <CatalogTrash kind={kind} onChanged={() => { setLoading(true); setRefresh((n) => n + 1) }} />
@@ -259,7 +258,7 @@ export function CatalogPage() {
                 <tr>
                   <th
                     className="catalog-numeric"
-                    aria-sort={hasIdSort && idSortActive ? (sort === 'OLDEST' ? 'descending' : 'ascending') : undefined}
+                    aria-sort={hasIdSort ? (sort === 'OLDEST' ? 'descending' : 'ascending') : undefined}
                   >
                     {hasIdSort ? (
                       <button

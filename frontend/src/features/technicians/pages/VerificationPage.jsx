@@ -5,7 +5,6 @@ import { adminRequest } from '../../../shared/api/adminApi.js'
 import {
   PageHeader,
   SearchIcon,
-  SlidersIcon,
   EyeIcon,
   Pagination,
   TableState,
@@ -24,12 +23,9 @@ export function VerificationPage() {
   const [params] = useSearchParams()
   const [search, setSearch] = useState(() => (params.get('search') || '').slice(0, 150))
   const [keyword, setKeyword] = useState(() => (params.get('search') || '').slice(0, 150).trim())
-  const [sort, setSort] = useState('LATEST')
-  const [verification, setVerification] = useState('PENDING')
+  const [verification, setVerification] = useState('ALL')
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState(10)
-  const [qualification, setQualification] = useState('ALL')
-  const [filtersOpen, setFiltersOpen] = useState(false)
   const [data, setData] = useState({ items: [], total: 0 })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -49,10 +45,9 @@ export function VerificationPage() {
     const query = new URLSearchParams({
       search: keyword,
       verification,
-      sort,
+      sort: 'LATEST',
       page,
       limit,
-      qualification,
     })
     adminRequest(`/technicians?${query}`, token, { signal: controller.signal })
       .then((result) => {
@@ -69,7 +64,7 @@ export function VerificationPage() {
         if (!controller.signal.aborted) setLoading(false)
       })
     return () => controller.abort()
-  }, [token, logout, keyword, sort, verification, page, limit, qualification, refresh])
+  }, [token, logout, keyword, verification, page, limit, refresh])
   const change = (setter, value) => {
     setLoading(true)
     setPage(1)
@@ -83,7 +78,7 @@ export function VerificationPage() {
     <main className="figma-admin-main technician-main verification-page">
       <PageHeader
         title="Technician Verification"
-        subtitle={t(verification === 'PENDING' ? '{count} pending verification requests' : '{count} verification requests', { count: data.total })}
+        subtitle={t('{count} verification requests', { count: data.total })}
         onRefresh={retry}
         refreshing={loading}
       />
@@ -113,54 +108,7 @@ export function VerificationPage() {
               <option key={value} value={value}>{t(label(value))}</option>
             ))}
           </select>
-          <select
-            aria-label={t('Sort requests')}
-            value={sort}
-            onChange={(e) => change(setSort, e.target.value)}
-          >
-            <option value="LATEST">{t('Latest First')}</option>
-            <option value="OLDEST">{t('Oldest First')}</option>
-            <option value="NAME">{t('Name A–Z')}</option>
-          </select>
-          <button
-            className={`verification-filter-button ${filtersOpen ? 'active' : ''}`}
-            aria-label={t('Additional filters')}
-            aria-expanded={filtersOpen}
-            aria-controls="verification-extra-filters"
-            onClick={() => setFiltersOpen((value) => !value)}
-          >
-            <SlidersIcon />
-          </button>
         </div>
-        {filtersOpen && (
-          <div className="verification-extra-filters" id="verification-extra-filters">
-            <label>
-              {t('Qualification')}{' '}
-              <select
-                value={qualification}
-                onChange={(e) => change(setQualification, e.target.value)}
-              >
-                <option value="ALL">{t('All levels')}</option>
-                {['BEGINNER', 'INTERMEDIATE', 'ADVANCED', 'EXPERT'].map((value) => (
-                  <option key={value} value={value}>{t(value)}</option>
-                ))}
-              </select>
-            </label>
-            <button
-              onClick={() => {
-                setSearch('')
-                setKeyword('')
-                setSort('LATEST')
-                setVerification('PENDING')
-                setQualification('ALL')
-                setPage(1)
-                retry()
-              }}
-            >
-              {t('Reset filters')}
-            </button>
-          </div>
-        )}
         <section className="verification-queue">
           <header>
             <h2>
@@ -218,7 +166,8 @@ export function VerificationPage() {
                       </td>
                       <td>
                         <div className="verification-actions">
-                          {row.verification_status === 'PENDING' ? <button
+                          {row.verification_status === 'PENDING' ? (
+                          <button
                             className="view"
                             aria-label={`${t('View identity')} — ${row.full_name}`}
                             title="Xem căn cước và kiểm tra AI trước khi duyệt"
@@ -230,13 +179,16 @@ export function VerificationPage() {
                             })}
                           >
                             <EyeIcon />
-                          </button> : <Link
-                            className="view"
-                            aria-label={`${t('View details')} — ${row.full_name}`}
-                            to={`/admin/technicians/${row.id}?tab=overview`}
-                          >
-                            <EyeIcon />
-                          </Link>}
+                          </button>
+                          ) : (
+                            <Link
+                              className="view"
+                              aria-label={t('View details') + ' — ' + row.full_name}
+                              to={'/admin/technicians/' + row.id + '?tab=overview'}
+                            >
+                              <EyeIcon />
+                            </Link>
+                          )}
                         </div>
                       </td>
                     </tr>

@@ -29,7 +29,6 @@ const initialFilters = {
   capacity_btu: '',
   inverter: '',
   status: 'all',
-  sort: 'NEWEST',
 }
 
 function ModelIcon({ name }) {
@@ -348,31 +347,6 @@ export function AcModelsPage() {
               <option value="true">{t('Inverter')}</option>
               <option value="false">{t('Non-inverter')}</option>
             </select>
-            <select
-              aria-label="Sort models"
-              value={filters.sort}
-              onChange={(event) => filter('sort', event.target.value)}
-            >
-              <option value="NEWEST">{t('Newest')}</option>
-              <option value="OLDEST">{t('Oldest')}</option>
-              <option value="NAME_ASC">{t('Name A–Z')}</option>
-              <option value="NAME_DESC">{t('Name Z–A')}</option>
-              <option value="CAPACITY_ASC">{t('BTU low to high')}</option>
-              <option value="CAPACITY_DESC">{t('BTU high to low')}</option>
-            </select>
-            <button
-              type="button"
-              className="catalog-button"
-              onClick={() => {
-                setSearch('')
-                setQuerySearch('')
-                setFilters(initialFilters)
-                setPage(1)
-                setLoading(true)
-              }}
-            >
-              {t('Reset filters')}
-            </button>
           </div>
         </div>
         <div className="models-table-wrap">
