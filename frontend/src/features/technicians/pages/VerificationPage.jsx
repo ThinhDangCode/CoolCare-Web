@@ -12,7 +12,7 @@ import {
 } from '../../../shared/components/AdminUi.jsx'
 import { TechnicianAvatar, TechnicianNotification } from '../components/TechnicianShared.jsx'
 import { useUiPreferences } from '../../../shared/context/UiPreferencesContext.jsx'
-import { formatDate } from '../components/technicianFormat.js'
+import { formatDate, label } from '../components/technicianFormat.js'
 import '../../../shared/styles/admin.css'
 import './technicians.css'
 import './verification.css'
@@ -25,6 +25,7 @@ export function VerificationPage() {
   const [search, setSearch] = useState(() => (params.get('search') || '').slice(0, 150))
   const [keyword, setKeyword] = useState(() => (params.get('search') || '').slice(0, 150).trim())
   const [sort, setSort] = useState('LATEST')
+  const [verification, setVerification] = useState('PENDING')
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState(10)
   const [qualification, setQualification] = useState('ALL')
@@ -47,7 +48,7 @@ export function VerificationPage() {
     const controller = new AbortController()
     const query = new URLSearchParams({
       search: keyword,
-      verification: 'PENDING',
+      verification,
       sort,
       page,
       limit,
@@ -68,7 +69,7 @@ export function VerificationPage() {
         if (!controller.signal.aborted) setLoading(false)
       })
     return () => controller.abort()
-  }, [token, logout, keyword, sort, page, limit, qualification, refresh])
+  }, [token, logout, keyword, sort, verification, page, limit, qualification, refresh])
   const change = (setter, value) => {
     setLoading(true)
     setPage(1)
@@ -82,7 +83,7 @@ export function VerificationPage() {
     <main className="figma-admin-main technician-main verification-page">
       <PageHeader
         title="Technician Verification"
-        subtitle={t('{count} pending verification requests', { count: data.total })}
+        subtitle={t(verification === 'PENDING' ? '{count} pending verification requests' : '{count} verification requests', { count: data.total })}
         onRefresh={retry}
         refreshing={loading}
       />
@@ -102,7 +103,16 @@ export function VerificationPage() {
               }}
             />
           </label>
-          <span className="verification-status pending">{t('Pending Review')}</span>
+          <select
+            aria-label={t('Filter by status')}
+            value={verification}
+            onChange={(e) => change(setVerification, e.target.value)}
+          >
+            <option value="ALL">{t('All statuses')}</option>
+            {['PENDING', 'REJECTED', 'VERIFIED'].map((value) => (
+              <option key={value} value={value}>{t(label(value))}</option>
+            ))}
+          </select>
           <select
             aria-label={t('Sort requests')}
             value={sort}
@@ -141,6 +151,7 @@ export function VerificationPage() {
                 setSearch('')
                 setKeyword('')
                 setSort('LATEST')
+                setVerification('PENDING')
                 setQualification('ALL')
                 setPage(1)
                 retry()
@@ -202,12 +213,12 @@ export function VerificationPage() {
                           className={`verification-status ${row.verification_status.toLowerCase()}`}
                         >
                           <i />
-                          {t('Pending Review')}
+                          {t(label(row.verification_status))}
                         </span>
                       </td>
                       <td>
                         <div className="verification-actions">
-                          <button
+                          {row.verification_status === 'PENDING' ? <button
                             className="view"
                             aria-label={`${t('View identity')} — ${row.full_name}`}
                             title="Xem căn cước và kiểm tra AI trước khi duyệt"
@@ -219,7 +230,13 @@ export function VerificationPage() {
                             })}
                           >
                             <EyeIcon />
-                          </button>
+                          </button> : <Link
+                            className="view"
+                            aria-label={`${t('View details')} — ${row.full_name}`}
+                            to={`/admin/technicians/${row.id}?tab=overview`}
+                          >
+                            <EyeIcon />
+                          </Link>}
                         </div>
                       </td>
                     </tr>

@@ -2,6 +2,9 @@ import { pool } from '../../config/database.js'
 import { AppError } from '../../utils.js'
 import { remainingPointsSql, activePointsSql } from './technician.points.js'
 
+const issuerLabelSql = "btrim(regexp_replace(issued_by, '[[:space:]]+', ' ', 'g'))"
+const issuerKeySql = `lower(${issuerLabelSql})`
+
 const profileColumns = `t.id, t.user_id, u.full_name, u.email, u.phone, u.avatar_url,
   u.status AS account_status, t.is_active, t.qualification_level, t.years_experience,
   ${remainingPointsSql('t.id')} AS remaining_points, ${activePointsSql('t.id')} AS active_penalty_points,
@@ -112,7 +115,10 @@ export class TechnicianRepository {
     const clauses = []
     if (query.search) { values.push(likeValue(query.search)); clauses.push('(certificate_name ILIKE $1 OR certificate_number ILIKE $1 OR full_name ILIKE $1)') }
     if (query.status !== 'ALL') { values.push(query.status); clauses.push(`status=$${values.length}`) }
-    if (query.issuer) { values.push(query.issuer); clauses.push(`issued_by=$${values.length}`) }
+    if (query.issuer) {
+      values.push(query.issuer.trim().replace(/\s+/g, ' '))
+      clauses.push(`${issuerKeySql}=lower($${values.length}::text)`)
+    }
     const fileType = "CASE WHEN document_url ~* '\\.pdf([?#].*)?$' THEN 'PDF' WHEN document_url ~* '\\.(png|jpe?g|webp|gif)([?#].*)?$' THEN 'IMAGE' ELSE 'OTHER' END"
     if (query.type && query.type !== 'ALL') { values.push(query.type); clauses.push(`(${fileType})=$${values.length}`) }
     const from = `FROM (SELECT ${certificateColumns},u.full_name FROM technician_certifications c
@@ -121,7 +127,10 @@ export class TechnicianRepository {
     const count = await pool.query(`SELECT count(*)::int AS total ${from}`,values)
     const rows = await pool.query(`SELECT * ${from} ORDER BY certificate_name,id
       LIMIT $${values.length+1} OFFSET $${values.length+2}`,[...values,query.limit,(query.page-1)*query.limit])
-    const issuers = await pool.query("SELECT DISTINCT issued_by FROM technician_certifications WHERE issued_by IS NOT NULL AND issued_by <> '' ORDER BY issued_by")
+    const issuers = await pool.query(`SELECT min(${issuerLabelSql}) AS issued_by
+      FROM technician_certifications
+      WHERE issued_by IS NOT NULL AND ${issuerLabelSql} <> ''
+      GROUP BY ${issuerKeySql} ORDER BY issued_by`)
     return { items: rows.rows, total: count.rows[0].total, page: query.page, limit: query.limit, issuers: issuers.rows.map(row => row.issued_by) }
   }
 }

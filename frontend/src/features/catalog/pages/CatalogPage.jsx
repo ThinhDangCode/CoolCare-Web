@@ -38,6 +38,7 @@ const money = (value) =>
 export function CatalogPage() {
   const { kind } = useParams()
   const config = catalogConfig[kind]
+  const hasIdSort = kind === 'brands' || kind === 'services' || kind === 'categories'
   const { token, logout } = useAuth()
   const { locale, t } = useUiPreferences()
   const [search, setSearch] = useState('')
@@ -45,6 +46,7 @@ export function CatalogPage() {
   const [status, setStatus] = useState('all')
   const [category, setCategory] = useState('')
   const [sort, setSort] = useState('NEWEST')
+  const [idSortActive, setIdSortActive] = useState(false)
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState(10)
   const [result, setResult] = useState({ items: [], total: 0 })
@@ -227,6 +229,7 @@ export function CatalogPage() {
               value={sort}
               onChange={(event) => {
                 setSort(event.target.value)
+                setIdSortActive(false)
                 setPage(1)
                 setLoading(true)
               }}
@@ -254,7 +257,29 @@ export function CatalogPage() {
             <table className={`catalog-table catalog-resource-table catalog-resource-${kind}`}>
               <thead>
                 <tr>
-                  <th className="catalog-numeric">ID</th>
+                  <th
+                    className="catalog-numeric"
+                    aria-sort={hasIdSort && idSortActive ? (sort === 'OLDEST' ? 'descending' : 'ascending') : undefined}
+                  >
+                    {hasIdSort ? (
+                      <button
+                        type="button"
+                        className={`catalog-id-sort${idSortActive ? ' active' : ''}`}
+                        aria-label={locale === 'vi' ? 'Đảo thứ tự ID' : 'Reverse ID order'}
+                        onClick={() => {
+                          setIdSortActive(true)
+                          setSort(sort === 'OLDEST' ? 'NEWEST' : 'OLDEST')
+                          setPage(1)
+                          setLoading(true)
+                        }}
+                      >
+                        ID
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+                          <path d="M12 3v18M8 7l4-4 4 4M8 17l4 4 4-4" />
+                        </svg>
+                      </button>
+                    ) : 'ID'}
+                  </th>
                   <th>{t(kind === 'brands' ? 'BRAND NAME' : 'NAME')}</th>
                   {kind === 'services' ? (
                     <>
@@ -307,7 +332,9 @@ export function CatalogPage() {
                   result.items.map((row, index) => (
                     <tr key={row.id}>
                       <td className="catalog-index catalog-numeric">
-                        {String((page - 1) * limit + index + 1).padStart(2, '0')}
+                        {String(hasIdSort && sort === 'OLDEST'
+                          ? result.total - (page - 1) * limit - index
+                          : (page - 1) * limit + index + 1).padStart(2, '0')}
                       </td>
                       <td>
                         <div className="catalog-name">
