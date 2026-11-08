@@ -154,7 +154,7 @@ export class ReviewRepository {
   refreshTechnicianRating(client, technicianId) {
     return client.query(
       `UPDATE technician_profiles tp
-          SET rating_average=summary.average,total_reviews=summary.total,updated_at=CURRENT_TIMESTAMP
+          SET rating_average=COALESCE(summary.average,0),total_reviews=summary.total,updated_at=CURRENT_TIMESTAMP
          FROM (SELECT round(avg(rating),2) average,count(*)::int total
                  FROM reviews WHERE technician_id=$1 AND status='PUBLISHED') summary
         WHERE tp.id=$1`,
