@@ -41,10 +41,11 @@ test('technician administration is atomic and preserves eligibility and review h
     assert.equal((await client.query('SELECT count(*)::int AS count FROM technician_skills WHERE technician_id=$1',[pending.id])).rows[0].count,1)
     await service.deactivate(pending.id,actor)
     assert.equal((await client.query('SELECT can_recommend_technician($1) AS allowed',[pending.id])).rows[0].allowed,false)
-    assert.equal((await client.query('SELECT status FROM users WHERE id=$1',[pending.user_id])).rows[0].status,'INACTIVE')
+    assert.equal((await client.query('SELECT status FROM users WHERE id=$1',[pending.user_id])).rows[0].status,'ACTIVE')
     await service.activate(pending.id,actor)
     assert.equal((await client.query('SELECT status FROM users WHERE id=$1',[pending.user_id])).rows[0].status,'ACTIVE')
     assert.equal((await client.query('SELECT is_active FROM technician_profiles WHERE id=$1',[pending.id])).rows[0].is_active,true)
+    assert.equal((await client.query('SELECT availability_status FROM technician_profiles WHERE id=$1',[pending.id])).rows[0].availability_status,'ONLINE')
     await client.query("UPDATE users SET status='LOCKED' WHERE id=$1",[pending.user_id])
     await assert.rejects(service.activate(pending.id,actor),{status:409})
     const certificate=(await client.query("SELECT * FROM technician_certifications WHERE verification_status='PENDING' LIMIT 1")).rows[0]

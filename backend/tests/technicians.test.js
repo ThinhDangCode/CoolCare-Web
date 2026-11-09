@@ -55,6 +55,103 @@ test('approving a technician repairs the receiving account and activates the pro
   assert.equal(notification.params[1], 'Đăng ký kỹ thuật viên đã được duyệt')
 })
 
+test('deactivating technician capability preserves the customer account status', async () => {
+  for (const accountStatus of ['ACTIVE', 'LOCKED', 'INACTIVE']) {
+    const user = { status: accountStatus }
+    const profile = { id: 'technician-id', user_id: 'customer-id', is_active: true, availability_status: 'ONLINE' }
+    const audits = []
+    const service = new TechnicianMutations({
+      audit: event => audits.push(event),
+      transaction: work => work({ query: async (sql, params) => {
+        if (sql.includes('INSERT INTO technician_accounts') || sql.startsWith('SELECT id FROM technician_accounts')) return { rows: [] }
+        if (sql.startsWith('SELECT * FROM technician_profiles')) return { rows: [profile] }
+        if (sql.startsWith('UPDATE technician_profiles')) {
+          assert.deepEqual(params, ['technician-id'])
+          assert.ok(sql.includes("is_active=false,availability_status='OFFLINE'"))
+          profile.is_active = false
+          profile.availability_status = 'OFFLINE'
+          return { rows: [] }
+        }
+        if (sql.startsWith('UPDATE users')) user.status = 'INACTIVE'
+        throw new Error('Unexpected query: ' + sql)
+      } }),
+    })
+    assert.deepEqual(await service.deactivate('technician-id', 'admin-id'), { id: 'technician-id', is_active: false })
+    assert.equal(profile.is_active, false)
+    assert.equal(profile.availability_status, 'OFFLINE')
+    assert.equal(user.status, accountStatus)
+    assert.equal(audits.length, 1)
+    assert.equal(audits[0].action, 'DEACTIVATE_TECHNICIAN')
+    assert.equal(audits[0].actorId, 'admin-id')
+  }
+})
+
+test('activating a deactivated technician restores online availability', async () => {
+  const profile = { id: 'technician-id', user_id: 'customer-id', verification_status: 'VERIFIED', is_active: true, availability_status: 'ONLINE' }
+  const audits = []
+  const service = new TechnicianMutations({
+    audit: event => audits.push(event),
+    transaction: work => work({ query: async (sql, params) => {
+      if (sql.includes('INSERT INTO technician_accounts') || sql.startsWith('SELECT id FROM technician_accounts')) return { rows: [] }
+      if (sql.startsWith('SELECT * FROM technician_profiles')) return { rows: [profile] }
+      if (sql.startsWith('SELECT status FROM users')) return { rows: [{ status: 'ACTIVE' }] }
+      if (sql.includes('AS remaining_points')) return { rows: [{ remaining_points: 12 }] }
+      if (sql.startsWith('UPDATE technician_profiles')) {
+        assert.deepEqual(params, ['technician-id'])
+        const activating = sql.includes('is_active=true')
+        assert.ok(sql.includes(activating ? "availability_status='ONLINE'" : "availability_status='OFFLINE'"))
+        profile.is_active = activating
+        profile.availability_status = activating ? 'ONLINE' : 'OFFLINE'
+        return { rows: [] }
+      }
+      if (sql.startsWith('UPDATE users')) {
+        assert.ok(sql.includes("status='ACTIVE'"))
+        return { rows: [] }
+      }
+      throw new Error('Unexpected query: ' + sql)
+    } }),
+  })
+  await service.deactivate('technician-id', 'admin-id')
+  assert.equal(profile.availability_status, 'OFFLINE')
+  await service.activate('technician-id', 'admin-id')
+  assert.equal(profile.is_active, true)
+  assert.equal(profile.availability_status, 'ONLINE')
+  assert.deepEqual(audits.at(-1).after, { is_active: true, availability_status: 'ONLINE' })
+})
+
+test('activation cannot bring locked or points-exhausted technicians online', async () => {
+  for (const [status, points, code] of [['LOCKED', 12, 'ACCOUNT_LOCKED'], ['ACTIVE', 0, 'POINTS_EXHAUSTED']]) {
+    const updates = [], audits = []
+    const service = new TechnicianMutations({
+      audit: event => audits.push(event),
+      transaction: work => work({ query: async sql => {
+        if (sql.startsWith('SELECT * FROM technician_profiles')) return { rows: [{ user_id: 'customer-id', verification_status: 'VERIFIED' }] }
+        if (sql.startsWith('SELECT status FROM users')) return { rows: [{ status }] }
+        if (sql.includes('AS remaining_points')) return { rows: [{ remaining_points: points }] }
+        if (sql.startsWith('UPDATE')) updates.push(sql)
+        return { rows: [] }
+      } }),
+    })
+    await assert.rejects(service.activate('technician-id', 'admin-id'), { status: 409, code })
+    assert.deepEqual(updates, [])
+    assert.deepEqual(audits, [])
+  }
+})
+
+test('deactivating a missing technician does not update or audit success', async () => {
+  const updates = [], audits = []
+  const service = new TechnicianMutations({
+    audit: event => audits.push(event),
+    transaction: work => work({ query: async sql => {
+      if (sql.startsWith('UPDATE')) updates.push(sql)
+      return { rows: [] }
+    } }),
+  })
+  await assert.rejects(service.deactivate('missing-id', 'admin-id'), { status: 404, code: 'TECHNICIAN_NOT_FOUND' })
+  assert.deepEqual(updates, [])
+  assert.deepEqual(audits, [])
+})
+
 test('pending and rejected applicants cannot be activated as official technicians', async () => {
   for (const verification_status of ['PENDING', 'REJECTED']) {
     const queries = []

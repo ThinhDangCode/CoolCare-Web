@@ -148,8 +148,8 @@ export function DeactivateDialog({ data, activate = false, onClose, onSuccess })
         <p>
           {t(activate ? 'Activate' : 'Deactivate')} <strong>{data.full_name}</strong>?{' '}
           {activate
-            ? t('Restore account access. New jobs still require a verified profile, availability and wallet eligibility.')
-            : t('This disables sign-in and new job assignments. Existing job history will be preserved.')}
+            ? t('Restore technician capability and set the technician online. New jobs still require profile and wallet eligibility.')
+            : t('This disables technician capability and new job assignments. Customer access and existing job history will be preserved.')}
         </p>
         <TechnicianNotification message={t(error)} onDismiss={setError} danger />
         <footer>
