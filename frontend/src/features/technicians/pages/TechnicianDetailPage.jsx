@@ -101,15 +101,15 @@ export function TechnicianDetailPage() {
             </>}
             {canManage && !loading && !error && (
               <>
-                {(!data.is_active || data.account_status === 'INACTIVE') &&
+                {!data.is_active &&
                   data.account_status !== 'LOCKED' && (
                     <button className="primary" onClick={() => setAction('activate')}>
-                      {t('Activate Account')}
+                      {t('Activate technician')}
                     </button>
                   )}
-                {(data.is_active || data.account_status !== 'INACTIVE') && (
+                {data.is_active && (
                   <button className="danger" onClick={() => setAction('deactivate')}>
-                    ⊘ {t('Deactivate Account')}
+                    ⊘ {t('Deactivate technician')}
                   </button>
                 )}
                 <button onClick={() => setAction('edit')}>✎ {t('Edit Profile')}</button>

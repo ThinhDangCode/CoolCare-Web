@@ -635,12 +635,14 @@ const messages = {
     'Certificate number': 'Số chứng chỉ',
     'Activate technician?': 'Kích hoạt kỹ thuật viên?',
     'Deactivate technician?': 'Vô hiệu hóa kỹ thuật viên?',
+    'Activate technician': 'Kích hoạt quyền kỹ thuật viên',
+    'Deactivate technician': 'Vô hiệu hóa quyền kỹ thuật viên',
     Activate: 'Kích hoạt',
     Deactivate: 'Vô hiệu hóa',
-    'Restore account access. New jobs still require a verified profile, availability and wallet eligibility.':
-      'Khôi phục quyền truy cập tài khoản. Công việc mới vẫn yêu cầu hồ sơ đã xác minh, trạng thái sẵn sàng và ví đủ điều kiện.',
-    'This disables sign-in and new job assignments. Existing job history will be preserved.':
-      'Thao tác này vô hiệu hóa đăng nhập và phân công công việc mới. Lịch sử công việc hiện có vẫn được giữ lại.',
+    'Restore technician capability and set the technician online. New jobs still require profile and wallet eligibility.':
+      'Khôi phục quyền kỹ thuật viên và chuyển sang trực tuyến. Công việc mới vẫn yêu cầu hồ sơ và ví đủ điều kiện.',
+    'This disables technician capability and new job assignments. Customer access and existing job history will be preserved.':
+      'Thao tác này vô hiệu hóa quyền kỹ thuật viên và nhận công việc mới. Quyền khách hàng và lịch sử công việc hiện có vẫn được giữ lại.',
     'Update technician skills': 'Cập nhật kỹ năng kỹ thuật viên',
     'Update technician': 'Cập nhật kỹ thuật viên',
     'A verified technician must have at least one skill.':
