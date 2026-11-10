@@ -43,6 +43,8 @@ export const INVOICE_DETAIL_SQL = `SELECT i.id,i.invoice_number AS "invoiceNumbe
     NULLIF(to_jsonb(b)->>'district',''),NULLIF(b.city,'')),'') AS "bookingAddress",
   b.recipient_name AS "recipientName",b.recipient_phone AS "recipientPhone",
   b.scheduled_at AS "scheduledStart",NULL AS "scheduledEnd",b.completed_at AS "completedAt",
+  b.technician_completed_at AS "technicianConfirmedAt",
+  b.completion_confirmed_at AS "customerConfirmedAt",
   tp.id AS "technicianId",tu.full_name AS "technicianName",tu.phone AS "technicianPhone",
   i.subtotal,i.parts_amount AS "partsAmount",i.discount_amount AS "discountAmount",i.total_amount AS "totalAmount",
   COALESCE((SELECT jsonb_agg(jsonb_build_object(
@@ -132,6 +134,7 @@ export function presentInvoiceDetail(row) {
       id: row.bookingId, code: row.bookingCode, address: row.bookingAddress,
       recipientName: row.recipientName, recipientPhone: row.recipientPhone,
       scheduledStart: row.scheduledStart, scheduledEnd: row.scheduledEnd, completedAt: row.completedAt,
+      technicianConfirmedAt: row.technicianConfirmedAt, customerConfirmedAt: row.customerConfirmedAt,
     },
     technician: row.technicianId
       ? { id: row.technicianId, name: row.technicianName, phone: row.technicianPhone } : null,

@@ -48,12 +48,16 @@ export class BookingDetailRepository {
     const result = await db.query(`
       SELECT id, status, note, changed_by_id, created_at
       FROM booking_status_history WHERE booking_id = $1
+        AND (note IS NULL OR note NOT LIKE 'COOLCARE_TRAVEL_V1:%')
       ORDER BY created_at ASC, id ASC
     `, [bookingId])
     return result.rows
   }
 
   async cancelBooking(userId, bookingId, reason, db) {
+    if (typeof reason !== 'string' || !reason.trim()) {
+      throw new Error('Vui lòng nhập lý do hủy.')
+    }
     const result = await db.query(`
       UPDATE bookings SET status = 'CANCELLED', cancelled_at = CURRENT_TIMESTAMP,
         cancelled_by_id = $1, cancellation_reason = $3,

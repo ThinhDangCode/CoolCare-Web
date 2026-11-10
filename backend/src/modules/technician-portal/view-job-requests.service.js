@@ -1,3 +1,5 @@
+import { storageCode } from '../../config/database-codebooks.js'
+import { isVerifiedTechnician, isActiveAccount } from './technician-status.js'
 import { AppError, validateUuid } from '../../utils.js'
 import { ViewJobRequestsRepository } from './view-job-requests.repository.js'
 import { validateViewJobRequestsQuery } from './view-job-requests.validation.js'
@@ -18,10 +20,10 @@ export class ViewJobRequestsService {
     if (!technician) {
       throw new AppError(403, 'TECHNICIAN_PROFILE_REQUIRED', 'Tài khoản chưa có hồ sơ kỹ thuật viên.')
     }
-    if (technician.verification_status !== 'VERIFIED') {
+    if (!isVerifiedTechnician(technician.verification_status)) {
       throw new AppError(403, 'TECHNICIAN_NOT_VERIFIED', 'Hồ sơ kỹ thuật viên chưa được xác minh.')
     }
-    if (!technician.is_active || technician.account_status !== 'ACTIVE') {
+    if (!technician.is_active || !isActiveAccount(technician.account_status)) {
       throw new AppError(403, 'TECHNICIAN_INACTIVE', 'Hồ sơ kỹ thuật viên hiện không hoạt động.')
     }
 
@@ -57,8 +59,8 @@ export class ViewJobRequestsService {
       cancellationReason: row.request_cancellation_reason ?? null,
       historyAt: this.historyAt(row),
       canRespond: row.request_status === 'SELECTED' && row.booking_status === 'TECHNICIAN_SELECTED',
-      canComplete: row.request_status === 'ACCEPTED' && row.booking_status === 'ACCEPTED',
-      canCancelAcceptedJob: row.request_status === 'ACCEPTED' && row.booking_status === 'ACCEPTED',
+      canComplete: row.request_status === 'ACCEPTED' && storageCode('bookings', 'status', row.booking_status) === 2,
+      canCancelAcceptedJob: row.request_status === 'ACCEPTED' && storageCode('bookings', 'status', row.booking_status) === 2,
       booking: {
         id: row.booking_id,
         code: row.booking_code,

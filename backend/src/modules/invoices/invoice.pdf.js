@@ -181,7 +181,7 @@ function drawLeftColumn(c, invoice) {
       { text: `Thời gian: ${formatDateTime(invoice.payment.paidAt)}`, lineHeight: 54 },
     ],
   }) + 37
-  card(c, {
+  return card(c, {
     title: 'GHI CHÚ',
     y,
     minHeight: 191,
@@ -327,13 +327,42 @@ export function renderInvoicePdf(invoice) {
   doc.addPage()
   const canvas = new InvoiceCanvas(doc)
   drawHeader(canvas, invoice)
-  drawLeftColumn(canvas, invoice)
+  const leftBottom = drawLeftColumn(canvas, invoice)
 
   const flow = new Flow(doc, canvas, invoice)
   flow.sectionBar('DỊCH VỤ VÀ TIỀN CÔNG')
   flow.serviceTable(invoice.items)
   flow.materials(invoice.partsAmount)
   flow.totals(invoice)
+
+  // Preserve the original CoolCare invoice and its two signature-style boxes.
+  // Only replace blank handwritten signature placeholders with audit-backed confirmations.
+  const signatureHeight = 178
+  let signY = Math.max(flow.y + 22, leftBottom + 22)
+  if (signY + signatureHeight > BOTTOM) {
+    doc.addPage()
+    signY = 190
+    canvas.text(`Hóa đơn ${invoice.invoiceNumber} — xác nhận`, MARGIN, 110, { size: 39, bold: true })
+  }
+  const signatureWidth = (CONTENT_WIDTH - 44) / 2
+  const signers = [
+    { heading: 'KHÁCH HÀNG', name: invoice.customer?.name, at: invoice.booking?.customerConfirmedAt },
+    { heading: 'KỸ THUẬT VIÊN', name: invoice.booking?.technicianName, at: invoice.booking?.technicianConfirmedAt },
+  ]
+  for (const [index, person] of signers.entries()) {
+    const x = MARGIN + index * (signatureWidth + 44)
+    const approved = Boolean(person.at && !Number.isNaN(new Date(person.at).getTime()))
+    canvas.rect(x, signY, signatureWidth, signatureHeight, { stroke: COLOR.line, lineWidth: 2, radius: 8 })
+    canvas.text(person.heading, x, signY + 40, { size: 33, bold: true, align: 'center', width: signatureWidth })
+    canvas.text(approved ? 'ĐÃ XÁC NHẬN ĐIỆN TỬ' : 'CHƯA XÁC NHẬN', x, signY + 79, {
+      size: 26, bold: true, color: approved ? COLOR.orange : COLOR.muted, align: 'center', width: signatureWidth,
+    })
+    const fittedName = canvas.fit(person.name || '—', signatureWidth - 36, 26, true, 20)
+    canvas.text(fittedName.text, x, signY + 116, { size: fittedName.size, bold: true, align: 'center', width: signatureWidth })
+    canvas.text(approved ? formatDateTime(person.at) : 'Chưa ghi nhận thời gian', x, signY + 151, {
+      size: 23, color: COLOR.muted, align: 'center', width: signatureWidth,
+    })
+  }
 
   if (doc.pages.length > 1) {
     doc.pages.forEach((_, index) => {

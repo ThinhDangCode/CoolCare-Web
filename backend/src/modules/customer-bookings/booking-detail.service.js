@@ -53,6 +53,14 @@ export class BookingDetailService {
         throw new AppError(409, 'NO_SHOW_NOT_REPORTABLE',
           'A missing technician can only be reported 30 minutes after the appointment starts.')
       }
+      const hasArrived = await db.query(`
+        SELECT 1 FROM booking_status_history WHERE booking_id=$1
+          AND note LIKE 'COOLCARE_TRAVEL_V1:%ARRIVED%'
+        LIMIT 1`, [bookingId])
+      if (hasArrived.rowCount) {
+        throw new AppError(409, 'TECHNICIAN_ALREADY_ARRIVED',
+          'Kỹ thuật viên đã xác nhận đến nơi. Vui lòng dùng luồng hỗ trợ nếu có tranh chấp.')
+      }
       const technician = (await db.query(`
         SELECT technician_id FROM booking_technicians
         WHERE booking_id=$1 AND status='ACCEPTED' LIMIT 1
@@ -86,6 +94,15 @@ export class BookingDetailService {
     ])
 
     const status = booking.status
+    const noShowEligibility = status === 'ACCEPTED' ? (await this.repository.db.query(`
+      SELECT EXISTS (SELECT 1 FROM booking_status_history
+        WHERE booking_id=$1 AND note LIKE 'COOLCARE_TRAVEL_V1:%ARRIVED%') AS arrived,
+        EXISTS (SELECT 1 FROM complaints WHERE booking_id=$1
+          AND type='TECHNICIAN' AND subject='Technician did not arrive') AS reported
+    `, [bookingId])).rows[0] : null
+    const canReportNoShow = status === 'ACCEPTED' &&
+      Date.now() >= new Date(booking.scheduled_at).getTime() + 30 * 60000 &&
+      noShowEligibility?.arrived === false && noShowEligibility?.reported === false
 
     const canCancel = [
       'PENDING',
@@ -144,6 +161,7 @@ export class BookingDetailService {
 
       // Booking actions
       canCancel,
+      canReportNoShow,
       canConfirmCompletion,
       canRebook: status === 'CANCELLED',
 
@@ -192,6 +210,9 @@ export class BookingDetailService {
       const reason = String(body?.reason ?? '')
         .trim()
         .slice(0, 1000)
+      if (!reason) {
+        throw new AppError(400, 'BOOKING_CANCELLATION_REASON_REQUIRED', 'Vui lòng nhập lý do hủy.')
+      }
 
       const result = await this.repository.cancelBooking(
         userId,

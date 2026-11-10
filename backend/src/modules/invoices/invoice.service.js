@@ -41,6 +41,8 @@ export function buildInvoiceView({ payment, invoice, items, paidAmount }, compan
       code: payment.bookingCode,
       serviceDate: payment.completedAt ?? payment.scheduledAt,
       technicianName: payment.technicianName ?? null,
+      technicianConfirmedAt: payment.technicianConfirmedAt ?? null,
+      customerConfirmedAt: payment.customerConfirmedAt ?? null,
     },
     provider: {
       name: company.name || 'CoolCare',

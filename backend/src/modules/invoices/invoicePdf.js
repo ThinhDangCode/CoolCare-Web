@@ -355,6 +355,42 @@ export async function buildInvoicePdf(invoice, { supplier = {} } = {}) {
     summaryRow('Đã thanh toán', paid ? formatInvoicePdfAmount(invoice.totals?.totalAmount) : 'Chưa xác định')
     summaryRow('Còn phải trả', paid ? formatInvoicePdfAmount('0') : 'Chưa xác định')
 
+    // Electronic confirmations are backed by the two distinct booking timestamps.
+    // They are not handwritten signatures or cryptographic digital signatures.
+    // For ordinary invoices keep the two confirmations together on the first A4
+    // page; do not waste a second page on a 140px handwritten signature box.
+    const confirmationHeight = 104
+    const confirmationGap = 16
+    const confirmationPage = Math.max(left.page, right.page)
+    const confirmationTop = Math.max(
+      left.page === confirmationPage ? left.y : topOf(confirmationPage),
+      right.page === confirmationPage ? right.y : topOf(confirmationPage),
+    ) + confirmationGap
+    const confirmation = { page: confirmationPage, y: confirmationTop }
+    if (confirmation.y + confirmationHeight > PAGE.bottom) {
+      confirmation.page += 1
+      ensurePage(confirmation.page)
+      confirmation.y = topOf(confirmation.page)
+    } else ensurePage(confirmation.page)
+    const x0 = MARGIN
+    const totalWidth = 738
+    const half = totalWidth / 2
+    rect(x0, confirmation.y, totalWidth, confirmationHeight, COLORS.white)
+    rect(x0, confirmation.y, totalWidth, 30, COLORS.tint, null)
+    text('XÁC NHẬN HOÀN THÀNH DỊCH VỤ', x0 + 12, confirmation.y + 6, totalWidth - 24, 18, 'bold', COLORS.orange)
+    line(x0 + half, confirmation.y + 30, x0 + half, confirmation.y + confirmationHeight)
+    const confirmations = [
+      { heading: 'KHÁCH HÀNG', name: invoice.customer?.name, at: invoice.booking?.customerConfirmedAt },
+      { heading: 'KỸ THUẬT VIÊN', name: invoice.technician?.name, at: invoice.booking?.technicianConfirmedAt },
+    ]
+    confirmations.forEach((person, index) => {
+      const x = x0 + index * half + 12
+      text(person.heading, x, confirmation.y + 36, half - 24, 16, 'bold', COLORS.ink, 'center')
+      text(printable(person.name), x, confirmation.y + 55, half - 24, 15, 'bold', COLORS.ink, 'center')
+      const status = person.at ? `Đã xác nhận trên CoolCare: ${dateText(person.at, true)} (UTC+7)` : 'Chưa có xác nhận điện tử'
+      text(status, x, confirmation.y + 76, half - 24, 13, 'regular', person.at ? COLORS.orange : COLORS.muted, 'center')
+    })
+
     for (let index = 0; index < pageCount; index += 1) {
       ensurePage(index)
       line(MARGIN, 1041, 766, 1041, COLORS.orange)

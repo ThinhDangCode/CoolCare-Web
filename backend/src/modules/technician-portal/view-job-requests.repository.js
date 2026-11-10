@@ -1,9 +1,9 @@
 import { pool } from '../../config/database.js'
 
 const effectiveStatus = `CASE
-  WHEN b.status='COMPLETED' AND bt.status='ACCEPTED' THEN 'COMPLETED'
-  WHEN b.status='CANCELLED' AND bt.status IN ('SELECTED','ACCEPTED') THEN 'CANCELLED'
-  WHEN bt.status='SELECTED' AND COALESCE(bt.expires_at,bt.requested_at+INTERVAL '10 minutes')<=CURRENT_TIMESTAMP
+  WHEN b.status=9 AND bt.status=2 THEN 'COMPLETED'
+  WHEN b.status=10 AND bt.status IN (1,2) THEN 'CANCELLED'
+  WHEN bt.status=1 AND COALESCE(bt.expires_at,bt.requested_at+INTERVAL '10 minutes')<=CURRENT_TIMESTAMP
     THEN 'EXPIRED'
   ELSE CASE bt.status
     WHEN 0 THEN 'RECOMMENDED' WHEN 1 THEN 'SELECTED' WHEN 2 THEN 'ACCEPTED'
@@ -14,11 +14,22 @@ END`
 const visibleStatuses = `('SELECTED','ACCEPTED','DECLINED','EXPIRED','COMPLETED','CANCELLED')`
 const historyStatuses = `('DECLINED','EXPIRED','COMPLETED','CANCELLED')`
 const closedStatuses = `('DECLINED','EXPIRED','CANCELLED')`
+// The accepted assignment remains ACCEPTED throughout travel and work.
+// Display-only filters split the technician list using the existing ARRIVED journal event.
+const hasArrived = `EXISTS (SELECT 1 FROM booking_status_history bsh
+  WHERE bsh.booking_id=b.id AND bsh.note=$$COOLCARE_TRAVEL_V1:{"event":"ARRIVED"}$$)`
+const hasDeparted = `EXISTS (SELECT 1 FROM booking_status_history bsh
+  WHERE bsh.booking_id=b.id AND bsh.note=$$COOLCARE_TRAVEL_V1:{"event":"DEPARTED"}$$)`
 const statusFilter = `(
   $2::varchar IS NULL
   OR ($2='HISTORY' AND ${effectiveStatus} IN ${historyStatuses})
   OR ($2='CLOSED' AND ${effectiveStatus} IN ${closedStatuses})
-  OR ($2 NOT IN ('HISTORY','CLOSED') AND ${effectiveStatus}=$2)
+  OR ($2='REQUESTS' AND (${effectiveStatus}='SELECTED' OR (${effectiveStatus}='ACCEPTED' AND NOT ${hasArrived})))
+  OR ($2='ONGOING' AND ${effectiveStatus}='ACCEPTED' AND ${hasArrived})
+  OR ($2='ACCEPTED_NOT_DEPARTED' AND ${effectiveStatus}='ACCEPTED' AND NOT ${hasDeparted})
+  OR ($2='ACCEPTED_PENDING_ARRIVAL' AND ${effectiveStatus}='ACCEPTED' AND NOT ${hasArrived})
+  OR ($2='ACCEPTED_ARRIVED' AND ${effectiveStatus}='ACCEPTED' AND ${hasArrived})
+  OR ($2 NOT IN ('HISTORY','CLOSED','REQUESTS','ONGOING','ACCEPTED_NOT_DEPARTED','ACCEPTED_PENDING_ARRIVAL','ACCEPTED_ARRIVED') AND ${effectiveStatus}=$2)
 )`
 
 export class ViewJobRequestsRepository {

@@ -42,7 +42,7 @@ export class BookingRepository {
         (SELECT COALESCE(json_agg(json_build_object('name',s.name,'description',s.description,'unit_price',bus.unit_price,'estimated_duration',s.estimated_duration) ORDER BY s.name),'[]'::json)
         FROM booking_unit_services bus JOIN services s ON s.id=bus.service_id WHERE bus.booking_unit_id=bu.id) AS services
         FROM booking_units bu LEFT JOIN ac_brands ab ON ab.id=bu.ac_brand_id LEFT JOIN ac_models am ON am.id=bu.ac_model_id WHERE bu.booking_id=$1 ORDER BY bu.unit_number`, [id]),
-      this.db.query(`SELECT h.id,h.status,h.note,h.created_at,u.full_name AS changed_by FROM booking_status_history h LEFT JOIN users u ON u.id=h.changed_by_id WHERE h.booking_id=$1 ORDER BY h.created_at,h.id`, [id]),
+      this.db.query(`SELECT h.id,h.status,h.note,h.created_at,u.full_name AS changed_by FROM booking_status_history h LEFT JOIN users u ON u.id=h.changed_by_id WHERE h.booking_id=$1 AND (h.note IS NULL OR h.note NOT LIKE 'COOLCARE_TRAVEL_V1:%') ORDER BY h.created_at,h.id`, [id]),
     ])
     return { ...booking, units: units.rows, history: history.rows }
   }
