@@ -20,7 +20,7 @@ test('Update Job Status only accepts COMPLETED', () => {
   }
 })
 
-function fixture({ requestStatus = 'ACCEPTED', bookingStatus = 'ACCEPTED' } = {}) {
+function fixture({ requestStatus = 'ACCEPTED', bookingStatus = 'ACCEPTED', departed = true, arrived = true } = {}) {
   const calls = []
   const repository = new UpdateJobStatusRepository({
     transaction: async (operation) => operation({
@@ -34,6 +34,7 @@ function fixture({ requestStatus = 'ACCEPTED', bookingStatus = 'ACCEPTED' } = {}
           id: requestId, booking_id: 'booking-id', status: requestStatus,
           booking_status: bookingStatus, booking_code: 'BK-001', customer_user_id: 'customer-id',
         }] }
+        if (sql.includes('bool_or(note=$2)')) return { rows: [{ departed, arrived }] }
         if (sql.startsWith('SELECT id, status, total_amount FROM quotations')) return { rows: [{
           id: 'initial-quotation-id', status: 'ACCEPTED', total_amount: '200000.00',
         }] }
@@ -55,11 +56,21 @@ test('technician completion waits for the customer and keeps the assignment acti
   assert.equal(result.status, 'ACCEPTED')
   assert.equal(result.booking.status, 'WAITING_CONFIRMATION')
   assert.ok(calls.some(({ sql }) => sql.includes('technician_completed_at=CURRENT_TIMESTAMP')))
-  assert.ok(calls.some(({ sql }) => sql.includes('booking_status_history') && sql.includes("'WAITING_CONFIRMATION'")))
+  assert.ok(calls.some(({ sql }) => sql.includes('INSERT INTO booking_status_history') && sql.includes('VALUES($1,8')))
   assert.ok(calls.some(({ sql, params }) => sql.includes('INSERT INTO notifications') && params[0] === 'customer-id'))
   assert.ok(calls.some(({ sql, params }) =>
     sql.includes('INSERT INTO notifications') && params[1].includes('200.000đ')))
   assert.equal(result.initial_quotation.id, 'initial-quotation-id')
+})
+
+test('technician must confirm departure and arrival before completion', async () => {
+  for (const travel of [{ departed: false, arrived: false }, { departed: true, arrived: false }]) {
+    const { repository, calls } = fixture(travel)
+    await assert.rejects(repository.complete(userId, requestId), {
+      status: 409, code: 'ARRIVAL_CONFIRMATION_REQUIRED',
+    })
+    assert.ok(!calls.some(({ sql }) => sql.includes('UPDATE bookings')))
+  }
 })
 
 test('only an active accepted job can be completed', async () => {

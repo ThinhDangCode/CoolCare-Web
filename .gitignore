@@ -143,3 +143,4 @@ vite.config.ts.timestamp-*
 .vite/
 # CoolCare Stripe Connect Sandbox
 backend/data/stripe-accounts.json
+backend/storage/booking-travel-eta.json
