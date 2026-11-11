@@ -64,10 +64,15 @@ async function getAssignment(db, userId, bookingId, lock = false) {
     WHERE b.id=$1 AND tp.user_id=$2 AND bt.status=2 AND b.status=2
     LIMIT 1 ${lock ? 'FOR UPDATE OF b' : ''}`, [bookingId, userId])
   if (!rows.length) throw new AppError(403, 'TRAVEL_NOT_ALLOWED', 'Đơn không thuộc thợ hoặc không còn ở trạng thái đã nhận.')
-  if (rows[0].latitude == null || rows[0].longitude == null) {
-    throw new AppError(422, 'DESTINATION_GPS_MISSING', 'Địa chỉ khách chưa có tọa độ GPS.')
-  }
   return rows[0]
+}
+function destinationCoordinates(booking) {
+  if (booking.latitude == null || booking.longitude == null) return null
+  const latitude = Number(booking.latitude)
+  const longitude = Number(booking.longitude)
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude) ||
+      Math.abs(latitude) > 90 || Math.abs(longitude) > 180) return null
+  return [latitude, longitude]
 }
 async function history(db, bookingId) {
   const { rows } = await db.query(`SELECT note, created_at FROM booking_status_history
@@ -155,32 +160,40 @@ async function view(db, bookingId) {
     estimate_type: 'route_estimate_without_live_traffic',
   }
 }
-async function startDeparture(userId, id, body) {
+export async function startDeparture(userId, id, body, {
+  database = pool,
+  transaction = withTransaction,
+  estimateRoute = routeEstimate,
+  persist = saveCache,
+  readStatus = view,
+} = {}) {
   // GPS is sampled once at departure to calculate travel duration; not tracked.
   const [lat, lng] = coordinates(body)
-  const booking = await getAssignment(pool, userId, id)
-  const estimate = await routeEstimate(lat, lng, Number(booking.latitude), Number(booking.longitude))
-  if (!estimate) throw new AppError(503, 'ROUTE_ESTIMATE_UNAVAILABLE', 'Không tính được thời gian di chuyển. Kiểm tra kết nối, cấu hình bản đồ rồi thử lại.')
-  await withTransaction(async db => {
+  const booking = await getAssignment(database, userId, id)
+  const destination = destinationCoordinates(booking)
+  const estimate = destination
+    ? await estimateRoute(lat, lng, destination[0], destination[1])
+    : null
+  await transaction(async db => {
     await getAssignment(db, userId, id, true)
     const markers = await history(db, id)
     if (markers.departedAt) throw new AppError(409, 'TRAVEL_STARTED', 'Hành trình đã được bắt đầu.')
     await appendEvent(db, id, userId, 'DEPARTED')
-    const arrival = Date.now() + estimate.seconds * 1000
-    if (booking.scheduled_at && arrival >= new Date(booking.scheduled_at).getTime() + 15 * 60000) {
+    const arrival = estimate ? Date.now() + estimate.seconds * 1000 : null
+    if (arrival && booking.scheduled_at && arrival >= new Date(booking.scheduled_at).getTime() + 15 * 60000) {
       const minutes = Math.ceil((arrival - new Date(booking.scheduled_at).getTime()) / 60000)
       await notifyCustomer(db, id, 'Thợ dự kiến đến trễ', `Thợ đã bắt đầu di chuyển nhưng dự kiến đến trễ khoảng ${minutes} phút. Bạn có thể nhắn tin trao đổi trực tiếp với thợ.`)
     }
   })
   const now = iso()
-  await saveCache(id, {
+  await persist(id, {
     eta_at: estimate ? new Date(Date.now() + estimate.seconds * 1000).toISOString() : null,
     duration_seconds: estimate?.seconds ?? null,
     distance_meters: estimate?.meters ?? null,
     eta_updated_at: now,
     routing_available: Boolean(estimate),
   })
-  return { ...await view(pool, id), routing_available: Boolean(estimate) }
+  return { ...await readStatus(database, id), routing_available: Boolean(estimate) }
 }
 // One-time GPS estimate after accepting a job, before departure.
 // Does not mark departure and never starts the work timer.
@@ -193,7 +206,10 @@ router.post('/:id/estimate', requireRole('CUSTOMER', 'TECHNICIAN'), asyncHandler
   if (markers.departedAt) {
     return res.set('Cache-Control', 'no-store').json({ data: await view(pool, req.params.id) })
   }
-  const estimate = await routeEstimate(lat, lng, Number(booking.latitude), Number(booking.longitude))
+  const destination = destinationCoordinates(booking)
+  const estimate = destination
+    ? await routeEstimate(lat, lng, destination[0], destination[1])
+    : null
   await saveCache(req.params.id, {
     predeparture_duration_seconds: estimate?.seconds ?? null,
     predeparture_distance_meters: estimate?.meters ?? null,
