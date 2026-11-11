@@ -1,3 +1,4 @@
+import { bookingTravelRouter } from './modules/booking-travel/booking-travel.routes.js'
 import { stripeWithdrawalRouter, stripeWebhook } from './modules/stripe-withdrawals/routes.js'
 import cors from 'cors'
 import express from 'express'
@@ -201,6 +202,7 @@ app.use('/api/quotations', createQuotationRouter())
 app.use('/api/addresses', createAddressRouter(addressController))
 // CUSTOMER BOOKING
 app.use('/api/bookings', createCustomerBookingRouter(customerBookingController))
+app.use('/api/booking-travel', bookingTravelRouter)
 // SERVICES
 app.use('/api/service-categories', createServiceCategoryRouter())
 

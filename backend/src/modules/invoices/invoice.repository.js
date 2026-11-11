@@ -18,6 +18,8 @@ export class InvoiceRepository {
                 upper(trim(pm.code)) AS "methodCode",
                 b.id AS "bookingId", b.booking_code AS "bookingCode",
                 b.scheduled_at AS "scheduledAt", b.completed_at AS "completedAt",
+                b.technician_completed_at AS "technicianConfirmedAt",
+                b.completion_confirmed_at AS "customerConfirmedAt",
                 b.description AS "bookingDescription",
                 b.service_address AS "serviceAddress", b.ward,
                 to_jsonb(b)->>'district' AS district, b.city,
