@@ -1,8 +1,26 @@
 # STT126 — Admin technician settlement viewing
 
-This module only reads existing weekly settlement periods and their ledgers.
-There are no create, close, payout, adjustment, CSV or PDF endpoints. It never
-changes financial rows or starts a scheduler. No database migration is needed.
+The Admin API reads existing weekly settlement periods and their ledgers. A
+backend worker creates and closes completed periods using the existing
+PostgreSQL triggers in the schema with numeric settlement statuses.
+
+## Weekly closing
+
+Weekly closing is enabled by default when the backend starts. The worker catches
+up at startup, runs every Monday at 00:05 Vietnam time, and retries failed runs
+after one minute. Set `WEEKLY_SETTLEMENTS_ENABLED=false` and restart the backend
+to temporarily disable the worker.
+
+For each wallet with ledger entries, the worker resumes at the end of the last
+finalized period or starts at the week of the first ledger entry. It closes
+completed weeks in chronological order, including intervening empty weeks.
+Each transaction locks the wallet, creates or reuses its OPEN period, and
+transitions it to CALCULATED. Finalized periods are skipped on reruns. The
+existing triggers calculate totals, link ledger entries, and issue an in-app
+notice if debt remains. Catch-up may surface overdue debt on old periods and
+activate the existing restriction on new assignments.
+
+## Admin API
 
 `GET /api/admin/settlements` accepts `search` (literal, at most 150 characters),
 `status` (`ALL|OPEN|CALCULATED|SETTLED|OVERDUE`), optional inclusive calendar dates
