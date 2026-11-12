@@ -415,10 +415,6 @@
   line-height: 1.5;
   overflow-wrap: anywhere;
 }
-.settlements-code {
-  color: var(--orange);
-  overflow-wrap: anywhere;
-}
 .settlements-status {
   display: inline-flex;
   align-items: center;

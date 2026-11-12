@@ -7,6 +7,7 @@ import { configureChatSocket } from './modules/chat/chat.socket.js'
 import { setChatIo } from './modules/chat/chat.routes.js'
 import { reconcileExpiredRequests } from './modules/customer-bookings/reconcile-technician-request.js'
 import { startInvoiceEmailWorker } from './modules/invoices/invoice.routes.js'
+import { startWeeklySettlementWorker } from './modules/settlements/weekly-settlement.worker.js'
 
 async function start() {
   validateRuntimeEnv()
@@ -18,6 +19,7 @@ async function start() {
   }, 60_000)
   expiryTimer.unref()
   const invoiceEmailTimer = startInvoiceEmailWorker()
+  const stopWeeklySettlements = env.weeklySettlementsEnabled ? startWeeklySettlementWorker() : null
   const httpServer = createServer(app)
   const io = new Server(httpServer, {
     cors: {
@@ -39,8 +41,10 @@ async function start() {
   const shutdown = (signal) => {
     clearInterval(expiryTimer)
     clearInterval(invoiceEmailTimer)
+    const settlementsStopped = stopWeeklySettlements?.()
     console.info(`${signal} received. Closing CoolCare API...`)
     server.close(async () => {
+      await settlementsStopped
       await pool.end()
       process.exit(0)
     })

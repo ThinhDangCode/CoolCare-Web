@@ -314,7 +314,6 @@ export default function SettlementsPage() {
                         className="settlements-period-cell"
                         data-label={t('Settlement period')}
                       >
-                        <strong className="settlements-code">{row.code}</strong>
                         <span className="settlements-secondary">
                           {formatSettlementPeriod(row.period)}
                         </span>
