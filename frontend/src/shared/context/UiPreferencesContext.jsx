@@ -1999,6 +1999,7 @@ const messages = {
   },
   en: {
     'Invoice paid': 'Paid',
+    ratingWithReviews: '★ {rating} ({count} reviews)',
     language: 'Language',
     theme: 'Theme',
     light: 'Light',
