@@ -36,6 +36,16 @@ test('VNPay signature input has deterministic sorted parameters',()=>{
   assert.ok(secureSame(sig,hmac('shared-secret',vnpSign({...params}),'sha512')))
   assert.ok(!secureSame(sig,hmac('wrong',vnpSign(params),'sha512')))
 })
+test('F107 UTCID02 hmac supports an explicit SHA-512 algorithm', () => {
+  const signature = hmac('secret-2', 'backend-payload', 'sha512')
+  assert.match(signature, /^[0-9a-f]{128}$/)
+  assert.notEqual(signature, hmac('secret-2', 'backend-payload'))
+  assert.equal(signature, hmac('secret-2', 'backend-payload', 'sha512'))
+})
+test('F110 UTCID02 ZaloPay order ID crosses the Vietnam new-year boundary', () => {
+  const row = { id: key, created_at: '2026-12-31T18:00:00.000Z' }
+  assert.equal(zaloOrderId(row), '270101_aaaaaaaabbbb4ccc8dddeeeeeeeeeeee')
+})
 test('rejects insecure gateway checkout URLs',()=>{
   assert.throws(()=>safeHttps('http://fake-gateway.test/checkout'))
   assert.throws(()=>safeHttps('javascript:alert(1)'))
