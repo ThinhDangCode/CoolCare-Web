@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { authenticate, requireRole } from '../../middleware/authenticate.js'
 import { asyncHandler, AppError } from '../../utils.js'
 import { CatalogRepository } from './catalog.repository.js'
+import { pool } from '../../config/database.js'
 import { resources, validateId, validateInput, validateQuery } from './catalog.validation.js'
 
 export function createCatalogRouter(repository = new CatalogRepository(), admin = true) {
@@ -9,6 +10,26 @@ export function createCatalogRouter(repository = new CatalogRepository(), admin 
   // The mobile catalog is public and read-only. Admin mutations remain
   // protected by authentication and the ADMIN role.
   if (admin) router.use(authenticate, requireRole('ADMIN'))
+  // Public service reviews, sourced only from completed bookings for this service.
+  if (!admin) router.get('/services/:id/reviews', asyncHandler(async (req, res) => {
+    const serviceId = validateId(req.params.id)
+    const result = await pool.query(
+      `SELECT r.id, r.rating, r.comment, r.created_at
+         FROM reviews r
+         JOIN bookings b ON b.id = r.booking_id
+        WHERE r.status = 'PUBLISHED'
+          AND b.status = 'COMPLETED'
+          AND EXISTS (
+            SELECT 1 FROM booking_units bu
+            JOIN booking_unit_services bus ON bus.booking_unit_id = bu.id
+            WHERE bu.booking_id = b.id AND bus.service_id = $1
+          )
+        ORDER BY r.created_at DESC, r.id DESC
+        LIMIT 100`,
+      [serviceId]
+    )
+    res.json({ data: result.rows })
+  }))
   for (const kind of Object.keys(resources)) {
     router.get(
       `/${kind}`,
