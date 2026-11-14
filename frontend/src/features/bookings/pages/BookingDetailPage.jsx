@@ -12,10 +12,20 @@ import './bookings.css'
 
 function DetailField({ title, children }) {
   const { t } = useUiPreferences()
+  const isMissing =
+    children === null ||
+    children === undefined ||
+    children === false ||
+    (typeof children === 'string' && children.trim() === '')
+  const content = isMissing
+    ? t('Not provided')
+    : typeof children === 'string'
+      ? t(children)
+      : children
   return (
     <div className="booking-detail-field">
       <dt>{t(title)}</dt>
-      <dd>{typeof children === 'string' ? t(children) : children || t('Not provided')}</dd>
+      <dd>{content}</dd>
     </div>
   )
 }
@@ -69,7 +79,11 @@ export function BookingDetailPage() {
         refreshing={loading}
       />
       <section className="booking-content">
-        <Link to="/admin/bookings" aria-label={t('Back to bookings')} className="booking-detail-back">
+        <Link
+          to="/admin/bookings"
+          aria-label={t('Back to bookings')}
+          className="booking-detail-back"
+        >
           ← {t('Back to bookings')}
         </Link>
         {loading ? (
@@ -246,7 +260,13 @@ export function BookingDetailPage() {
                       <DetailField title="PHONE NUMBER">{data.recipient_phone}</DetailField>
                       <DetailField title="EMAIL ADDRESS">{data.customer_email}</DetailField>
                       <DetailField title="SERVICE ADDRESS">
-                        {[data.service_address, data.ward, data.city].filter(Boolean).join(', ')}
+                        {[data.service_address, data.ward, data.city]
+                          .map((part) => (typeof part === 'string' ? part.trim() : part))
+                          .filter(
+                            (part) =>
+                              part !== null && part !== undefined && part !== '' && part !== false
+                          )
+                          .join(', ')}
                       </DetailField>
                     </dl>
                   </section>
