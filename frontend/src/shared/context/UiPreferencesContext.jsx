@@ -361,7 +361,7 @@ const messages = {
     'Article content will appear here.': 'Nội dung bài viết sẽ hiển thị tại đây.',
     'Manage customer issues, booking impact, and resolution status.':
       'Quản lý vấn đề khách hàng, ảnh hưởng đến lịch đặt và trạng thái xử lý.',
-    'Search code, subject, booking, customer...': 'Tìm mã, chủ đề, lịch đặt, khách hàng (không cần dấu)...',
+    'Search code, subject, booking, customer...': 'Tìm mã, chủ đề, lịch đặt, khách hàng...',
     'Customer needs a support follow-up': 'Khách hàng cần được hỗ trợ thêm',
     'Property was damaged during service': 'Tài sản bị hư hỏng trong quá trình sử dụng dịch vụ',
     'Refund has not been received': 'Chưa nhận được tiền hoàn trả',
