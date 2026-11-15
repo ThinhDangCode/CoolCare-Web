@@ -7,22 +7,12 @@ import {
   lockPenaltyTechnician,
 } from '../technicians/technician.points.js'
 import { createComplaintCompensationCode } from './complaint-compensation-code.js'
+import { normalizeSearch, searchPattern, searchSql } from '../../search.js'
 
 const add = (values, value) => {
   values.push(value)
   return `$${values.length}`
 }
-const escapeLike = (value) => value.replace(/[\\%_]/g, '\\$&')
-const vietnameseAccents = 'àáảãạăắằẳẵặâấầẩẫậèéẻẽẹêếềểễệìíỉĩịòóỏõọôốồổỗộơớờởỡợùúủũụưứừửữựỳýỷỹỵđ'
-const plainAccents = [...vietnameseAccents]
-  .map((character) => character === 'đ' ? 'd' : character.normalize('NFD').replace(/\p{M}/gu, ''))
-  .join('')
-const normalizeSearch = (value) => value.toLowerCase()
-  .normalize('NFD')
-  .replace(/\p{M}/gu, '')
-  .replace(/đ/g, 'd')
-const searchText = (column) =>
-  `translate(lower(${column}), '${vietnameseAccents}', '${plainAccents}')`
 const vietnameseSubjects = {
   'Customer needs a support follow-up': 'Khách hàng cần được hỗ trợ thêm',
   'Property was damaged during service': 'Tài sản bị hư hỏng trong quá trình sử dụng dịch vụ',
@@ -131,7 +121,7 @@ export class ComplaintRepository {
       const clauses = []
       if (filters.search) {
         const normalized = normalizeSearch(filters.search)
-        const term = add(values, `%${escapeLike(normalized)}%`)
+        const term = add(values, searchPattern(filters.search))
         const translatedSubjects = Object.entries(vietnameseSubjects)
           .filter(([, title]) => normalizeSearch(title).includes(normalized))
           .map(([subject]) => subject)
@@ -139,7 +129,7 @@ export class ComplaintRepository {
           ? ` OR c.subject = ANY(${add(values, translatedSubjects)}::text[])`
           : ''
         clauses.push(
-          `(${searchText('c.complaint_code')} LIKE ${term} OR ${searchText('c.subject')} LIKE ${term} OR ${searchText('b.booking_code')} LIKE ${term} OR ${searchText('cu.full_name')} LIKE ${term}${subjectClause})`
+          `(${searchSql('c.complaint_code')} LIKE ${term} OR ${searchSql('c.subject')} LIKE ${term} OR ${searchSql('b.booking_code')} LIKE ${term} OR ${searchSql('cu.full_name')} LIKE ${term}${subjectClause})`
         )
       }
       if (filters.status !== 'ALL') clauses.push(`c.status=${add(values, filters.status)}`)

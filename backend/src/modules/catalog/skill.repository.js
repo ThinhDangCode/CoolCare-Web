@@ -1,4 +1,5 @@
 import { withTransaction } from '../../config/database.js'
+import { searchPattern, searchSql } from '../../search.js'
 
 const codeExpression = "'SK-' || upper(left(r.id::text, 8))"
 
@@ -12,9 +13,9 @@ export async function listSkills(filters, mobile = false, transaction = withTran
       return `$${values.length}`
     }
     if (filters.search) {
-      const keyword = bind(`%${filters.search.replace(/[\\%_]/g, '\\$&')}%`)
+      const keyword = bind(searchPattern(filters.search))
       clauses.push(
-        `(r.name ILIKE ${keyword} OR s.name ILIKE ${keyword} OR ${codeExpression} ILIKE ${keyword})`
+        `(${searchSql('r.name')} LIKE ${keyword} OR ${searchSql('s.name')} LIKE ${keyword} OR ${searchSql(codeExpression)} LIKE ${keyword})`
       )
     }
     if (filters.serviceId) clauses.push(`r.service_id = ${bind(filters.serviceId)}`)

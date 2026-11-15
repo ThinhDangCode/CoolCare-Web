@@ -1,4 +1,5 @@
 import { withTransaction } from '../../config/database.js'
+import { searchPattern, searchSql } from '../../search.js'
 
 export class PaymentsRepository {
   constructor({ transaction = withTransaction } = {}) {
@@ -16,11 +17,11 @@ export class PaymentsRepository {
         return `$${values.length}`
       }
       if (filters.search) {
-        const term = bind(`%${filters.search.replace(/[\\%_]/g, '\\$&')}%`)
+        const term = bind(searchPattern(filters.search))
         clauses.push(
-          `(p.payment_code ILIKE ${term} OR p.id::text ILIKE ${term}
-            OR b.booking_code ILIKE ${term} OR u.full_name ILIKE ${term}
-            OR COALESCE(u.phone, '') ILIKE ${term})`
+          `(${searchSql('p.payment_code')} LIKE ${term} OR ${searchSql('p.id::text')} LIKE ${term}
+            OR ${searchSql('b.booking_code')} LIKE ${term} OR ${searchSql('u.full_name')} LIKE ${term}
+            OR ${searchSql("COALESCE(u.phone, '')")} LIKE ${term})`
         )
       }
       if (filters.status !== 'ALL') clauses.push(`p.payment_status = ${bind(filters.status)}`)

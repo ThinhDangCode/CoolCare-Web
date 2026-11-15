@@ -71,7 +71,7 @@ test('settlement list binds literal search and inclusive UTC7 period-start dates
   const search = "%'_\\ OR true --"
   const query = buildSettlementListQueries(validateSettlementListQuery({ search, status: 'OVERDUE',
     from: '2026-10-01', to: '2026-10-31', page: '2', limit: '25' }))
-  assert.deepEqual(query.values, ["%\\%'\\_\\\\ OR true --%", 3, '2026-10-01', '2026-10-31'])
+  assert.deepEqual(query.values, ["%\\%'\\_\\\\ or true --%", 3, '2026-10-01', '2026-10-31'])
   assert.deepEqual(query.rowValues, [...query.values, 25, 25])
   for (const sql of [query.rowsSql, query.summarySql]) {
     assert.equal(sql.includes(search), false)

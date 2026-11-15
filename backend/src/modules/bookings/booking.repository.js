@@ -1,5 +1,6 @@
 import { pool } from '../../config/database.js'
 import { AppError } from '../../utils.js'
+import { searchPattern, searchSql } from '../../search.js'
 
 
 const notFound = () => new AppError(404, 'BOOKING_NOT_FOUND', 'Booking not found.')
@@ -19,8 +20,8 @@ export class BookingRepository {
   async list(query) {
     const values = [], clauses = []
     const add = (sql, value) => { values.push(value); clauses.push(sql.replaceAll('?', `$${values.length}`)) }
-    if (query.search) add(`(b.booking_code ILIKE ? OR b.recipient_name ILIKE ? OR b.recipient_phone ILIKE ? OR u.full_name ILIKE ? OR EXISTS (
-      SELECT 1 FROM booking_units bu JOIN booking_unit_services bus ON bus.booking_unit_id=bu.id JOIN services s ON s.id=bus.service_id WHERE bu.booking_id=b.id AND s.name ILIKE ?))`, `%${query.search.replace(/[\\%_]/g, '\\$&')}%`)
+    if (query.search) add(`(${searchSql('b.booking_code')} LIKE ? OR ${searchSql('b.recipient_name')} LIKE ? OR ${searchSql('b.recipient_phone')} LIKE ? OR ${searchSql('u.full_name')} LIKE ? OR EXISTS (
+      SELECT 1 FROM booking_units bu JOIN booking_unit_services bus ON bus.booking_unit_id=bu.id JOIN services s ON s.id=bus.service_id WHERE bu.booking_id=b.id AND ${searchSql('s.name')} LIKE ?))`, searchPattern(query.search))
     if (query.status !== 'ALL') add('b.status=?', query.status)
     if (query.service) add('EXISTS (SELECT 1 FROM booking_units bu JOIN booking_unit_services bus ON bus.booking_unit_id=bu.id WHERE bu.booking_id=b.id AND bus.service_id=?)', query.service)
     if (query.month) add("to_char(b.scheduled_at AT TIME ZONE 'Asia/Ho_Chi_Minh','YYYY-MM')=?", query.month)

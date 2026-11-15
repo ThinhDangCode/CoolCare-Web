@@ -1,6 +1,7 @@
 import { pool } from '../../config/database.js'
 import { AppError } from '../../utils.js'
 import { remainingPointsSql, activePointsSql } from './technician.points.js'
+import { searchPattern, searchSql } from '../../search.js'
 
 const issuerLabelSql = "btrim(regexp_replace(issued_by, '[[:space:]]+', ' ', 'g'))"
 const issuerKeySql = `lower(${issuerLabelSql})`
@@ -24,7 +25,6 @@ const certificateColumns = `c.id,c.technician_id,c.certificate_name,c.certificat
        WHEN c.expiry_date < CURRENT_DATE THEN 'EXPIRED'
        WHEN c.expiry_date <= CURRENT_DATE + 30 THEN 'EXPIRING'
        ELSE 'VERIFIED' END AS status`
-const likeValue = (value) => `%${value.replace(/[\\%_]/g, '\\$&')}%`
 
 // History includes expired and revoked records. Expiry never erases history.
 // Aggregate the penalty table directly; list filters and pagination do not apply.
@@ -51,7 +51,7 @@ export class TechnicianRepository {
       JOIN users u ON u.id=t.user_id LEFT JOIN bookings b ON b.id=p.booking_id
       LEFT JOIN (SELECT complaints.*,ROW_NUMBER() OVER (ORDER BY created_at,id)::int AS complaint_number FROM complaints) c
         ON split_part(p.reason, ' ', 1) = '[COMPLAINT:' || c.id::text || ']'`
-    if (query.search) { values.push(likeValue(query.search)); clauses.push(`(full_name ILIKE $1 OR phone ILIKE $1 OR email ILIKE $1 OR booking_code ILIKE $1 OR reason ILIKE $1)`) }
+    if (query.search) { values.push(searchPattern(query.search)); clauses.push(`(${searchSql('full_name')} LIKE $1 OR ${searchSql('phone')} LIKE $1 OR ${searchSql('email')} LIKE $1 OR ${searchSql('booking_code')} LIKE $1 OR ${searchSql('reason')} LIKE $1)`) }
     if (query.status !== 'ALL') { values.push(query.status); clauses.push(`status=$${values.length}`) }
     if (query.type !== 'ALL') { values.push(query.type); clauses.push(`penalty_type=$${values.length}`) }
     const from = `FROM (${source}) penalties ${clauses.length ? 'WHERE '+clauses.join(' AND ') : ''}`
@@ -74,7 +74,7 @@ export class TechnicianRepository {
     const values = []
     const clauses = []
     const add = (sql, value) => { values.push(value); clauses.push(sql.replaceAll('?', `$${values.length}`)) }
-    if (query.search) add('(u.full_name ILIKE ? OR u.email ILIKE ? OR u.phone ILIKE ? OR t.identity_number ILIKE ?)', likeValue(query.search))
+    if (query.search) add(`(${searchSql('u.full_name')} LIKE ? OR ${searchSql('u.email')} LIKE ? OR ${searchSql('u.phone')} LIKE ? OR ${searchSql('t.identity_number')} LIKE ?)`, searchPattern(query.search))
     if (query.status === 'LOCKED') clauses.push("u.status='LOCKED'")
     if (query.status === 'ACTIVE') clauses.push("u.status='ACTIVE' AND t.is_active")
     if (query.status === 'INACTIVE') clauses.push("u.status <> 'LOCKED' AND (u.status <> 'ACTIVE' OR NOT t.is_active)")
@@ -113,7 +113,7 @@ export class TechnicianRepository {
   async certifications(query) {
     const values = []
     const clauses = []
-    if (query.search) { values.push(likeValue(query.search)); clauses.push('(certificate_name ILIKE $1 OR certificate_number ILIKE $1 OR full_name ILIKE $1)') }
+    if (query.search) { values.push(searchPattern(query.search)); clauses.push(`(${searchSql('certificate_name')} LIKE $1 OR ${searchSql('certificate_number')} LIKE $1 OR ${searchSql('full_name')} LIKE $1)`) }
     if (query.status !== 'ALL') { values.push(query.status); clauses.push(`status=$${values.length}`) }
     if (query.issuer) {
       values.push(query.issuer.trim().replace(/\s+/g, ' '))

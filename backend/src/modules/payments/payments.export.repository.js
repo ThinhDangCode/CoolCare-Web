@@ -1,6 +1,7 @@
 import { withTransaction } from '../../config/database.js'
 import { AppError } from '../../utils.js'
 import { REPORT_ROW_LIMIT, REVENUE_METRICS } from './payments.export.constants.js'
+import { searchPattern, searchSql } from '../../search.js'
 
 export class PaymentsExportRepository {
   constructor({ transaction = withTransaction } = {}) { this.transaction = transaction }
@@ -18,10 +19,10 @@ export class PaymentsExportRepository {
       const bind = (value) => { values.push(value); return `$${values.length}` }
       if (filters.method !== 'ALL') clauses.push(`upper(trim(pm.code)) = ${bind(filters.method)}`)
       if (filters.search) {
-        const term = bind(`%${filters.search.replace(/[\\%_]/g, '\\$&')}%`)
-        clauses.push(`(p.payment_code ILIKE ${term} OR p.id::text ILIKE ${term}
-          OR b.booking_code ILIKE ${term} OR u.full_name ILIKE ${term}
-          OR COALESCE(u.phone, '') ILIKE ${term})`)
+        const term = bind(searchPattern(filters.search))
+        clauses.push(`(${searchSql('p.payment_code')} LIKE ${term} OR ${searchSql('p.id::text')} LIKE ${term}
+          OR ${searchSql('b.booking_code')} LIKE ${term} OR ${searchSql('u.full_name')} LIKE ${term}
+          OR ${searchSql("COALESCE(u.phone, '')")} LIKE ${term})`)
       }
       const source = `FROM payments p
         JOIN bookings b ON b.id=p.booking_id

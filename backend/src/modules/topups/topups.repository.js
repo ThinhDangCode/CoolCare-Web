@@ -1,4 +1,5 @@
 import { withTransaction } from '../../config/database.js'
+import { searchPattern, searchSql } from '../../search.js'
 import { requireValidBody } from '../../utils.js'
 
 const source = `FROM technician_topups t
@@ -26,10 +27,10 @@ export function buildTopupListQueries(filters) {
     return `$${values.length}`
   }
   if (filters.search) {
-    const term = bind(`%${filters.search.replace(/[\\%_]/g, '\\$&')}%`)
-    clauses.push(`(t.id::text ILIKE ${term} OR t.topup_code ILIKE ${term}
-      OR COALESCE(t.transaction_reference,'') ILIKE ${term} OR u.full_name ILIKE ${term}
-      OR COALESCE(u.phone,'') ILIKE ${term})`)
+    const term = bind(searchPattern(filters.search))
+    clauses.push(`(${searchSql('t.id::text')} LIKE ${term} OR ${searchSql('t.topup_code')} LIKE ${term}
+      OR ${searchSql("COALESCE(t.transaction_reference,'')")} LIKE ${term} OR ${searchSql('u.full_name')} LIKE ${term}
+      OR ${searchSql("COALESCE(u.phone,'')")} LIKE ${term})`)
   }
   if (filters.status !== 'ALL') clauses.push(`t.payment_status=${bind(filters.status)}`)
   if (filters.method !== 'ALL') clauses.push(`t.payment_method_id=${bind(filters.method)}::uuid`)
