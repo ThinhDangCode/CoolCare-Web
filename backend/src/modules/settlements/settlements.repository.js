@@ -1,5 +1,6 @@
 import { withTransaction } from '../../config/database.js'
 import { apiCode, storageCode } from '../../config/database-codebooks.js'
+import { searchPattern, searchSql } from '../../search.js'
 
 // Use this module's explicit conversions: the derived debt view has no codebook
 // metadata and must never be decoded as the stored settlements.status column.
@@ -29,9 +30,9 @@ export function buildSettlementListQueries(filters) {
   const clauses = []
   const bind = (value) => { values.push(value); return `$${values.length}` }
   if (filters.search) {
-    const term = bind(`%${filters.search.replace(/[\\%_]/g, '\\$&')}%`)
-    clauses.push(`(s.settlement_code ILIKE ${term} OR u.full_name ILIKE ${term}
-      OR COALESCE(u.phone,'') ILIKE ${term} OR s.technician_id::text ILIKE ${term})`)
+    const term = bind(searchPattern(filters.search))
+    clauses.push(`(${searchSql('s.settlement_code')} LIKE ${term} OR ${searchSql('u.full_name')} LIKE ${term}
+      OR ${searchSql("COALESCE(u.phone,'')")} LIKE ${term} OR ${searchSql('s.technician_id::text')} LIKE ${term})`)
   }
   if (filters.status !== 'ALL') clauses.push(`d.effective_status=${bind(statusCode(filters.status))}::smallint`)
   if (filters.from) clauses.push(`s.period_start >= (${bind(filters.from)}::date::timestamp AT TIME ZONE INTERVAL '+07:00')`)

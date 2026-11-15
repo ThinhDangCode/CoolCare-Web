@@ -11,14 +11,6 @@ export function SearchIcon() {
     </svg>
   )
 }
-export function BellIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
-      <path d="M10 21h4" />
-    </svg>
-  )
-}
 export function FilterIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -182,10 +174,6 @@ export function AdminHeaderControls({ onRefresh, refreshing = false, actions, cl
           onClick={onRefresh ?? (() => window.location.reload())}
         >
           ↻ <span>{refreshing ? t('Refreshing') : t('Refresh')}</span>
-        </button>
-        <button className="figma-notification" aria-label={t('Notifications')}>
-          <BellIcon />
-          <i />
         </button>
         <ThemeControl />
         {actions}

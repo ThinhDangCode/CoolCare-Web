@@ -4,6 +4,7 @@ import { AppError } from '../../utils.js'
 import { writeAdminAudit as writeManagementAudit } from '../audit/admin-audit.js'
 import { resources } from './catalog.validation.js'
 import { listSkills } from './skill.repository.js'
+import { searchPattern, searchSql } from '../../search.js'
 
 export class CatalogRepository {
   constructor({ transaction = withTransaction, audit = writeManagementAudit } = {}) {
@@ -30,9 +31,7 @@ export class CatalogRepository {
 
     if (filters.search) {
       clauses.push(
-        `r.${kind === 'models' ? 'model_name' : 'name'} ILIKE ${bind(
-          `%${filters.search.replace(/[\\%_]/g, '\\$&')}%`
-        )}`
+        `${searchSql(`r.${kind === 'models' ? 'model_name' : 'name'}`)} LIKE ${bind(searchPattern(filters.search))}`
       )
     }
 

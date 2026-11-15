@@ -1,8 +1,8 @@
 import { withTransaction } from '../../config/database.js'
 import { AppError } from '../../utils.js'
 import { writeAdminAudit } from '../audit/admin-audit.js'
+import { searchPattern, searchSql } from '../../search.js'
 
-const escapeLike = (value) => value.replace(/[\\%_]/g, '\\$&')
 
 export class BlogRepository {
   constructor({ transaction = withTransaction, audit = writeAdminAudit } = {}) {
@@ -16,8 +16,8 @@ export class BlogRepository {
       const values = []
       let searchClause = ''
       if (search) {
-        values.push(`%${escapeLike(search)}%`)
-        searchClause = ' AND (b.title ILIKE $1 OR b.content ILIKE $1 OR u.full_name ILIKE $1)'
+        values.push(searchPattern(search))
+        searchClause = ` AND (${searchSql('b.title')} LIKE $1 OR ${searchSql('b.content')} LIKE $1 OR ${searchSql('u.full_name')} LIKE $1)`
       }
       const from = ` FROM blogs b JOIN users u ON u.id=b.author_id
                      WHERE b.status='PUBLISHED' AND b.published_at IS NOT NULL${searchClause}`
@@ -56,8 +56,8 @@ export class BlogRepository {
       const values = []
       const clauses = []
       if (filters.search) {
-        values.push(`%${escapeLike(filters.search)}%`)
-        clauses.push(`(b.title ILIKE $1 OR b.slug ILIKE $1 OR u.full_name ILIKE $1)`)
+        values.push(searchPattern(filters.search))
+        clauses.push(`(${searchSql('b.title')} LIKE $1 OR ${searchSql('b.slug')} LIKE $1 OR ${searchSql('u.full_name')} LIKE $1)`)
       }
       if (filters.status !== 'ALL') {
         values.push(filters.status)

@@ -1,13 +1,13 @@
 import { withTransaction } from '../../config/database.js'
 import { AppError } from '../../utils.js'
 import { writeAdminAudit } from '../audit/admin-audit.js'
+import { searchPattern, searchSql } from '../../search.js'
 import { bookingVoucherLimit, MAX_VOUCHER_DISCOUNT, voucherFitsBooking, voucherPolicyErrors } from './voucher-policy.js'
 import {
   isComplaintCompensationCode,
   verifyComplaintCompensationCode,
 } from '../complaints/complaint-compensation-code.js'
 
-const escapeLike = (value) => value.replace(/[\\%_]/g, '\\$&')
 const add = (values, value) => {
   values.push(value)
   return `$${values.length}`
@@ -161,8 +161,8 @@ export class VoucherRepository {
       const values = []
       const clauses = []
       if (filters.search) {
-        const term = add(values, `%${escapeLike(filters.search)}%`)
-        clauses.push(`(v.code ILIKE ${term} OR v.name ILIKE ${term})`)
+        const term = add(values, searchPattern(filters.search))
+        clauses.push(`(${searchSql('v.code')} LIKE ${term} OR ${searchSql('v.name')} LIKE ${term})`)
       }
       if (filters.status === 'ACTIVE') clauses.push('v.is_active=true')
       if (filters.status === 'INACTIVE') clauses.push('v.is_active=false')
@@ -302,16 +302,16 @@ export class VoucherRepository {
       if (filters.voucherId) clauses.push(`vu.voucher_id=${add(values, filters.voucherId)}`)
       if (filters.status !== 'ALL') clauses.push(`vu.status=${add(values, filters.status)}`)
       if (filters.search) {
-        const term = add(values, `%${escapeLike(filters.search)}%`)
+        const term = add(values, searchPattern(filters.search))
         clauses.push(
-          `(v.code ILIKE ${term} OR u.full_name ILIKE ${term} OR COALESCE(u.phone,'') ILIKE ${term} OR b.booking_code ILIKE ${term})`
+          `(${searchSql('v.code')} LIKE ${term} OR ${searchSql('u.full_name')} LIKE ${term} OR ${searchSql("COALESCE(u.phone,'')")} LIKE ${term} OR ${searchSql('b.booking_code')} LIKE ${term})`
         )
       }
       if (filters.voucherSearch)
-        clauses.push(`v.code ILIKE ${add(values, `%${escapeLike(filters.voucherSearch)}%`)}`)
+        clauses.push(`${searchSql('v.code')} LIKE ${add(values, searchPattern(filters.voucherSearch))}`)
       if (filters.customerSearch) {
-        const term = add(values, `%${escapeLike(filters.customerSearch)}%`)
-        clauses.push(`(u.full_name ILIKE ${term} OR COALESCE(u.phone,'') ILIKE ${term})`)
+        const term = add(values, searchPattern(filters.customerSearch))
+        clauses.push(`(${searchSql('u.full_name')} LIKE ${term} OR ${searchSql("COALESCE(u.phone,'')")} LIKE ${term})`)
       }
       if (filters.fromDate)
         clauses.push(

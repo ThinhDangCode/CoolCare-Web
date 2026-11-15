@@ -159,7 +159,7 @@ export function ComplaintsPage() {
             />
           </label>
           <select
-            aria-label="Filter complaints by status"
+            aria-label={t('Filter complaints by status')}
             value={status}
             onChange={(e) => {
               setLoading(true)
@@ -176,7 +176,7 @@ export function ComplaintsPage() {
           </select>
           <label className="select-filter">
             <select
-              aria-label="Filter complaints by issue type"
+              aria-label={t('Filter complaints by issue type')}
               value={type}
               onChange={(e) => {
                 setLoading(true)
@@ -247,7 +247,7 @@ export function ComplaintsPage() {
                       <strong>{row.customer_name}</strong>
                     </td>
                     <td>
-                      <strong>{row.subject}</strong>
+                      <strong>{t(row.subject)}</strong>
                       <small>{t(statusLabel(row.type))}</small>
                     </td>
                     <td>
@@ -259,8 +259,8 @@ export function ComplaintsPage() {
                     <td>
                       <div className="voucher-inline-actions">
                         <button
-                          title="View complaint details"
-                          aria-label={`View ${row.complaint_code}`}
+                          title={t('View complaint details')}
+                          aria-label={`${t('View')} ${row.complaint_code}`}
                           onClick={() => open(row)}
                         >
                           <ViewIcon />
@@ -344,7 +344,7 @@ export function ComplaintsPage() {
             </div>
             <div className="complaint-description">
               <span>{t('ISSUE DESCRIPTION')}</span>
-              <h3>{target.subject}</h3>
+              <h3>{t(target.subject)}</h3>
               <p>{target.description}</p>
             </div>
             <div className="complaint-resolution-title">

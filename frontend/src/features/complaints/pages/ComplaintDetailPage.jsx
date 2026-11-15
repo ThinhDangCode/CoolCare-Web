@@ -146,24 +146,24 @@ export function ComplaintDetailPage() {
         !Number.isFinite(new Date(penaltyExpiry).getTime()) ||
         new Date(penaltyExpiry).getTime() <= Date.now())
     )
-      return setError('Choose a penalty expiry date and time in the future.')
+      return setError(t('Choose a penalty expiry date and time in the future.'))
     if (applyPenalty && !complaint.technician_id)
-      return setError('This complaint has no linked technician. A penalty cannot be applied.')
+      return setError(t('This complaint has no linked technician. A penalty cannot be applied.'))
     if (
       applyPenalty &&
       (!Number.isInteger(Number(penaltyPoints)) ||
         Number(penaltyPoints) < 1 ||
         Number(penaltyPoints) > 12)
     )
-      return setError('Enter penalty points from 1 to 12.')
+      return setError(t('Enter penalty points from 1 to 12.'))
     if (!draft && resolution.trim().length < 10)
-      return setError('Resolution notes must contain at least 10 characters.')
+      return setError(t('Resolution notes must contain at least 10 characters.'))
     if (draft && !resolution.trim())
-      return setError('Enter a resolution note before saving a draft.')
+      return setError(t('Enter a resolution note before saving a draft.'))
     if (resolution.trim().length > 5000)
-      return setError('Resolution notes must not exceed 5,000 characters.')
+      return setError(t('Resolution notes must not exceed 5,000 characters.'))
     if (!(nextStatusOptions[complaint.status] || []).includes(nextStatus))
-      return setError('The selected status transition is not allowed.')
+      return setError(t('The selected status transition is not allowed.'))
     setBusy(true)
     setSaved('')
     try {
@@ -183,12 +183,12 @@ export function ComplaintDetailPage() {
       if (!draft) setShowResolution(false)
       setSaved(
         draft
-          ? 'Resolution draft saved successfully.'
+          ? t('Resolution draft saved successfully.')
           : applyPenalty
-            ? 'Complaint accepted. The technician penalty is now listed in Penalties.'
+            ? t('Complaint accepted. The technician penalty is now listed in Penalties.')
             : nextStatus === 'REJECTED'
-              ? 'Complaint rejected. No penalty was applied.'
-              : 'Complaint updated successfully.'
+              ? t('Complaint rejected. No penalty was applied.')
+              : t('Complaint updated successfully.')
       )
       setError('')
     } catch (err) {
@@ -206,11 +206,11 @@ export function ComplaintDetailPage() {
     const minimum = Number(voucherMinimum)
     const days = Number(voucherDays)
     if (!Number.isInteger(amount) || amount < 1 || amount > 50000)
-      return setError('Compensation amount must be a whole number from 1 to 50,000 VND.')
+      return setError(t('Compensation amount must be a whole number from 1 to 50,000 VND.'))
     if (!Number.isInteger(minimum) || minimum < amount * 5)
-      return setError('Eligible service amount must be at least five times the discount.')
+      return setError(t('Eligible service amount must be at least five times the discount.'))
     if (!Number.isInteger(days) || days < 1 || days > 365)
-      return setError('Voucher validity must be a whole number from 1 to 365 days.')
+      return setError(t('Voucher validity must be a whole number from 1 to 365 days.'))
     setBusy(true)
     setSaved('')
     try {
@@ -225,7 +225,7 @@ export function ComplaintDetailPage() {
       })
       setCreatedVoucher(voucher)
       setShowVoucher(false)
-      setSaved(`Voucher ${voucher.code} đã được gửi cho khách hàng.`)
+      setSaved(t('Voucher {code} was sent to the customer.', { code: voucher.code }))
       setError('')
     } catch (err) {
       setError(err.message)
@@ -245,7 +245,7 @@ export function ComplaintDetailPage() {
               <b>#{complaint.complaint_code}</b>
               <span className={`figma-status complaint-${complaint.status.toLowerCase()}`}>
                 <i />
-                {statusName[complaint.status] || label(complaint.status)}
+                {t(statusName[complaint.status] || label(complaint.status))}
               </span>
             </span>
           ) : (
@@ -280,7 +280,7 @@ export function ComplaintDetailPage() {
             <h1>{t('Complaint Detail')}</h1>
             <p>
               <strong>#{complaint.complaint_code}</strong>
-              <span>{statusName[complaint.status] || label(complaint.status)}</span>
+              <span>{t(statusName[complaint.status] || label(complaint.status))}</span>
             </p>
           </header>
         )}
@@ -318,7 +318,7 @@ export function ComplaintDetailPage() {
                   <div className="complaint-facts">
                     <div>
                       <small>{t('ISSUE CATEGORY')}</small>
-                      <strong>{label(complaint.type)}</strong>
+                      <strong>{t(label(complaint.type))}</strong>
                     </div>
                     <div>
                       <small>{t('SUBMISSION DATE')}</small>
@@ -328,13 +328,13 @@ export function ComplaintDetailPage() {
                       <small>{t('CURRENT STATUS')}</small>
                       <span className={`figma-status complaint-${complaint.status.toLowerCase()}`}>
                         <i />
-                        {statusName[complaint.status] || label(complaint.status)}
+                        {t(statusName[complaint.status] || label(complaint.status))}
                       </span>
                     </div>
                   </div>
                   <div className="complaint-quote">
                     <small>{t('CUSTOMER COMPLAINT DESCRIPTION')}</small>
-                    <blockquote>“{complaint.description}”</blockquote>
+                    <blockquote>“{t(complaint.description)}”</blockquote>
                     <footer>
                       <span>● {t('Sent via CoolCare Customer App')}</span>
                       <span>{complaint.description.length} {t('characters')}</span>
@@ -352,7 +352,7 @@ export function ComplaintDetailPage() {
                     </div>
                     <span className={`figma-status complaint-${complaint.status.toLowerCase()}`}>
                       <i />
-                      {statusName[complaint.status] || label(complaint.status)}
+                      {t(statusName[complaint.status] || label(complaint.status))}
                     </span>
                   </header>
                   {complaint.resolution && (
@@ -360,15 +360,17 @@ export function ComplaintDetailPage() {
                   )}
                   {complaint.penalty_id && (
                     <p className="complaint-resolution-summary">
-                      Penalty applied to {complaint.technician_name}: {complaint.penalty_points}{' '}
-                      points.{' '}
+                      {t('Penalty applied to {name}: {points} points.', {
+                        name: complaint.technician_name,
+                        points: complaint.penalty_points,
+                      })}{' '}
                       {complaint.penalty_expires_at && (
                         <>
-                          Expires: {new Date(complaint.penalty_expires_at).toLocaleString('vi-VN')}
+                          {t('Expires:')} {new Date(complaint.penalty_expires_at).toLocaleString(locale === 'vi' ? 'vi-VN' : 'en-US')}
                           .{' '}
                         </>
                       )}
-                      <Link to="/admin/technicians/penalties">View technician penalties</Link>
+                      <Link to="/admin/technicians/penalties">{t('View technician penalties')}</Link>
                     </p>
                   )}
                   <button
@@ -385,16 +387,16 @@ export function ComplaintDetailPage() {
                       type="button"
                       onClick={() => setShowVoucher(true)}
                     >
-                      Gift Compensation Voucher
+                      {t('Gift Compensation Voucher')}
                     </button>
                   )}
                   {createdVoucher && (
                     <div className="complaint-voucher-result">
-                      <span>Customer-only voucher</span>
+                      <span>{t('Customer-only voucher')}</span>
                       <strong>{createdVoucher.code}</strong>
                       <small>
-                        {Number(createdVoucher.discount_value).toLocaleString('vi-VN')}đ · Valid
-                        until {new Date(createdVoucher.end_at).toLocaleDateString('vi-VN')}
+                        {Number(createdVoucher.discount_value).toLocaleString(locale === 'vi' ? 'vi-VN' : 'en-US')}đ · {t('Valid until')}{' '}
+                        {new Date(createdVoucher.end_at).toLocaleDateString(locale === 'vi' ? 'vi-VN' : 'en-US')}
                       </small>
                     </div>
                   )}
@@ -404,9 +406,9 @@ export function ComplaintDetailPage() {
                 <section>
                   <header>
                     <strong>
-                      <DetailIcon name="customer" /> RELATED CUSTOMER
+                      <DetailIcon name="customer" /> {t('RELATED CUSTOMER')}
                     </strong>
-                    <span>View Profile</span>
+                    <span>{t('View Profile')}</span>
                   </header>
                   <div className="related-person">
                     <b>
@@ -418,35 +420,35 @@ export function ComplaintDetailPage() {
                     </b>
                     <span>
                       <strong>{complaint.customer_name}</strong>
-                      <small>Verified Customer</small>
+                      <small>{t('Verified Customer')}</small>
                     </span>
                   </div>
                   <dl>
-                    <dt>Phone:</dt>
+                    <dt>{t('Phone:')}</dt>
                     <dd>{complaint.customer_phone || '—'}</dd>
-                    <dt>Email:</dt>
+                    <dt>{t('Email:')}</dt>
                     <dd>{complaint.customer_email || '—'}</dd>
                   </dl>
                 </section>
                 <section>
                   <header>
                     <strong>
-                      <DetailIcon name="booking" /> RELATED BOOKING
+                      <DetailIcon name="booking" /> {t('RELATED BOOKING')}
                     </strong>
-                    <span>{label(complaint.booking_status || 'UNKNOWN')}</span>
+                    <span>{t(label(complaint.booking_status || 'UNKNOWN'))}</span>
                   </header>
                   <dl>
-                    <dt>BOOKING ID</dt>
+                    <dt>{t('BOOKING ID')}</dt>
                     <dd className="accent">#{complaint.booking_code}</dd>
-                    <dt>SERVICE ORDERED</dt>
+                    <dt>{t('SERVICE ORDERED')}</dt>
                     <dd>{complaint.service_names || '—'}</dd>
-                    <dt>EXECUTED SLOT</dt>
+                    <dt>{t('EXECUTED SLOT')}</dt>
                     <dd>
                       {complaint.scheduled_at
                         ? new Date(complaint.scheduled_at).toLocaleString('vi-VN')
                         : '—'}
                     </dd>
-                    <dt>SERVICE ADDRESS</dt>
+                    <dt>{t('SERVICE ADDRESS')}</dt>
                     <dd>
                       {[complaint.service_address, complaint.ward, complaint.city]
                         .filter(Boolean)
@@ -457,9 +459,9 @@ export function ComplaintDetailPage() {
                 <section>
                   <header>
                     <strong>
-                      <DetailIcon name="technician" /> ASSIGNED TECHNICIAN
+                      <DetailIcon name="technician" /> {t('ASSIGNED TECHNICIAN')}
                     </strong>
-                    <span>History</span>
+                    <span>{t('History')}</span>
                   </header>
                   <div className="related-person">
                     <b>
@@ -472,18 +474,18 @@ export function ComplaintDetailPage() {
                         : '—'}
                     </b>
                     <span>
-                      <strong>{complaint.technician_name || 'Not assigned'}</strong>
-                      <small>Service Technician</small>
+                      <strong>{complaint.technician_name || t('Not assigned')}</strong>
+                      <small>{t('Service Technician')}</small>
                     </span>
                   </div>
                   <dl>
-                    <dt>Qualification Level:</dt>
+                    <dt>{t('Qualification Level:')}</dt>
                     <dd>
                       {complaint.technician_qualification
-                        ? label(complaint.technician_qualification)
+                        ? t(label(complaint.technician_qualification))
                         : '—'}
                     </dd>
-                    <dt>Phone:</dt>
+                    <dt>{t('Phone:')}</dt>
                     <dd>{complaint.technician_phone || '—'}</dd>
                   </dl>
                 </section>
@@ -537,8 +539,8 @@ export function ComplaintDetailPage() {
                         status === 'RESOLVED' &&
                         ['OPEN', 'IN_PROGRESS', 'RESOLVED'].includes(complaint.status) && (
                           <label>
-                            PENALTY POINTS FOR{' '}
-                            {complaint.technician_name || 'UNASSIGNED TECHNICIAN'}
+                            {t('PENALTY POINTS FOR')}{' '}
+                            {complaint.technician_name || t('UNASSIGNED TECHNICIAN')}
                             <input
                               type="number"
                               min="1"
@@ -547,11 +549,10 @@ export function ComplaintDetailPage() {
                               disabled={busy}
                               value={penaltyPoints}
                               onChange={(event) => setPenaltyPoints(event.target.value)}
-                              placeholder="Enter positive whole-number points"
+                              placeholder={t('Enter positive whole-number points')}
                             />
                             <small>
-                              Accepting applies an active rule violation penalty. Rejecting or
-                              saving a draft does not apply a penalty.
+                              {t('Accepting applies an active rule violation penalty. Rejecting or saving a draft does not apply a penalty.')}
                             </small>
                           </label>
                         )}
@@ -559,7 +560,7 @@ export function ComplaintDetailPage() {
                         (complaint.technician_id || complaint.type === 'TECHNICIAN') &&
                         !complaint.penalty_expires_at && (
                           <label>
-                            PENALTY EXPIRY DATE &amp; TIME
+                            {t('PENALTY EXPIRY DATE & TIME')}
                             <input
                               type="datetime-local"
                               value={penaltyExpiry}
@@ -567,8 +568,7 @@ export function ComplaintDetailPage() {
                               onChange={(event) => setPenaltyExpiry(event.target.value)}
                             />
                             <small>
-                              The penalty starts when approved and expires at the selected time. You
-                              can also set an expiry for an existing penalty with no end date.
+                              {t('The penalty starts when approved and expires at the selected time. You can also set an expiry for an existing penalty with no end date.')}
                             </small>
                           </label>
                         )}
@@ -602,7 +602,7 @@ export function ComplaintDetailPage() {
                           disabled={busy}
                           onClick={() => saveResolution('REJECTED')}
                         >
-                          Reject Complaint
+                          {t('Reject Complaint')}
                         </button>
                       )}
                       <button
@@ -635,8 +635,8 @@ export function ComplaintDetailPage() {
                     <header>
                       <span aria-hidden="true">%</span>
                       <div>
-                        <h2>Gift Compensation Voucher</h2>
-                        <p>Create a one-time voucher assigned only to this customer.</p>
+                        <h2>{t('Gift Compensation Voucher')}</h2>
+                        <p>{t('Create a one-time voucher assigned only to this customer.')}</p>
                       </div>
                       <small>#{complaint.complaint_code}</small>
                       <button type="button" aria-label="Close" disabled={busy} onClick={() => setShowVoucher(false)}>
@@ -646,29 +646,28 @@ export function ComplaintDetailPage() {
                     <div className="complaint-resolution-dialog-body complaint-voucher-fields">
                       {error && <p role="alert" className="figma-table-state error">{error}</p>}
                       <label>
-                        COMPENSATION AMOUNT (VND)
+                        {t('COMPENSATION AMOUNT (VND)')}
                         <input type="number" min="1" max="50000" step="1" required value={voucherAmount}
                           onChange={(event) => setVoucherAmount(event.target.value)} />
                       </label>
                       <label>
-                        MINIMUM ORDER AMOUNT (VND)
+                        {t('MINIMUM ORDER AMOUNT (VND)')}
                         <input type="number" min="0" step="1" required value={voucherMinimum}
                           onChange={(event) => setVoucherMinimum(event.target.value)} />
                       </label>
                       <label>
-                        VALID FOR (DAYS)
+                        {t('VALID FOR (DAYS)')}
                         <input type="number" min="1" max="365" step="1" required value={voucherDays}
                           onChange={(event) => setVoucherDays(event.target.value)} />
                       </label>
                       <p>
-                        The code can be redeemed once and is bound to the complaint customer.
-                        A notification will be sent immediately.
+                        {t('The code can be redeemed once and is bound to the complaint customer. A notification will be sent immediately.')}
                       </p>
                     </div>
                     <footer>
-                      <button type="button" disabled={busy} onClick={() => setShowVoucher(false)}>Cancel</button>
+                      <button type="button" disabled={busy} onClick={() => setShowVoucher(false)}>{t('Cancel')}</button>
                       <button className="confirm" type="submit" disabled={busy}>
-                        {busy ? 'Creating…' : 'Create & Send Voucher'}
+                        {busy ? t('Creating…') : t('Create & Send Voucher')}
                       </button>
                     </footer>
                   </form>

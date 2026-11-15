@@ -1,4 +1,5 @@
 import { withTransaction } from '../../config/database.js'
+import { searchPattern, searchSql } from '../../search.js'
 
 const source = `FROM withdrawals w
   JOIN technician_profiles tp ON tp.id=w.technician_id
@@ -16,9 +17,9 @@ export function buildWithdrawalListQueries(filters) {
     return `$${values.length}`
   }
   if (filters.search) {
-    const term = bind(`%${filters.search.replace(/[\\%_]/g, '\\$&')}%`)
-    clauses.push(`(w.id::text ILIKE ${term} OR COALESCE(w.payout_reference,'') ILIKE ${term}
-      OR u.full_name ILIKE ${term} OR COALESCE(u.phone,'') ILIKE ${term})`)
+    const term = bind(searchPattern(filters.search))
+    clauses.push(`(${searchSql('w.id::text')} LIKE ${term} OR ${searchSql("COALESCE(w.payout_reference,'')")} LIKE ${term}
+      OR ${searchSql('u.full_name')} LIKE ${term} OR ${searchSql("COALESCE(u.phone,'')")} LIKE ${term})`)
   }
   if (filters.status !== 'ALL') clauses.push(`w.status=${bind(filters.status)}`)
   if (filters.from)

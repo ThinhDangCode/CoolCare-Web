@@ -82,6 +82,20 @@ test('ComplaintRepository.list escapes search and applies status and type', asyn
   assert.deepEqual(calls[2][1],['%a\\_b\\%%','OPEN','SERVICE',5,5])
 })
 
+test('ComplaintRepository.list matches Vietnamese names without accents and translated subjects', async () => {
+  const searches = ['Trần Ngọc Bình', 'tran ngoc binh', 'chất lượng']
+  for (const search of searches) {
+    const {repository,calls} = stub(sql => sql.includes('count(*)')
+      ? {rows:[{total:0}]} : {rows:[]})
+    await repository.list({page:1,limit:10,search,status:'ALL',type:'ALL',sortBy:'created_at',sortOrder:'desc'})
+    assert.match(calls[1][0],/translate\(lower\(cu\.full_name\)/)
+    assert.deepEqual(calls[1][1][0],search === 'chất lượng' ? '%chat luong%' : '%tran ngoc binh%')
+    if (search === 'chất lượng') {
+      assert.ok(calls[1][1][1].includes('Service quality did not meet expectations'))
+    }
+  }
+})
+
 test('ComplaintRepository.get returns a full complaint or not found', async () => {
   const row = {id:complaintId,status:'OPEN'}
   const found = stub(() => ({rows:[row]}))

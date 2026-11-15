@@ -155,7 +155,7 @@ test('invoice SQL binds literal searches, filters invoice issue dates, preserves
   const query = buildInvoiceListQueries(validateInvoiceListQuery({
     search, status: 'PAID', service: serviceId, from: '2026-10-01', to: '2026-10-31', page: '2', limit: '25',
   }))
-  assert.deepEqual(query.values, ["%\\%'\\_\\\\ OR 1=1 --%", serviceId, '2026-10-01', '2026-10-31'])
+  assert.deepEqual(query.values, ["%\\%'\\_\\\\ or 1=1 --%", serviceId, '2026-10-01', '2026-10-31'])
   assert.deepEqual(query.rowValues, [...query.values, 25, 25])
   assert.equal(query.rowsSql.includes(search), false)
   assert.match(query.rowsSql, /i\.total_amount AS amount/)

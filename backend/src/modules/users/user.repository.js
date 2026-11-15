@@ -1,8 +1,8 @@
 import { withTransaction } from '../../config/database.js'
 import { AppError } from '../../utils.js'
 import { writeAdminAudit } from '../audit/admin-audit.js'
+import { searchPattern, searchSql } from '../../search.js'
 
-const escapeLike = (value) => value.replace(/[\\%_]/g, '\\$&')
 const add = (values, value) => {
   values.push(value)
   return `$${values.length}`
@@ -31,11 +31,11 @@ export class UserRepository {
         FROM users u${joins}
       )`
       if (filters.search) {
-        const term = add(values, `%${escapeLike(filters.search)}%`)
+        const term = add(values, searchPattern(filters.search))
         const searchConditions = [
-          `u.full_name ILIKE ${term}`,
-          `u.email ILIKE ${term}`,
-          `COALESCE(u.phone,'') ILIKE ${term}`,
+          `${searchSql('u.full_name')} LIKE ${term}`,
+          `${searchSql('u.email')} LIKE ${term}`,
+          `${searchSql("COALESCE(u.phone,'')")} LIKE ${term}`,
         ]
         clauses.push(`(${searchConditions.join(' OR ')})`)
       }

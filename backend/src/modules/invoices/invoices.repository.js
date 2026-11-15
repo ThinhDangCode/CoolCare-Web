@@ -1,5 +1,6 @@
 import { withTransaction } from '../../config/database.js'
 import { requireValidBody } from '../../utils.js'
+import { searchPattern, searchSql } from '../../search.js'
 
 // A payment attempt cannot own an invoice by booking alone. Exact customer and
 // invoiced total must match, including successful zero-value FREE payments.
@@ -69,9 +70,9 @@ export function buildInvoiceListQueries(filters) {
   const clauses = []
   const bind = (value) => { values.push(value); return `$${values.length}` }
   if (filters.search) {
-    const term = bind(`%${filters.search.replace(/[\\%_]/g, '\\$&')}%`)
-    clauses.push(`(i.invoice_number ILIKE ${term} OR b.booking_code ILIKE ${term}
-      OR u.full_name ILIKE ${term} OR COALESCE(u.phone,'') ILIKE ${term})`)
+    const term = bind(searchPattern(filters.search))
+    clauses.push(`(${searchSql('i.invoice_number')} LIKE ${term} OR ${searchSql('b.booking_code')} LIKE ${term}
+      OR ${searchSql('u.full_name')} LIKE ${term} OR ${searchSql("COALESCE(u.phone,'')")} LIKE ${term})`)
   }
   if (filters.status === 'PAID') clauses.push(INVOICE_PAID_SQL)
   if (filters.status === 'UNRECORDED') clauses.push(`NOT ${INVOICE_PAID_SQL}`)

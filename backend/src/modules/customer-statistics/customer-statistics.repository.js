@@ -1,4 +1,5 @@
 import { withTransaction } from '../../config/database.js'
+import { normalizeSearch, searchSql } from '../../search.js'
 
 // SELECT-only fixture sources are injected by tests, never by an HTTP request.
 export function buildCustomerStatisticsSql(sources = {}) {
@@ -111,7 +112,7 @@ export function buildCustomerStatisticsSql(sources = {}) {
     ),
     locked_matches AS (
       SELECT * FROM customers WHERE status=1 AND ($4::text='' OR
-        strpos(lower(concat_ws(' ',id::text,full_name,email,phone)),lower($4::text))>0)
+        strpos(${searchSql("concat_ws(' ',id::text,full_name,email,phone)")},$4::text)>0)
     ),
     locked_page AS (SELECT * FROM locked_matches ORDER BY created_at DESC,id LIMIT $5::int OFFSET $6::int)
     SELECT transaction_timestamp() AS "asOf",
@@ -154,7 +155,7 @@ export class CustomerStatisticsRepository {
     return this.transaction(async (client) => {
       await client.query('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY')
       const { rows } = await client.query(CUSTOMER_STATISTICS_SQL,
-        [query.from, query.to, query.granularity, query.search, query.limit, (query.page - 1) * query.limit])
+        [query.from, query.to, query.granularity, normalizeSearch(query.search), query.limit, (query.page - 1) * query.limit])
       return { ...rows[0], asOf: rows[0].asOf.toISOString() }
     })
   }
