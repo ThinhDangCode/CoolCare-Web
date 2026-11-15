@@ -553,7 +553,6 @@ const messages = {
     'No reviews yet': 'Chưa có đánh giá',
     Selected: 'Đã chọn',
     Assigned: 'Đã phân công',
-    Notifications: 'Thông báo',
     'CITIZEN ID (CCCD)': 'SỐ CCCD',
     'CONTACT NUMBER': 'SỐ ĐIỆN THOẠI',
     'EMAIL VERIFIED': 'NGÀY XÁC MINH EMAIL',

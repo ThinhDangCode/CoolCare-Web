@@ -2044,24 +2044,6 @@ a:focus-visible {
   stroke-linecap: round;
   stroke-linejoin: round;
 }
-.profile-utility .notification-button {
-  width: 28px;
-  height: 28px;
-  justify-content: center;
-  position: relative;
-  padding: 0;
-  color: #657184;
-}
-.profile-utility .notification-button > i {
-  width: 5px;
-  height: 5px;
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  border: 1px solid #fff;
-  border-radius: 50%;
-  background: #ff7415;
-}
 .utility-user {
   display: flex;
   align-items: center;
@@ -2535,10 +2517,6 @@ a:focus-visible {
 .profile-utility > div > button .utility-icon {
   width: clamp(14px, 1.05vw, 17px);
   height: clamp(14px, 1.05vw, 17px);
-}
-.profile-utility .notification-button {
-  width: clamp(28px, 2.2vw, 34px);
-  height: clamp(28px, 2.2vw, 34px);
 }
 .utility-user {
   gap: clamp(8px, 0.7vw, 11px);
@@ -3075,10 +3053,6 @@ a:focus-visible {
 }
 .profile-title-header .utility-user small {
   font-size: 10px;
-}
-.profile-title-header .notification-button {
-  width: 36px;
-  height: 36px;
 }
 .profile-title-header > div > button:first-of-type {
   min-width: 92px;

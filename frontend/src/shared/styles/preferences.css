@@ -681,13 +681,6 @@ html[data-theme='dark'] .voucher-inline-actions button:disabled {
   opacity: 0.6;
 }
 
-html[data-theme='dark'] .figma-header-actions .figma-notification,
-html[data-theme='dark'] .catalog-topbar .catalog-notification {
-  color: #c7d4e6;
-  background: #172a43;
-  border: 1px solid #314761;
-}
-
 html[data-theme='dark'] .figma-header-actions .preference-controls button {
   color: var(--app-text);
   background: transparent;

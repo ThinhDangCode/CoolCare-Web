@@ -655,9 +655,6 @@
   .skills-main .catalog-topbar-controls {
     gap: 8px;
   }
-  .skills-main .catalog-topbar-controls > .catalog-notification {
-    display: none;
-  }
   .skills-content {
     padding: 20px 16px 32px;
   }
@@ -729,9 +726,4 @@
   height: 34px;
   padding: 0;
   flex: 0 0 auto;
-}
-@media (max-width: 700px) {
-  .skills-main .catalog-topbar .catalog-topbar-controls > .catalog-notification {
-    display: none;
-  }
 }

@@ -994,12 +994,6 @@
   font-size: 12px;
   cursor: pointer;
 }
-.catalog-topbar .catalog-notification {
-  width: 36px;
-  position: relative;
-  border-radius: 50%;
-  background: #f8fafc;
-}
 .catalog-topbar svg {
   width: 17px;
   height: 17px;
@@ -1008,16 +1002,6 @@
   stroke-width: 1.8;
   stroke-linecap: round;
   stroke-linejoin: round;
-}
-.catalog-notification i {
-  width: 5px;
-  height: 5px;
-  position: absolute;
-  top: 5px;
-  right: 4px;
-  border: 1px solid #fff;
-  border-radius: 50%;
-  background: #f97316;
 }
 .catalog-topbar .catalog-avatar {
   width: 36px;
