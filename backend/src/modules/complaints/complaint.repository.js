@@ -13,6 +13,25 @@ const add = (values, value) => {
   return `$${values.length}`
 }
 const escapeLike = (value) => value.replace(/[\\%_]/g, '\\$&')
+const vietnameseAccents = 'àáảãạăắằẳẵặâấầẩẫậèéẻẽẹêếềểễệìíỉĩịòóỏõọôốồổỗộơớờởỡợùúủũụưứừửữựỳýỷỹỵđ'
+const plainAccents = [...vietnameseAccents]
+  .map((character) => character === 'đ' ? 'd' : character.normalize('NFD').replace(/\p{M}/gu, ''))
+  .join('')
+const normalizeSearch = (value) => value.toLowerCase()
+  .normalize('NFD')
+  .replace(/\p{M}/gu, '')
+  .replace(/đ/g, 'd')
+const searchText = (column) =>
+  `translate(lower(${column}), '${vietnameseAccents}', '${plainAccents}')`
+const vietnameseSubjects = {
+  'Customer needs a support follow-up': 'Khách hàng cần được hỗ trợ thêm',
+  'Property was damaged during service': 'Tài sản bị hư hỏng trong quá trình sử dụng dịch vụ',
+  'Refund has not been received': 'Chưa nhận được tiền hoàn trả',
+  'Service quality did not meet expectations': 'Chất lượng dịch vụ không như mong đợi',
+  'Service quality issue': 'Vấn đề về chất lượng dịch vụ',
+  'Technician arrived later than scheduled': 'Kỹ thuật viên đến muộn so với lịch hẹn',
+  'Technician did not arrive': 'Kỹ thuật viên không đến theo lịch hẹn',
+}
 
 export class ComplaintRepository {
   constructor({ transaction = withTransaction, audit = writeAdminAudit } = {}) {
@@ -111,9 +130,16 @@ export class ComplaintRepository {
       const values = []
       const clauses = []
       if (filters.search) {
-        const term = add(values, `%${escapeLike(filters.search)}%`)
+        const normalized = normalizeSearch(filters.search)
+        const term = add(values, `%${escapeLike(normalized)}%`)
+        const translatedSubjects = Object.entries(vietnameseSubjects)
+          .filter(([, title]) => normalizeSearch(title).includes(normalized))
+          .map(([subject]) => subject)
+        const subjectClause = translatedSubjects.length
+          ? ` OR c.subject = ANY(${add(values, translatedSubjects)}::text[])`
+          : ''
         clauses.push(
-          `(c.complaint_code ILIKE ${term} OR c.subject ILIKE ${term} OR b.booking_code ILIKE ${term} OR cu.full_name ILIKE ${term})`
+          `(${searchText('c.complaint_code')} LIKE ${term} OR ${searchText('c.subject')} LIKE ${term} OR ${searchText('b.booking_code')} LIKE ${term} OR ${searchText('cu.full_name')} LIKE ${term}${subjectClause})`
         )
       }
       if (filters.status !== 'ALL') clauses.push(`c.status=${add(values, filters.status)}`)
