@@ -110,6 +110,20 @@ export class BookingDetailRepository {
         AND completion_confirmed_at IS NULL
       RETURNING id,booking_code,status,completed_at,updated_at
     `, [bookingId, userId])
+    if (result.rowCount) {
+      // Reuse existing maintenance fields; earliest configured service period
+      // becomes the next due date. Later periods are handled by the worker.
+      await db.query(`UPDATE booking_units bu
+        SET serviced_at=$2,
+          next_maintenance_at=(SELECT MIN($2::timestamptz +
+            s.maintenance_interval_days * INTERVAL '1 day')
+            FROM booking_unit_services bus
+            JOIN services s ON s.id=bus.service_id
+            WHERE bus.booking_unit_id=bu.id AND s.maintenance_interval_days>0),
+          maintenance_reminder_sent_at=NULL,
+          updated_at=NOW()
+        WHERE bu.booking_id=$1`, [bookingId, result.rows[0].completed_at])
+    }
     return result.rows[0] ?? null
   }
 
