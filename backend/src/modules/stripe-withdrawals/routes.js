@@ -222,3 +222,46 @@ export async function stripeWebhook(req, res) {
   catch { return res.status(400).send('Invalid signature') }
   return res.json({ received: true })
 }
+
+// Recover Stripe Sandbox withdrawals left PROCESSING after a timeout/restart.
+// Never cancel solely because 15 minutes passed: a transfer may already exist.
+// Stripe idempotency keys are not retained forever; after 20 hours of an
+// uncertain transfer we stop automatic retries and require manual review.
+export async function reconcileProcessingStripeWithdrawals({ limit = 15 } = {}) {
+  const rows = (await pool.query(`SELECT * FROM withdrawals
+    WHERE status=1 AND initiated_at <= NOW()-INTERVAL '1 minute'
+    ORDER BY initiated_at ASC LIMIT $1`, [limit])).rows
+  for (const w of rows) {
+    try {
+      const hasTransfer = TRANSFER_NOTE.test(w.note || '')
+      if (!hasTransfer && Date.now() - new Date(w.initiated_at).getTime() >= 20 * 3600_000) {
+        console.warn('Stripe withdrawal needs manual reconciliation (idempotency window elapsed)', { id: w.id })
+        continue
+      }
+      const account = await accountFor(w)
+      if (!hasTransfer && !(await accountState(account)).ready) continue
+      const cents = Math.round(Number(w.amount) / fx() * 100)
+      if (cents < 50) continue
+      await runStripeSteps(w, account, cents)
+    } catch (error) {
+      console.error('Stripe withdrawal recovery failed', { id: w.id, message: error.message })
+    }
+  }
+  return rows.length
+}
+
+export function startStripeWithdrawalRecoveryWorker({
+  intervalMs = 60_000, run = reconcileProcessingStripeWithdrawals,
+} = {}) {
+  let running = false
+  const tick = async () => {
+    if (running) return
+    running = true
+    try { await run() } catch (error) { console.error('Stripe withdrawal recovery worker failed', error) }
+    finally { running = false }
+  }
+  const timer = setInterval(tick, intervalMs)
+  timer.unref?.()
+  void tick()
+  return () => clearInterval(timer)
+}

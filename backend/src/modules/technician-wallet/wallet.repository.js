@@ -422,6 +422,15 @@ export class TechnicianWalletRepository {
         return normalizeTopup(prior)
       }
 
+      // Serialize top-up creation for this technician and prevent two live QR
+      // orders from collecting money at the same time. A retry with the same
+      // idempotency key was handled above.
+      await db.query('SELECT id FROM technician_accounts WHERE id=$1 FOR UPDATE', [owner.account_id])
+      const active = await db.query(`SELECT id FROM technician_topups
+        WHERE technician_id=$1 AND payment_status IN (0,1) LIMIT 1`, [owner.technician_id])
+      if (active.rowCount) walletError('TOPUP_ALREADY_ACTIVE',
+        'A previous top-up is still being verified. Wait for it to close before creating a new one.', 409)
+
       const methodResult = await db.query(
         `
         SELECT id
@@ -622,7 +631,8 @@ export class TechnicianWalletRepository {
     })
   }
 
-  async failVerified(id, provider, reason) {
+  async failVerified(id, provider, reason, finalStatus = 'FAILED') {
+    if (!['FAILED', 'CANCELLED'].includes(finalStatus)) throw new Error('Invalid verified top-up closure status')
     return this.transaction(async db => {
       const result = await db.query(
         `
@@ -662,7 +672,7 @@ export class TechnicianWalletRepository {
         `
         UPDATE technician_topups
         SET
-          payment_status = 3,
+          payment_status = $3,
           closure_verified_at = CURRENT_TIMESTAMP,
           closure_reference = $2
         WHERE id = $1
@@ -670,6 +680,7 @@ export class TechnicianWalletRepository {
         [
           id,
           String(reason ?? 'PROVIDER_VERIFIED_FAILED').slice(0, 150),
+          finalStatus === 'CANCELLED' ? 4 : 3,
         ],
       )
 

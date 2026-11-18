@@ -23,6 +23,12 @@ class DevelopmentEmailSender {
     )
   }
 
+  async sendMaintenanceReminder({ email, bookingCode }) {
+    console.warn(`[DEV EMAIL] Maintenance reminder for ${bookingCode} to ${email} not sent: SMTP is not configured`)
+    throw new AppError(503, 'EMAIL_NOT_CONFIGURED',
+      'Chưa cấu hình SMTP để gửi email nhắc chăm sóc máy lạnh.')
+  }
+
   async sendEmailVerificationOtp({ email, otp, expiresMinutes }) {
     console.info(`[DEV EMAIL] Verification OTP for ${email}: ${otp} (${expiresMinutes} minutes)`)
     throw new AppError(
@@ -67,6 +73,31 @@ class SmtpEmailSender {
       subject: 'Xác thực email đăng ký CoolCare',
       text: `Mã xác thực đăng ký CoolCare của bạn là ${otp}. Mã có hiệu lực trong ${expiresMinutes} phút.`,
       html: `<p>Mã xác thực email đăng ký CoolCare:</p><p style="font-size:24px;font-weight:700;letter-spacing:6px">${otp}</p><p>Mã có hiệu lực trong ${expiresMinutes} phút.</p>`,
+    })
+  }
+
+  // The complete Vietnamese wording lives here, not in a separate template.
+  async sendMaintenanceReminder({ email, name, bookingCode, unitNumber, items }) {
+    const greeting = name ? `Xin chào ${name},` : 'Xin chào bạn,'
+    const intro = `Theo lịch chăm sóc định kỳ của CoolCare, máy lạnh số ${unitNumber} trong lịch đặt ${bookingCode} đã đến kỳ cần được kiểm tra hoặc chăm sóc.`
+    const lines = items.map(item =>
+      `- ${item.serviceName} (đến kỳ ${item.dueDate}): ${item.recommendation}`)
+    const text = [greeting, intro, 'CoolCare khuyến nghị:', ...lines,
+      'Bạn có thể mở ứng dụng CoolCare để xem lịch sử dịch vụ và đặt lịch phù hợp.',
+      'Đây là lời nhắc chăm sóc định kỳ theo chu kỳ đã cấu hình, không phải thông báo hết hạn bảo hành.',
+      'Trân trọng,\nĐội ngũ CoolCare'].join('\n\n')
+    const html = `<div style="font-family:Arial,Helvetica,sans-serif;color:#193943;max-width:560px">` +
+      `<h2 style="color:#087f92">CoolCare - Đã đến kỳ chăm sóc máy lạnh</h2>` +
+      `<p>${escapeHtml(greeting)}</p><p>${escapeHtml(intro)}</p>` +
+      `<p><strong>CoolCare khuyến nghị:</strong></p><ul>` +
+      items.map(item => `<li><strong>${escapeHtml(item.serviceName)}</strong> ` +
+        `(đến kỳ ${escapeHtml(item.dueDate)}): ${escapeHtml(item.recommendation)}</li>`).join('') +
+      `</ul><p>Bạn có thể mở ứng dụng CoolCare để xem lịch sử dịch vụ và đặt lịch phù hợp.</p>` +
+      `<p style="color:#64748b;font-size:12px">Đây là lịch nhắc chăm sóc định kỳ, không phải thời hạn bảo hành.</p></div>`
+    await this.transporter.sendMail({
+      from: env.smtp.from, to: email,
+      subject: `CoolCare: Đã đến kỳ chăm sóc máy lạnh - ${bookingCode}`,
+      text, html,
     })
   }
 

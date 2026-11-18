@@ -8,6 +8,10 @@ import { setChatIo } from './modules/chat/chat.routes.js'
 import { reconcileExpiredRequests } from './modules/customer-bookings/reconcile-technician-request.js'
 import { startInvoiceEmailWorker } from './modules/invoices/invoice.routes.js'
 import { startWeeklySettlementWorker } from './modules/settlements/weekly-settlement.worker.js'
+import { startBookingPaymentExpiryWorker } from './modules/payments/payment-expiry.worker.js'
+import { startTopupExpiryWorker } from './modules/technician-wallet/topup-expiry.worker.js'
+import { startStripeWithdrawalRecoveryWorker } from './modules/stripe-withdrawals/routes.js'
+import { startMaintenanceReminderWorker } from './modules/maintenance-reminders/maintenance-reminder.worker.js'
 
 async function start() {
   validateRuntimeEnv()
@@ -19,6 +23,10 @@ async function start() {
   }, 60_000)
   expiryTimer.unref()
   const invoiceEmailTimer = startInvoiceEmailWorker()
+  const stopBookingExpiry = startBookingPaymentExpiryWorker()
+  const stopTopupExpiry = startTopupExpiryWorker()
+  const stopWithdrawalRecovery = startStripeWithdrawalRecoveryWorker()
+  const stopMaintenanceReminders = startMaintenanceReminderWorker()
   const stopWeeklySettlements = env.weeklySettlementsEnabled ? startWeeklySettlementWorker() : null
   const httpServer = createServer(app)
   const io = new Server(httpServer, {
@@ -41,6 +49,10 @@ async function start() {
   const shutdown = (signal) => {
     clearInterval(expiryTimer)
     clearInterval(invoiceEmailTimer)
+    stopBookingExpiry()
+    stopTopupExpiry()
+    stopWithdrawalRecovery()
+    stopMaintenanceReminders()
     const settlementsStopped = stopWeeklySettlements?.()
     console.info(`${signal} received. Closing CoolCare API...`)
     server.close(async () => {

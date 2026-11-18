@@ -3,6 +3,7 @@ import { Router } from 'express'
 import { authenticate, requireRole } from '../../middleware/authenticate.js'
 import { asyncHandler, validateUuid } from '../../utils.js'
 import { TechnicianWalletRepository } from './wallet.repository.js'
+import { reconcileTopup } from './topup-expiry.worker.js'
 import {
   hmac,
   secureSame,
@@ -123,45 +124,9 @@ const checkoutResponse = (topup, checkout = null) => ({
   amount: topup.amount,
   method: topup.method,
   status: topup.payment_status,
+  ...(topup.created_at ? { expiresAt: new Date(new Date(topup.created_at).getTime() + 15 * 60_000).toISOString() } : {}),
   ...(checkout ? { checkout } : {}),
 })
-
-// Verify an existing ZaloPay order without creating a duplicate charge.
-async function queryZaloPayTopup(topup, repository) {
-  if (topup.method !== 'ZALOPAY' || !['PENDING', 'PROCESSING'].includes(topup.payment_status)) return topup
-  const appId = requireGateway('ZALOPAY_APP_ID')
-  const key1 = requireGateway('ZALOPAY_KEY1')
-  const orderId = zaloOrderId(topup)
-  const payload = {
-    app_id: appId,
-    app_trans_id: orderId,
-    mac: hmac(key1, `${appId}|${orderId}|${key1}`),
-  }
-  try {
-    const response = await fetch(safeHttps(requireGateway('ZALOPAY_QUERY_URL')), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams(payload),
-      signal: AbortSignal.timeout(10000),
-    })
-    if (!response.ok) throw new Error(`ZaloPay query HTTP ${response.status}`)
-    const result = await response.json()
-    console.info('[TechnicianWallet ZALOPAY_QUERY]', {
-      topupId: topup.id,
-      returnCode: result.return_code,
-      returnMessage: result.return_message,
-      hasTransactionId: Boolean(result.zp_trans_id),
-    })
-    if (Number(result.return_code) === 1 && result.zp_trans_id) {
-      await repository.settle(topup.id, 'ZALOPAY', String(result.zp_trans_id))
-    }
-  } catch (error) {
-    console.error('[TechnicianWallet ZALOPAY_QUERY_ERROR]', {
-      topupId: topup.id, message: error.message,
-    })
-  }
-  return repository.getById(topup.id)
-}
 
 export function createTechnicianWalletRouter(
   repository = new TechnicianWalletRepository(),
@@ -262,9 +227,11 @@ export function createTechnicianWalletRouter(
         req.params.id,
       )
 
+      // Preserve the existing ZaloPay refresh behavior. VNPay is queried by
+      // the one-minute expiry worker to avoid hammering querydr every 8 seconds.
       if (topup.method === 'ZALOPAY' &&
           ['PENDING', 'PROCESSING'].includes(topup.payment_status)) {
-        topup = await queryZaloPayTopup(topup, repository)
+        topup = await reconcileTopup(topup.id, { repository })
       }
 
       res
@@ -557,68 +524,7 @@ requestData.mac = hmac(
         })
       }
 
-      const appId = requireGateway(
-        'ZALOPAY_APP_ID',
-      )
-
-      const order = zaloOrderId(topup)
-
-      const payload = {
-        app_id: appId,
-        app_trans_id: order,
-        mac: hmac(
-          requireGateway('ZALOPAY_KEY1'),
-          `${appId}|${order}|${requireGateway(
-            'ZALOPAY_KEY1',
-          )}`,
-        ),
-      }
-
-      let result
-
-      try {
-        const response = await fetch(
-          safeHttps(
-            requireGateway('ZALOPAY_QUERY_URL'),
-          ),
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type':
-                'application/x-www-form-urlencoded',
-            },
-            body: new URLSearchParams(
-              payload,
-            ),
-            signal: AbortSignal.timeout(12000),
-          },
-        )
-
-        if (!response.ok) {
-          throw new Error(
-            'Gateway status query error',
-          )
-        }
-
-        result = await response.json()
-      } catch {
-        walletError(
-          'GATEWAY_STATUS_UNKNOWN',
-          'Cannot verify payment yet. It remains pending.',
-          503,
-        )
-      }
-
-      if (
-        Number(result.return_code) === 1 &&
-        result.zp_trans_id
-      ) {
-        await repository.settle(
-          topup.id,
-          'ZALOPAY',
-          String(result.zp_trans_id),
-        )
-      }
+      await reconcileTopup(topup.id, { repository })
 
       const current = await repository.getOwned(
         req.auth.userId,

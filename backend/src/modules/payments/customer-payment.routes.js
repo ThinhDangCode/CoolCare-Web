@@ -3,6 +3,7 @@ import { randomUUID, createHmac, timingSafeEqual } from 'node:crypto'
 import { authenticate, requireRole } from '../../middleware/authenticate.js'
 import { asyncHandler, AppError, validateUuid } from '../../utils.js'
 import { withTransaction } from '../../config/database.js'
+import { reconcileBookingPayment } from './payment-expiry.worker.js'
 
 const router = Router()
 
@@ -638,7 +639,7 @@ router.get('/technician/bookings/:bookingId/summary', authenticate, requireRole(
  const id=validateUuid(req.params.bookingId)
  const data=await withTransaction(async db=>{
    const b=await assigned(db,req.auth.userId,id)
-   const r=await db.query(`SELECT p.id,p.amount,p.payment_status,p.payment_kind,p.checkout_url,p.qr_expires_at,p.paid_at,pm.code AS method_code
+   const r=await db.query(`SELECT p.id,p.amount,p.payment_status,p.payment_kind,p.checkout_url,p.qr_expires_at,p.paid_at,p.created_at,pm.code AS method_code
     FROM payments p JOIN payment_methods pm ON pm.id=p.payment_method_id WHERE p.booking_id=$1 ORDER BY p.created_at DESC`,[id])
    return {booking:{id:b.id,status:b.status,total_amount:b.total_amount,charges_confirmed_at:b.charges_confirmed_at},payments:r.rows}
  })
@@ -680,6 +681,45 @@ router.get(
     res.json({ data })
   })
 )
+
+// The technician may replace a pending payment only after proving that the
+// previous attempt cannot collect money. Cash requires an explicit declaration.
+router.post('/:paymentId/close-for-retry', authenticate, requireRole('CUSTOMER'),
+  asyncHandler(async (req, res) => {
+    const id = validateUuid(req.params.paymentId)
+    const payment = await withTransaction(async db => {
+      const p = await attempt(db, id)
+      await assigned(db, req.auth.userId, p.booking_id)
+      const own = await db.query('SELECT 1 FROM technician_profiles WHERE id=$1 AND user_id=$2',
+        [p.technician_id, req.auth.userId])
+      if (!own.rowCount) error('NOT_ASSIGNED_TECHNICIAN', 'Only the assigned technician can change payment.', 403)
+      return p
+    })
+    if (payment.payment_status === 'SUCCESS') error('PAYMENT_ALREADY_PAID', 'Payment was already successful.')
+    if (['FAILED', 'CANCELLED'].includes(payment.payment_status)) {
+      return res.json({ data: { id, status: payment.payment_status, canRetry: true } })
+    }
+    if (payment.payment_kind === 'CASH') {
+      if (req.body?.cashNotReceived !== true) {
+        error('CASH_CONFIRMATION_REQUIRED', 'Confirm that you have NOT received cash before switching payment method.', 422)
+      }
+      const closed = await withTransaction(async db => {
+        const p = await attempt(db, id)
+        if (p.payment_status === 'SUCCESS') error('PAYMENT_ALREADY_PAID', 'Cash has already been received.')
+        if (p.payment_status !== 'PENDING') return p
+        return close(db, p, 'CANCELLED', `technician:cash-not-received:${req.auth.userId}`)
+      })
+      return res.json({ data: { id, status: closed.payment_status,
+        canRetry: closed.payment_status === 'CANCELLED' } })
+    }
+    const checked = await reconcileBookingPayment(id)
+    const canRetry = ['FAILED', 'CANCELLED'].includes(checked?.payment_status)
+    if (!canRetry) {
+      error('GATEWAY_STATUS_UNKNOWN',
+        'Giao dịch cũ chưa được cổng thanh toán xác nhận đã đóng. Vui lòng kiểm tra lại sau để tránh thanh toán hai lần.', 409)
+    }
+    res.json({ data: { id, status: checked.payment_status, canRetry: true } })
+  }))
 
 // =====================================================
 // CONFIRM CASH
