@@ -1,7 +1,7 @@
 import { createServer } from 'node:http'
 import { Server } from 'socket.io'
 import { app, setAuthSocketServer } from './app.js'
-import { pool, verifyDatabaseConnection } from './config/database.js'
+import { ensureVoucherMarginGuard, pool, verifyDatabaseConnection } from './config/database.js'
 import { env, validateRuntimeEnv } from './config/env.js'
 import { configureChatSocket } from './modules/chat/chat.socket.js'
 import { setChatIo } from './modules/chat/chat.routes.js'
@@ -16,6 +16,7 @@ import { startMaintenanceReminderWorker } from './modules/maintenance-reminders/
 async function start() {
   validateRuntimeEnv()
   await verifyDatabaseConnection()
+  await ensureVoucherMarginGuard()
 
   const expiryTimer = setInterval(() => {
     reconcileExpiredRequests().catch(error =>
