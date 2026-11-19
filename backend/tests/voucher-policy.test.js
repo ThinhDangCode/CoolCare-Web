@@ -4,6 +4,7 @@ import { validateVoucherInput } from '../src/modules/vouchers/voucher.validation
 import { validateCompensationVoucher } from '../src/modules/complaints/complaint.validation.js'
 import { voucherFitsBooking } from '../src/modules/vouchers/voucher-policy.js'
 import { VoucherRepository } from '../src/modules/vouchers/voucher.repository.js'
+import { ensureVoucherMarginGuard } from '../src/config/database.js'
 
 const voucher = (overrides = {}) => ({
   code: 'SAVE50K',
@@ -62,4 +63,29 @@ test('repository caps a new voucher even when the API omits its cap', async () =
   await repository.save(null, validateVoucherInput(voucher({ maximum_discount: null })), 'admin-id', 'CREATE_VOUCHER')
   const capIndex = inserted.sql.match(/INSERT INTO vouchers\(([^)]+)\)/)[1].split(',').indexOf('maximum_discount')
   assert.equal(inserted.values[capIndex], 50_000)
+})
+
+test('backend startup installs the voucher margin guard only when missing', async () => {
+  for (const installed of [false, true]) {
+    const statements = []
+    await ensureVoucherMarginGuard(async work => work({
+      query: async sql => {
+        statements.push(sql)
+        if (sql.includes('SELECT EXISTS')) return { rows: [{ installed }] }
+        return { rowCount: 1 }
+      },
+    }))
+    const constraint = statements.find(sql => sql.includes('ADD CONSTRAINT'))
+    assert.equal(Boolean(constraint), !installed)
+    if (constraint) {
+      assert.match(constraint, /platform_discount_amount <= 50000/)
+      assert.match(constraint, /commission_base_amount \* 0\.20/)
+      assert.match(constraint, /platform_discount_amount <= commission_amount/)
+      assert.match(constraint, /NOT VALID/)
+    }
+    const deactivation = statements.find(sql => sql.includes('UPDATE vouchers'))
+    assert.match(deactivation, /v\.discount_value > 20/)
+    assert.match(deactivation, /v\.discount_value > 50000/)
+    assert.match(deactivation, /vu\.status = 'RESERVED'/)
+  }
 })
