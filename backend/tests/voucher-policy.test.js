@@ -65,6 +65,28 @@ test('repository caps a new voucher even when the API omits its cap', async () =
   assert.equal(inserted.values[capIndex], 50_000)
 })
 
+test('admin cannot lower voucher limit below used and reserved slots', async () => {
+  let updated = false
+  const repository = new VoucherRepository({
+    transaction: async work => work({ query: async sql => {
+      if (sql.startsWith('SELECT * FROM vouchers')) return { rows: [{
+        id: 'voucher-id', ...voucher(), usage_count: 1, usage_limit: 3,
+        start_at: new Date(Date.now() - 86_400_000),
+        end_at: new Date(Date.now() + 86_400_000),
+      }] }
+      if (sql.includes('COUNT(*)::int AS total')) return { rows: [{ total: 2 }] }
+      if (sql.startsWith('UPDATE vouchers')) updated = true
+      return { rows: [] }
+    } }),
+    audit: () => {},
+  })
+  await assert.rejects(
+    repository.save('voucher-id', { usage_limit: 1 }, 'admin-id', 'UPDATE_VOUCHER'),
+    { code: 'VALIDATION_ERROR' },
+  )
+  assert.equal(updated, false)
+})
+
 test('backend startup installs the voucher margin guard only when missing', async () => {
   for (const installed of [false, true]) {
     const statements = []
