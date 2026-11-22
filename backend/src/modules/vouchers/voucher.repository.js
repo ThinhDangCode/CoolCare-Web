@@ -41,13 +41,17 @@ export class VoucherRepository {
                v.minimum_order_amount, v.maximum_discount, v.start_at, v.end_at,
                v.usage_limit, v.usage_count, v.usage_limit_per_customer,
                (SELECT COUNT(*)::int FROM voucher_usages vu
+                WHERE vu.voucher_id=v.id AND vu.booking_id<>$2
+                  AND vu.status IN ('RESERVED','USED')) AS allocated_usage_count,
+               (SELECT COUNT(*)::int FROM voucher_usages vu
                 WHERE vu.voucher_id=v.id AND vu.customer_id=$1
+                  AND vu.booking_id<>$2
                   AND vu.status IN ('RESERVED','USED')) AS customer_usage_count
         FROM vouchers v
         WHERE v.is_active=true AND v.start_at<=CURRENT_TIMESTAMP
           AND v.end_at>CURRENT_TIMESTAMP
         ORDER BY v.end_at ASC, v.id ASC
-      `, [booking.customer_id])
+      `, [booking.customer_id, booking.id])
       return result.rows
         .filter((v) => !isComplaintCompensationCode(v.code))
         .map((v) => ({
@@ -57,7 +61,7 @@ export class VoucherRepository {
           maximumDiscount: v.maximum_discount == null ? null : Number(v.maximum_discount),
           expiresAt: v.end_at,
           eligible: voucherFitsBooking(v, eligibleAmount, booking.commission_rate)
-            && (v.usage_limit == null || Number(v.usage_count) < Number(v.usage_limit))
+            && (v.usage_limit == null || Number(v.allocated_usage_count) < Number(v.usage_limit))
             && (v.usage_limit_per_customer == null || v.customer_usage_count < Number(v.usage_limit_per_customer)),
         }))
     })
@@ -230,17 +234,17 @@ export class VoucherRepository {
           data.usage_limit_per_customer !== undefined
             ? data.usage_limit_per_customer
             : before?.usage_limit_per_customer
-        if (
-          data.usage_limit !== undefined &&
-          data.usage_limit !== null &&
-          data.usage_limit < Number(before?.usage_count ?? 0)
-        )
-          throw new AppError(
-            422,
-            'VALIDATION_ERROR',
-            'Giới hạn lượt dùng thấp hơn số lượt đã dùng.',
-            { usage_limit: 'Giới hạn không hợp lệ.' }
-          )
+        if (id && data.usage_limit != null) {
+          const allocated = await client.query(`SELECT COUNT(*)::int AS total
+            FROM voucher_usages WHERE voucher_id=$1 AND status IN ('RESERVED','USED')`, [id])
+          if (data.usage_limit < Math.max(
+            Number(before.usage_count ?? 0), Number(allocated.rows[0].total)
+          )) {
+            throw new AppError(422, 'VALIDATION_ERROR',
+              'Giới hạn lượt dùng thấp hơn số lượt đã dùng hoặc đang giữ.',
+              { usage_limit: 'Giới hạn không hợp lệ.' })
+          }
+        }
         if (
           totalLimit !== null &&
           customerLimit !== null &&

@@ -459,11 +459,6 @@ export function ProfilePage() {
                       </button>
                     </p>
                   </div>
-                  <div className="profile-clearance">
-                    <small>{t('SECURITY CLEARANCE')}</small>
-                    <strong>♙ {t('Level 4 Fleet Controller')}</strong>
-                    <span>{t('MFA Enforced (FIDO2 Key)')}</span>
-                  </div>
                 </div>
               )}
               {message && (
@@ -574,7 +569,6 @@ export function ProfilePage() {
                     </label>
                   </div>
                   <div className="profile-form-actions">
-                    <p>☑&nbsp; {t('All sessions synced across 2 active workstations')}</p>
                     <button type="button" onClick={cancelEdit}>
                       {t('Cancel')}
                     </button>
