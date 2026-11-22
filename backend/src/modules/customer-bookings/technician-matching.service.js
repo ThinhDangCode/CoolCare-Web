@@ -298,6 +298,25 @@ export class TechnicianMatchingService {
         )
       }
 
+      // Block repeatedly targeting the same technician with cancelled requests.
+      const targeted = await db.query(`SELECT COUNT(DISTINCT b.id)::int AS total
+        FROM bookings b JOIN customer_profiles cp ON cp.id=b.customer_id
+        JOIN booking_technicians bt ON bt.booking_id=b.id
+        WHERE cp.user_id=$1 AND bt.technician_id=$2
+          AND b.status='CANCELLED' AND b.cancelled_by_id=$1
+          AND b.cancelled_at >= NOW() - INTERVAL '7 days'
+          AND b.cancellation_reason NOT LIKE '[LATE_TECHNICIAN]%'`,
+        [validUserId,validTechnicianId])
+      if (targeted.rows[0].total >= 3) throw new AppError(429,
+        'TECHNICIAN_REQUEST_RATE_LIMIT',
+        'Bạn đã hủy nhiều đơn với thợ này; vui lòng chọn thợ khác trong 7 ngày.')
+      const previouslyReassigned = await db.query(`SELECT 1 FROM booking_technicians
+        WHERE booking_id=$1 AND technician_id=$2 AND status='CANCELLED'
+          AND cancellation_reason LIKE 'Khách đổi thợ sau 30 phút:%' LIMIT 1`,
+        [validBookingId,validTechnicianId])
+      if (previouslyReassigned.rowCount) throw new AppError(409,
+        'PREVIOUS_TECHNICIAN_EXCLUDED', 'Không thể chọn lại thợ vừa bị thay thế.')
+
       // 5. Recheck the technician against the
       // current recommendation list.
       const selectedTechnician =

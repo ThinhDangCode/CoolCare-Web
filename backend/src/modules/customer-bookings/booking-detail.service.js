@@ -39,48 +39,50 @@ export class BookingDetailService {
     return booking
   }
 
-  async reportNoShow(userId, bookingId, body) {
-    const description = String(body?.description ?? '').trim()
-    if (typeof body?.description !== 'string' || description.length < 10 ||
-        description.length > 2000 || Object.keys(body).some(k => k !== 'description')) {
-      throw new AppError(422, 'VALIDATION_ERROR',
-        'Please describe the missing technician (10–2000 characters).')
+  // Customer-initiated reassignment; no complaint or Admin approval.
+  async changeLateTechnician(userId, bookingId, body = {}) {
+    const reason = String(body.reason ?? '').trim()
+    const nextAt = new Date(body.scheduledAt)
+    if (reason.length < 10 || reason.length > 1000 ||
+        !Number.isFinite(nextAt.getTime()) || nextAt.getTime() <= Date.now()) {
+      throw new AppError(422, 'INVALID_REASSIGNMENT', 'Nhập lý do từ 10 ký tự và chọn lịch mới trong tương lai.')
     }
     return this.transaction(async db => {
       const booking = await this.owned(userId, bookingId, db, true)
-      if (booking.status !== 'ACCEPTED' ||
-          new Date(booking.scheduled_at).getTime() + 30*60*1000 > Date.now()) {
-        throw new AppError(409, 'NO_SHOW_NOT_REPORTABLE',
-          'A missing technician can only be reported 30 minutes after the appointment starts.')
+      if (booking.status !== 'ACCEPTED' || booking.technician_completed_at ||
+          Date.now() < new Date(booking.scheduled_at).getTime() + 30 * 60000) {
+        throw new AppError(409, 'NO_SHOW_NOT_ELIGIBLE', 'Chỉ đổi thợ sau 30 phút khi công việc chưa bắt đầu.')
       }
-      const hasArrived = await db.query(`
-        SELECT 1 FROM booking_status_history WHERE booking_id=$1
-          AND note LIKE 'COOLCARE_TRAVEL_V1:%ARRIVED%'
-        LIMIT 1`, [bookingId])
-      if (hasArrived.rowCount) {
-        throw new AppError(409, 'TECHNICIAN_ALREADY_ARRIVED',
-          'Kỹ thuật viên đã xác nhận đến nơi. Vui lòng dùng luồng hỗ trợ nếu có tranh chấp.')
-      }
-      const technician = (await db.query(`
-        SELECT technician_id FROM booking_technicians
-        WHERE booking_id=$1 AND status='ACCEPTED' LIMIT 1
-      `, [bookingId])).rows[0]
-      if (!technician) throw new AppError(409, 'TECHNICIAN_NOT_ASSIGNED',
-        'No accepted technician assignment was found.')
-      const previous = (await db.query(`
-        SELECT id FROM complaints WHERE booking_id=$1 AND type='TECHNICIAN'
-          AND subject='Technician did not arrive' LIMIT 1
-      `, [bookingId])).rows[0]
-      if (previous) throw new AppError(409, 'NO_SHOW_ALREADY_REPORTED',
-        'This booking already has a technician no-show report.')
-      const code = `NS-${randomUUID().replace(/-/g,'').slice(0,16).toUpperCase()}`
-      const result = await db.query(`
-        INSERT INTO complaints(complaint_code,booking_id,customer_id,technician_id,
-          type,subject,description)
-        VALUES($1,$2,$3,$4,'TECHNICIAN','Technician did not arrive',$5)
-        RETURNING id,complaint_code,status
-      `, [code, bookingId, booking.customer_id, technician.technician_id, description])
-      return result.rows[0]
+      const arrival = await db.query(`SELECT 1 FROM booking_status_history
+        WHERE booking_id=$1 AND note LIKE 'COOLCARE_TRAVEL_V1:%ARRIVED%' LIMIT 1`, [bookingId])
+      if (arrival.rowCount) throw new AppError(409, 'TECHNICIAN_ALREADY_ARRIVED', 'Thợ đã xác nhận đến nơi.')
+      const quotation = await db.query(`SELECT 1 FROM quotations WHERE booking_id=$1
+        AND quotation_type='ADDITIONAL' LIMIT 1`, [bookingId])
+      if (quotation.rowCount) throw new AppError(409, 'WORK_ALREADY_QUOTED', 'Đơn đã có báo giá phát sinh.')
+      const paid = await db.query(`SELECT 1 FROM payments WHERE booking_id=$1
+        AND payment_status='SUCCESS' LIMIT 1`, [bookingId])
+      if (paid.rowCount) throw new AppError(409, 'PAYMENT_REVIEW_REQUIRED', 'Đơn đã thanh toán, cần xử lý tiền trước khi đổi thợ.')
+      const assignment = await this.repository.findAcceptedAssignment(bookingId, db)
+      if (!assignment) throw new AppError(409, 'ASSIGNMENT_CHANGED', 'Phân công đã thay đổi.')
+      const update = await db.query(`UPDATE booking_technicians
+        SET status='CANCELLED',cancelled_at=NOW(),cancellation_reason=$2
+        WHERE id=$1 AND status='ACCEPTED' RETURNING id`,
+        [assignment.id, `Khách đổi thợ sau 30 phút: ${reason}`])
+      if (!update.rowCount) throw new AppError(409, 'ASSIGNMENT_CHANGED', 'Phân công đã thay đổi.')
+      await db.query(`UPDATE bookings SET status='PENDING',scheduled_at=$2,updated_at=NOW()
+        WHERE id=$1 AND status='ACCEPTED'`, [bookingId, nextAt.toISOString()])
+      await db.query(`INSERT INTO booking_status_history(booking_id,status,changed_by_id,note)
+        VALUES($1,'PENDING',$2,$3)`, [bookingId, userId,
+          `Đổi thợ do báo không đến sau 30 phút; lịch cũ: ${new Date(booking.scheduled_at).toISOString()}; lịch mới: ${nextAt.toISOString()}; thợ cũ: ${assignment.technician_id}; lý do: ${reason}`])
+      // The unique assignment transition under booking lock makes this penalty idempotent.
+      await db.query(`INSERT INTO technician_penalties
+        (technician_id,booking_id,penalty_type,penalty_points,reason,status,applied_at,expires_at)
+        VALUES($1,$2,'LATE_HANDLING',2,$3,'ACTIVE',NOW(),NULL)`,
+        [assignment.technician_id,bookingId,`Khách đổi thợ sau 30 phút: ${reason}`])
+      await db.query(`INSERT INTO notifications(user_id,type,title,message,reference_type,reference_id)
+        VALUES($1,'BOOKING','Đã thu hồi công việc',$2,'BOOKING',$3)`,
+        [assignment.technician_user_id,`Booking ${booking.booking_code}: khách đã đổi thợ sau 30 phút; hệ thống ghi nhận 2 điểm phạt.`,bookingId])
+      return { bookingId, status:'PENDING', scheduledAt:nextAt.toISOString(), penaltyPoints:2 }
     })
   }
 
@@ -96,17 +98,16 @@ export class BookingDetailService {
     const status = booking.status
     const noShowEligibility = status === 'ACCEPTED' ? (await this.repository.db.query(`
       SELECT EXISTS (SELECT 1 FROM booking_status_history
-        WHERE booking_id=$1 AND note LIKE 'COOLCARE_TRAVEL_V1:%ARRIVED%') AS arrived,
-        EXISTS (SELECT 1 FROM complaints WHERE booking_id=$1
-          AND type='TECHNICIAN' AND subject='Technician did not arrive') AS reported
+        WHERE booking_id=$1 AND note LIKE 'COOLCARE_TRAVEL_V1:%ARRIVED%') AS arrived
     `, [bookingId])).rows[0] : null
     const canReportNoShow = status === 'ACCEPTED' &&
       Date.now() >= new Date(booking.scheduled_at).getTime() + 30 * 60000 &&
-      noShowEligibility?.arrived === false && noShowEligibility?.reported === false
+      noShowEligibility?.arrived === false
 
     const canCancel = [
       'PENDING',
       'TECHNICIAN_SELECTED',
+      'ACCEPTED',
     ].includes(status)
 
     const canConfirmCompletion =
@@ -162,6 +163,7 @@ export class BookingDetailService {
       // Booking actions
       canCancel,
       canReportNoShow,
+      canChangeLateTechnician: canReportNoShow,
       canConfirmCompletion,
       canRebook: status === 'CANCELLED',
 
@@ -187,6 +189,7 @@ export class BookingDetailService {
   // Cancel booking
   async cancel(userId, bookingId, body = {}) {
     return this.transaction(async (db) => {
+      await db.query('SELECT pg_advisory_xact_lock(hashtext($1))', [userId])
       const booking = await this.owned(
         userId,
         bookingId,
@@ -198,6 +201,7 @@ export class BookingDetailService {
         ![
           'PENDING',
           'TECHNICIAN_SELECTED',
+          'ACCEPTED',
         ].includes(booking.status)
       ) {
         throw new AppError(
@@ -214,6 +218,14 @@ export class BookingDetailService {
         throw new AppError(400, 'BOOKING_CANCELLATION_REASON_REQUIRED', 'Vui lòng nhập lý do hủy.')
       }
 
+      // Paid bookings require a refund workflow, never silently cancel money.
+      const paid = await db.query(`SELECT 1 FROM payments WHERE booking_id=$1
+        AND payment_status='SUCCESS' LIMIT 1`, [bookingId])
+      if (paid.rowCount) throw new AppError(409, 'PAYMENT_REVIEW_REQUIRED',
+        'Đơn đã thanh toán; vui lòng liên hệ hỗ trợ để xử lý hoàn tiền.')
+      const accepted = booking.status === 'ACCEPTED'
+      const assignment = accepted ? await this.repository.findAcceptedAssignment(bookingId, db) : null
+      if (accepted && !assignment) throw new AppError(409, 'ASSIGNMENT_CHANGED', 'Phân công đã thay đổi.')
       const result = await this.repository.cancelBooking(
         userId,
         bookingId,
@@ -229,6 +241,14 @@ export class BookingDetailService {
         )
       }
 
+      if (assignment) {
+        await db.query(`UPDATE booking_technicians SET status='CANCELLED',
+          cancelled_at=NOW(),cancellation_reason=$2 WHERE id=$1 AND status='ACCEPTED'`,
+          [assignment.id, `Khách hủy: ${reason}`])
+        await db.query(`INSERT INTO notifications(user_id,type,title,message,reference_type,reference_id)
+          VALUES($1,'BOOKING','Khách đã hủy đơn',$2,'BOOKING',$3)`,
+          [assignment.technician_user_id,`Booking ${booking.booking_code} đã được khách hủy.`,bookingId])
+      }
       await this.repository.cancelPendingRequests(
         bookingId,
         db,
@@ -240,6 +260,16 @@ export class BookingDetailService {
         reason,
         db,
       )
+      const count = await db.query(`SELECT COUNT(*)::int AS total FROM bookings b
+        JOIN customer_profiles cp ON cp.id=b.customer_id
+        WHERE cp.user_id=$1 AND b.status='CANCELLED' AND b.cancelled_by_id=$1
+          AND b.cancelled_at >= NOW() - INTERVAL '24 hours'
+          AND b.cancellation_reason NOT LIKE '[LATE_TECHNICIAN]%'`, [userId])
+      if (count.rows[0].total === 3) await db.query(`INSERT INTO notifications
+        (user_id,type,title,message,reference_type,reference_id)
+        VALUES($1,'BOOKING','Cảnh báo hủy đơn',
+          'Bạn đã hủy 3 đơn trong 24 giờ. Hủy 5 đơn sẽ tạm hạn chế đặt lịch.','BOOKING',$2)`,
+        [userId,bookingId])
 
       return result
     })

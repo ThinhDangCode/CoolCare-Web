@@ -21,6 +21,24 @@ export class CustomerBookingService {
         throw new AppError(403, 'CUSTOMER_PROFILE_REQUIRED', 'Active customer profile is required.')
       }
 
+      // Serialize booking creation/cancellation for the same customer.
+      await db.query('SELECT pg_advisory_xact_lock(hashtext($1))', [userId])
+      const cancellations = await db.query(`SELECT COUNT(*)::int AS total FROM bookings
+        WHERE customer_id=$1 AND status='CANCELLED' AND cancelled_by_id=$2
+          AND cancelled_at >= NOW() - INTERVAL '24 hours'
+          AND cancellation_reason NOT LIKE '[LATE_TECHNICIAN]%'`, [customer.id,userId])
+      if (cancellations.rows[0].total >= 5) {
+        throw new AppError(429, 'BOOKING_RATE_LIMIT',
+          'Bạn đã hủy quá nhiều đơn trong 24 giờ; vui lòng thử lại sau.')
+      }
+      const overlapping = await db.query(`SELECT 1 FROM bookings
+        WHERE customer_id=$1 AND status IN ('PENDING','TECHNICIAN_SELECTED','ACCEPTED')
+          AND scheduled_at BETWEEN $2::timestamptz - INTERVAL '30 minutes'
+                               AND $2::timestamptz + INTERVAL '30 minutes' LIMIT 1`,
+        [customer.id,input.scheduledAt])
+      if (overlapping.rowCount) throw new AppError(409, 'OVERLAPPING_BOOKING',
+        'Bạn đã có đơn đang hoạt động gần thời gian này.')
+
       const address = await this.repository.findAddress(
         customer.id, input.customerAddressId, db
       )
