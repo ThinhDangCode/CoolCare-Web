@@ -62,7 +62,7 @@ export class BookingDetailRepository {
       UPDATE bookings SET status = 'CANCELLED', cancelled_at = CURRENT_TIMESTAMP,
         cancelled_by_id = $1, cancellation_reason = $3,
         updated_at = CURRENT_TIMESTAMP
-      WHERE id = $2 AND status IN ('PENDING','TECHNICIAN_SELECTED')
+      WHERE id = $2 AND status IN ('PENDING','TECHNICIAN_SELECTED','ACCEPTED')
       RETURNING id, status, cancelled_at
     `, [userId, bookingId, reason])
     return result.rows[0] ?? null

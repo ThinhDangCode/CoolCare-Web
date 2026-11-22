@@ -13,10 +13,9 @@ export class BookingDetailController {
     })
   }
 
-  reportNoShow = async (req, res) =>
-    res.status(201).json({
-      data: await this.service.reportNoShow(req.auth?.userId, req.params.bookingId, req.body),
-    })
+  changeLateTechnician = async (req, res) =>
+    res.status(200).json({data: await this.service.changeLateTechnician(
+      req.auth?.userId, req.params.bookingId, req.body)})
 
   getTimeline = async (req, res) =>
     res.status(200).json({
