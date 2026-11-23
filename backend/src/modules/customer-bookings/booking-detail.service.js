@@ -271,6 +271,12 @@ export class BookingDetailService {
           'Bạn đã hủy 3 đơn trong 24 giờ. Hủy 5 đơn sẽ tạm hạn chế đặt lịch.','BOOKING',$2)`,
         [userId,bookingId])
 
+      if (count.rows[0].total === 5) await db.query(`INSERT INTO notifications
+        (user_id,type,title,message,reference_type,reference_id)
+        VALUES($1,'BOOKING','Tạm hạn chế đặt lịch',
+          'Bạn đã hủy 5 đơn trong 24 giờ. Bạn chỉ có thể tạo đơn mới khi số đơn hủy trong 24 giờ gần nhất giảm xuống dưới 5. Các đơn hủy do thợ trễ không được tính.','BOOKING',$2)`,
+        [userId,bookingId])
+
       return result
     })
   }
