@@ -89,6 +89,12 @@ export class UpdateJobStatusRepository {
         throw new AppError(409, 'OUTSTANDING_QUOTATION', 'Cần xử lý báo giá đang chờ trước khi KTV hoàn thành.')
       }
 
+      const missingAc = await client.query(`SELECT 1 FROM booking_units bu
+        LEFT JOIN ac_models am ON am.id=bu.ac_model_id AND am.brand_id=bu.ac_brand_id
+        WHERE bu.booking_id=$1 AND (bu.ac_brand_id IS NULL OR bu.ac_model_id IS NULL OR am.id IS NULL) LIMIT 1`, [job.booking_id])
+      if (missingAc.rowCount) throw new AppError(409, 'AC_INFORMATION_REQUIRED',
+        'Vui lòng xác nhận hãng và model của tất cả máy lạnh trước khi hoàn thành công việc.')
+
       const initialQuotation = await ensureDefaultQuotation(
         client,
         job.booking_id,

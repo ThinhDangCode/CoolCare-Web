@@ -317,6 +317,25 @@ export class TechnicianMatchingService {
       if (previouslyReassigned.rowCount) throw new AppError(409,
         'PREVIOUS_TECHNICIAN_EXCLUDED', 'Không thể chọn lại thợ vừa bị thay thế.')
 
+      // Reject historical requests before INSERT can violate the unique index.
+      const historical = await db.query(`SELECT bt.status,
+          EXISTS (SELECT 1 FROM booking_status_history h
+            WHERE h.booking_id=bt.booking_id AND h.changed_by_id=tp.user_id
+              AND h.note LIKE 'Kỹ thuật viên hủy công việc đã nhận:%') AS cancelled_by_technician
+        FROM booking_technicians bt
+        JOIN technician_profiles tp ON tp.id=bt.technician_id
+        WHERE bt.booking_id=$1 AND bt.technician_id=$2 LIMIT 1`,
+        [validBookingId, validTechnicianId])
+      const previous = historical.rows[0]
+      if (previous?.status === 'CANCELLED' && previous.cancelled_by_technician) {
+        throw new AppError(409, 'TECHNICIAN_PREVIOUSLY_CANCELLED',
+          'Kỹ thuật viên này đã chủ động hủy đơn trước đó. Vui lòng chọn kỹ thuật viên khác.')
+      }
+      if (previous) {
+        throw new AppError(409, 'TECHNICIAN_PREVIOUS_REQUEST',
+          'Bạn đã gửi yêu cầu cho kỹ thuật viên này trong đơn hiện tại. Vui lòng chọn kỹ thuật viên khác.')
+      }
+
       // 5. Recheck the technician against the
       // current recommendation list.
       const selectedTechnician =

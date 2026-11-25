@@ -22,9 +22,11 @@ test('customer may select an AC brand without model', () => {
   assert.equal(result.units[0].acBrandId,uuid(3))
   assert.equal(result.units[0].acModelId,null)
 })
-test('customer cannot submit AC model, even when brand is known', () => {
+test('customer may submit a previously confirmed AC model with its brand', () => {
   const source=booking(); source.units[0].acBrandId=uuid(3);source.units[0].acModelId=uuid(4)
-  assert.throws(()=>validateCreateBookingBody(source),{code:'VALIDATION_ERROR'})
+  const result=validateCreateBookingBody(source)
+  assert.equal(result.units[0].acBrandId,uuid(3))
+  assert.equal(result.units[0].acModelId,uuid(4))
 })
 test('CLOSED filter is distinct from COMPLETED/HISTORY', () => {
   assert.equal(validateViewJobRequestsQuery({status:'CLOSED'}).status,'CLOSED')

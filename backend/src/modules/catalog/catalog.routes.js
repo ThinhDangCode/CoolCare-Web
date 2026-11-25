@@ -14,8 +14,11 @@ export function createCatalogRouter(repository = new CatalogRepository(), admin 
   if (!admin) router.get('/services/:id/reviews', asyncHandler(async (req, res) => {
     const serviceId = validateId(req.params.id)
     const result = await pool.query(
-      `SELECT r.id, r.rating, r.comment, r.created_at
+      `SELECT r.id, r.rating, r.comment, r.created_at,
+              NULLIF(TRIM(u.full_name), '') AS customer_name
          FROM reviews r
+         LEFT JOIN customer_profiles cp ON cp.id = r.customer_id
+         LEFT JOIN users u ON u.id = cp.user_id
          JOIN bookings b ON b.id = r.booking_id
         WHERE r.status = 'PUBLISHED'
           AND b.status = 'COMPLETED'

@@ -30,7 +30,7 @@ test('B05 booking: không có điều hòa/dịch vụ', () => {
 })
 test('B06 booking: không cho duplicate service trong cùng AC', () => invalid(() => validateCreateBookingBody(booking({units:[{serviceIds:[id2,id2]}]}))))
 test('B07 booking: không nhận quá 20 máy', () => invalid(() => validateCreateBookingBody(booking({units:Array.from({length:21},()=>({serviceIds:[id2]}))}))))
-test('B08 booking: không cho client xác nhận acModelId', () => invalid(() => validateCreateBookingBody(booking({units:[{serviceIds:[id2],acModelId:id1}]}))))
+test('B08 booking: model máy lạnh cần có hãng đi kèm', () => invalid(() => validateCreateBookingBody(booking({units:[{serviceIds:[id2],acModelId:id1}]}))))
 test('J01 nhận việc: action ACCEPT hợp lệ', () => assert.deepEqual(validateAcceptDeclineJobRequest({action:'ACCEPT'}),{action:'ACCEPT',reason:null}))
 test('J02 từ chối việc: lưu lý do đã trim', () => assert.deepEqual(validateAcceptDeclineJobRequest({action:'DECLINE',reason:'  Ban  '}),{action:'DECLINE',reason:'Ban'}))
 test('J03 nhận việc: không cho reason khi ACCEPT', () => invalid(() => validateAcceptDeclineJobRequest({action:'ACCEPT',reason:'abc'})))

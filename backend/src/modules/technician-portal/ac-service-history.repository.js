@@ -34,7 +34,8 @@ export class AcServiceHistoryRepository {
       JOIN booking_units history_unit ON ${sameUnit}
       JOIN bookings history_booking ON history_booking.id=history_unit.booking_id
       WHERE current_unit.id=$1 AND history_booking.customer_id=$2
-        AND (current_unit.ac_brand_id IS NOT NULL OR current_unit.ac_model_id IS NOT NULL)
+        AND current_unit.ac_brand_id IS NOT NULL AND current_unit.ac_model_id IS NOT NULL
+        AND history_booking.customer_address_id = (SELECT customer_address_id FROM bookings WHERE id=$3)
         AND history_booking.id<>$3 AND history_booking.status='COMPLETED'`,
     [context.unit_id, context.customer_id, context.booking_id])
     return result.rows[0]?.total ?? 0
@@ -82,7 +83,8 @@ export class AcServiceHistoryRepository {
         ORDER BY assignment.responded_at DESC NULLS LAST,assignment.id DESC LIMIT 1
       ) technician_user ON TRUE
       WHERE current_unit.id=$1 AND history_booking.customer_id=$2
-        AND (current_unit.ac_brand_id IS NOT NULL OR current_unit.ac_model_id IS NOT NULL)
+        AND current_unit.ac_brand_id IS NOT NULL AND current_unit.ac_model_id IS NOT NULL
+        AND history_booking.customer_address_id = (SELECT customer_address_id FROM bookings WHERE id=$3)
         AND history_booking.id<>$3 AND history_booking.status='COMPLETED'
       ORDER BY history_booking.completed_at DESC NULLS LAST,history_booking.updated_at DESC,history_booking.id DESC
       LIMIT $4 OFFSET $5`,
