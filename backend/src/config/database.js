@@ -69,6 +69,16 @@ export async function ensureServiceLocationKeys(transaction = withTransaction) {
   await transaction(async (db) => {
     await db.query('SELECT pg_advisory_xact_lock(hashtext($1))',
       ['coolcare:service_location_keys'])
+    const addressReference = await db.query(`SELECT confdeltype FROM pg_constraint
+      WHERE conrelid='bookings'::regclass AND conname='fk_bookings_customer_address_id'`)
+    if (!addressReference.rows[0]) {
+      throw new Error('Booking address foreign key is missing')
+    }
+    if (addressReference.rows[0].confdeltype !== 'n') {
+      await db.query('ALTER TABLE bookings DROP CONSTRAINT fk_bookings_customer_address_id')
+      await db.query(`ALTER TABLE bookings ADD CONSTRAINT fk_bookings_customer_address_id
+        FOREIGN KEY (customer_address_id) REFERENCES customer_addresses(id) ON DELETE SET NULL`)
+    }
     await db.query(`ALTER TABLE customer_addresses ADD COLUMN IF NOT EXISTS
       service_location_id uuid GENERATED ALWAYS AS (${expression('address_line')}) STORED`)
     await db.query(`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS
