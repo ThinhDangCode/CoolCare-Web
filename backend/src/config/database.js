@@ -56,6 +56,30 @@ export async function verifyDatabaseConnection() {
   await pool.query('SELECT 1')
 }
 
+// A saved address is disposable, but a booking needs an immutable location key.
+// Both generated columns use the same customer-scoped normalized address so
+// deleting and later recreating a saved address can still find prior visits.
+export async function ensureServiceLocationKeys(transaction = withTransaction) {
+  const normalized = (column) =>
+    `lower(regexp_replace(btrim(${column}), '[[:space:]]+', ' ', 'g'))`
+  const expression = (street) =>
+    `md5(customer_id::text || '|' || ${normalized('city')} || '|' ||
+      ${normalized('ward')} || '|' || ${normalized(street)})::uuid`
+
+  await transaction(async (db) => {
+    await db.query('SELECT pg_advisory_xact_lock(hashtext($1))',
+      ['coolcare:service_location_keys'])
+    await db.query(`ALTER TABLE customer_addresses ADD COLUMN IF NOT EXISTS
+      service_location_id uuid GENERATED ALWAYS AS (${expression('address_line')}) STORED`)
+    await db.query(`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS
+      service_location_id uuid GENERATED ALWAYS AS (${expression('service_address')}) STORED`)
+    await db.query(`CREATE INDEX IF NOT EXISTS idx_customer_addresses_location
+      ON customer_addresses(customer_id,service_location_id)`)
+    await db.query(`CREATE INDEX IF NOT EXISTS idx_bookings_service_location
+      ON bookings(customer_id,service_location_id)`)
+  })
+}
+
 // Install the voucher payment guard when a fresh database starts without the
 // former standalone migration. Existing payment history remains untouched.
 export async function ensureVoucherMarginGuard(transaction = withTransaction) {

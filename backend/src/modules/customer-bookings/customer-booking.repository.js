@@ -16,7 +16,7 @@ export class CustomerBookingRepository {
 
   async findAddress(customerId, addressId, db = this.db) {
     const { rows } = await db.query(
-      `SELECT id, address_line, ward, city, latitude, longitude
+      `SELECT id, address_line, ward, city, latitude, longitude, service_location_id
        FROM customer_addresses WHERE id = $1 AND customer_id = $2`,
       [addressId, customerId]
     )

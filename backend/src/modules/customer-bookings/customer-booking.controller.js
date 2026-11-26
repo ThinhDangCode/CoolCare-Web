@@ -19,10 +19,12 @@ export class CustomerBookingController {
              ab.name AS "brandName", am.model_name AS "modelName"
       FROM bookings b
       JOIN customer_profiles cp ON cp.id=b.customer_id
+      JOIN customer_addresses selected_address ON selected_address.id=$2
+        AND selected_address.customer_id=cp.id
       JOIN booking_units bu ON bu.booking_id=b.id
       JOIN ac_models am ON am.id=bu.ac_model_id
       JOIN ac_brands ab ON ab.id=bu.ac_brand_id
-      WHERE cp.user_id=$1 AND b.customer_address_id=$2
+      WHERE cp.user_id=$1 AND b.service_location_id=selected_address.service_location_id
         AND b.status='COMPLETED'
         AND bu.ac_brand_id IS NOT NULL AND bu.ac_model_id IS NOT NULL
       ORDER BY "brandName", "modelName"
