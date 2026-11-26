@@ -63,9 +63,9 @@ export class CustomerBookingService {
         if (unit.acModelId) {
           const previous = await db.query(`SELECT 1 FROM bookings b
             JOIN booking_units bu ON bu.booking_id=b.id
-            WHERE b.customer_id=$1 AND b.customer_address_id=$2
+            WHERE b.customer_id=$1 AND b.service_location_id=$2
               AND b.status='COMPLETED' AND bu.ac_brand_id=$3 AND bu.ac_model_id=$4 LIMIT 1`,
-            [customer.id,address.id,unit.acBrandId,unit.acModelId])
+            [customer.id,address.service_location_id,unit.acBrandId,unit.acModelId])
           if (!previous.rowCount) throw new AppError(422, 'AC_MODEL_NOT_PREVIOUSLY_CONFIRMED',
             'Chỉ được chọn lại model máy lạnh đã được xác nhận trong đơn hoàn thành tại địa chỉ này.')
           const model = await this.repository.findModel(unit.acModelId, unit.acBrandId, db)

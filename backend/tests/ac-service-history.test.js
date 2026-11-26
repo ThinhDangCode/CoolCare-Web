@@ -28,6 +28,9 @@ test('AC service history repository scopes access and sorts completed visits new
     queryable: { async query(sql, params) { queries.push({ sql, params }); return { rows: [] } } },
   })
   await repository.findAccessibleUnit(userId, requestId, unitId)
+  await repository.countHistory(
+    { unit_id: unitId, customer_id: 'customer-id', booking_id: 'current-booking' },
+  )
   await repository.findHistory(
     { unit_id: unitId, customer_id: 'customer-id', booking_id: 'current-booking' },
     { limit: 20, offset: 0 },
@@ -36,9 +39,13 @@ test('AC service history repository scopes access and sorts completed visits new
   assert.match(queries[0].sql, /bt\.id=\$2/)
   assert.match(queries[0].sql, /current_unit\.id=\$3/)
   assert.match(queries[0].sql, /bt\.status IN \('SELECTED','ACCEPTED'\)/)
-  assert.match(queries[1].sql, /history_booking\.customer_id=\$2/)
-  assert.match(queries[1].sql, /history_booking\.status='COMPLETED'/)
-  assert.match(queries[1].sql, /q\.quotation_type='ADDITIONAL'/)
-  assert.match(queries[1].sql, /q\.status='ACCEPTED'/)
-  assert.match(queries[1].sql, /completed_at DESC NULLS LAST/)
+  for (const query of queries.slice(1)) {
+    assert.match(query.sql, /history_booking\.customer_id=\$2/)
+    assert.match(query.sql, /history_booking\.service_location_id = \(SELECT service_location_id/)
+    assert.doesNotMatch(query.sql, /history_booking\.customer_address_id/)
+    assert.match(query.sql, /history_booking\.status='COMPLETED'/)
+  }
+  assert.match(queries[2].sql, /q\.quotation_type='ADDITIONAL'/)
+  assert.match(queries[2].sql, /q\.status='ACCEPTED'/)
+  assert.match(queries[2].sql, /completed_at DESC NULLS LAST/)
 })
