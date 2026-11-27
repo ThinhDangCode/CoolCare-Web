@@ -2,9 +2,9 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { validateVoucherInput } from '../src/modules/vouchers/voucher.validation.js'
 import { validateCompensationVoucher } from '../src/modules/complaints/complaint.validation.js'
-import { voucherFitsBooking } from '../src/modules/vouchers/voucher-policy.js'
+import { voucherFitsBooking, assertPaymentVoucherMargin } from '../src/modules/vouchers/voucher-policy.js'
 import { VoucherRepository } from '../src/modules/vouchers/voucher.repository.js'
-import { ensureVoucherMarginGuard } from '../src/config/database.js'
+import { readFileSync } from 'node:fs'
 
 const voucher = (overrides = {}) => ({
   code: 'SAVE50K',
@@ -87,27 +87,18 @@ test('admin cannot lower voucher limit below used and reserved slots', async () 
   assert.equal(updated, false)
 })
 
-test('backend startup installs the voucher margin guard only when missing', async () => {
-  for (const installed of [false, true]) {
-    const statements = []
-    await ensureVoucherMarginGuard(async work => work({
-      query: async sql => {
-        statements.push(sql)
-        if (sql.includes('SELECT EXISTS')) return { rows: [{ installed }] }
-        return { rowCount: 1 }
-      },
-    }))
-    const constraint = statements.find(sql => sql.includes('ADD CONSTRAINT'))
-    assert.equal(Boolean(constraint), !installed)
-    if (constraint) {
-      assert.match(constraint, /platform_discount_amount <= 50000/)
-      assert.match(constraint, /commission_base_amount \* 0\.20/)
-      assert.match(constraint, /platform_discount_amount <= commission_amount/)
-      assert.match(constraint, /NOT VALID/)
-    }
-    const deactivation = statements.find(sql => sql.includes('UPDATE vouchers'))
-    assert.match(deactivation, /v\.discount_value > 20/)
-    assert.match(deactivation, /v\.discount_value > 50000/)
-    assert.match(deactivation, /vu\.status = 'RESERVED'/)
-  }
+test('payment snapshot preserves voucher margin without schema changes', () => {
+  const payment = { platform_discount_amount: '50000.00', commission_base_amount: '250000.00', commission_amount: '50000.00' }
+  assert.doesNotThrow(() => assertPaymentVoucherMargin(payment))
+  assert.doesNotThrow(() => assertPaymentVoucherMargin({ platform_discount_amount: 0 }))
+  for (const overrides of [
+    { platform_discount_amount: 50001 }, { commission_base_amount: 249999 },
+    { commission_amount: 49999 }, { commission_amount: null }, { commission_base_amount: null },
+  ]) assert.throws(() => assertPaymentVoucherMargin({ ...payment, ...overrides }), { code: 'VOUCHER_NOT_ELIGIBLE' })
+})
+
+test('startup does not modify the schema or automatically rewrite voucher policy data', () => {
+  const source = ['../src/config/database.js', '../src/server.js'].map(path =>
+    readFileSync(new URL(path, import.meta.url), 'utf8')).join('\n')
+  assert.doesNotMatch(source, /ALTER TABLE|CREATE INDEX|CREATE TABLE|UPDATE vouchers|ensureServiceLocationKeys|ensureVoucherMarginGuard/i)
 })

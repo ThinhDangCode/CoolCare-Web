@@ -1,4 +1,5 @@
 import { pool } from '../../config/database.js'
+import { sameServiceLocation } from '../customer-bookings/service-location.sql.js'
 
 const sameUnit = `history_unit.ac_brand_id IS NOT DISTINCT FROM current_unit.ac_brand_id
   AND history_unit.ac_model_id IS NOT DISTINCT FROM current_unit.ac_model_id`
@@ -33,9 +34,11 @@ export class AcServiceHistoryRepository {
       FROM booking_units current_unit
       JOIN booking_units history_unit ON ${sameUnit}
       JOIN bookings history_booking ON history_booking.id=history_unit.booking_id
+      JOIN bookings current_booking ON current_booking.id=current_unit.booking_id
+        AND current_booking.id=$3 AND current_booking.customer_id=$2
       WHERE current_unit.id=$1 AND history_booking.customer_id=$2
         AND current_unit.ac_brand_id IS NOT NULL AND current_unit.ac_model_id IS NOT NULL
-        AND history_booking.service_location_id = (SELECT service_location_id FROM bookings WHERE id=$3)
+        AND ${sameServiceLocation('history_booking', 'current_booking', 'service_address')}
         AND history_booking.id<>$3 AND history_booking.status='COMPLETED'`,
     [context.unit_id, context.customer_id, context.booking_id])
     return result.rows[0]?.total ?? 0
@@ -71,6 +74,8 @@ export class AcServiceHistoryRepository {
       FROM booking_units current_unit
       JOIN booking_units history_unit ON ${sameUnit}
       JOIN bookings history_booking ON history_booking.id=history_unit.booking_id
+      JOIN bookings current_booking ON current_booking.id=current_unit.booking_id
+        AND current_booking.id=$3 AND current_booking.customer_id=$2
       LEFT JOIN ac_brands ab ON ab.id=history_unit.ac_brand_id
       LEFT JOIN ac_models am ON am.id=history_unit.ac_model_id
       LEFT JOIN LATERAL (
@@ -84,7 +89,7 @@ export class AcServiceHistoryRepository {
       ) technician_user ON TRUE
       WHERE current_unit.id=$1 AND history_booking.customer_id=$2
         AND current_unit.ac_brand_id IS NOT NULL AND current_unit.ac_model_id IS NOT NULL
-        AND history_booking.service_location_id = (SELECT service_location_id FROM bookings WHERE id=$3)
+        AND ${sameServiceLocation('history_booking', 'current_booking', 'service_address')}
         AND history_booking.id<>$3 AND history_booking.status='COMPLETED'
       ORDER BY history_booking.completed_at DESC NULLS LAST,history_booking.updated_at DESC,history_booking.id DESC
       LIMIT $4 OFFSET $5`,

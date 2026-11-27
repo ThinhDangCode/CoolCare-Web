@@ -2,6 +2,7 @@ import { AppError, validateUuid } from '../../utils.js'
 import { withTransaction } from '../../config/database.js'
 import { validateCreateBookingBody } from './customer-booking.validation.js'
 import { CustomerBookingRepository } from './customer-booking.repository.js'
+import { sameServiceLocation } from './service-location.sql.js'
 
 export class CustomerBookingService {
   constructor(repository = new CustomerBookingRepository()) {
@@ -64,7 +65,9 @@ export class CustomerBookingService {
         if (unit.acModelId) {
           const previous = await db.query(`SELECT 1 FROM bookings b
             JOIN booking_units bu ON bu.booking_id=b.id
-            WHERE b.customer_id=$1 AND b.customer_address_id=$2
+            JOIN customer_addresses selected_address ON selected_address.id=$2
+              AND selected_address.customer_id=b.customer_id
+            WHERE b.customer_id=$1 AND ${sameServiceLocation('b', 'selected_address')}
               AND b.status='COMPLETED' AND bu.ac_brand_id=$3 AND bu.ac_model_id=$4 LIMIT 1`,
             [customer.id,address.id,unit.acBrandId,unit.acModelId])
           if (!previous.rowCount) throw new AppError(422, 'AC_MODEL_NOT_PREVIOUSLY_CONFIRMED',

@@ -5,6 +5,7 @@ import { authenticate, requireRole } from '../../middleware/authenticate.js'
 import { asyncHandler, AppError, validateUuid } from '../../utils.js'
 import { withTransaction } from '../../config/database.js'
 import { reconcileBookingPayment } from './payment-expiry.worker.js'
+import { assertPaymentVoucherMargin } from '../vouchers/voucher-policy.js'
 
 const router = Router()
 
@@ -612,6 +613,8 @@ router.post(
           ]
         )
       ).rows[0]
+
+      assertPaymentVoucherMargin(row)
 
       if (code === 'FREE') {
         return await succeed(

@@ -98,14 +98,14 @@ export class AddressRepository {
     return result.rows
   }
 
-  async findById(addressId, customerId, queryable = pool) {
+  async findById(addressId, customerId, queryable = pool, { forUpdate = false } = {}) {
     const result = await queryable.query(
       `
         SELECT ${ADDRESS_FIELDS}
         FROM customer_addresses
         WHERE id = $1
           AND customer_id = $2
-        LIMIT 1
+        LIMIT 1 ${forUpdate ? 'FOR UPDATE' : ''}
       `,
       [addressId, customerId]
     )
@@ -240,11 +240,19 @@ export class AddressRepository {
 
   async delete(addressId, customerId) {
     return withTransaction(async (client) => {
-      const existing = await this.findById(addressId, customerId, client)
+      const existing = await this.findById(addressId, customerId, client, { forUpdate: true })
 
       if (!existing) {
         return null
       }
+
+      // Keep the existing FK and immutable booking address fields. The nullable
+      // reference is cleared only when its owner requests address deletion.
+      await client.query(
+        `UPDATE bookings SET customer_address_id = NULL
+         WHERE customer_address_id = $1 AND customer_id = $2`,
+        [addressId, customerId]
+      )
 
       await client.query(
         `
