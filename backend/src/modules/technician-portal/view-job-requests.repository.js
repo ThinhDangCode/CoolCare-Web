@@ -3,7 +3,7 @@ import { pool } from '../../config/database.js'
 const effectiveStatus = `CASE
   WHEN b.status=9 AND bt.status=2 THEN 'COMPLETED'
   WHEN b.status=10 AND bt.status IN (1,2) THEN 'CANCELLED'
-  WHEN bt.status=1 AND COALESCE(bt.expires_at,bt.requested_at+INTERVAL '10 minutes')<=CURRENT_TIMESTAMP
+  WHEN bt.status=1 AND (b.scheduled_at<=clock_timestamp() OR COALESCE(bt.expires_at,bt.requested_at+INTERVAL '10 minutes')<=clock_timestamp())
     THEN 'EXPIRED'
   ELSE CASE bt.status
     WHEN 0 THEN 'RECOMMENDED' WHEN 1 THEN 'SELECTED' WHEN 2 THEN 'ACCEPTED'
@@ -17,9 +17,9 @@ const closedStatuses = `('DECLINED','EXPIRED','CANCELLED')`
 // The accepted assignment remains ACCEPTED throughout travel and work.
 // Display-only filters split the technician list using the existing ARRIVED journal event.
 const hasArrived = `EXISTS (SELECT 1 FROM booking_status_history bsh
-  WHERE bsh.booking_id=b.id AND bsh.note=$$COOLCARE_TRAVEL_V1:{"event":"ARRIVED"}$$)`
+  WHERE bsh.booking_id=b.id AND bsh.created_at>=bt.responded_at AND bsh.note=$$COOLCARE_TRAVEL_V1:{"event":"ARRIVED"}$$)`
 const hasDeparted = `EXISTS (SELECT 1 FROM booking_status_history bsh
-  WHERE bsh.booking_id=b.id AND bsh.note=$$COOLCARE_TRAVEL_V1:{"event":"DEPARTED"}$$)`
+  WHERE bsh.booking_id=b.id AND bsh.created_at>=bt.responded_at AND bsh.note=$$COOLCARE_TRAVEL_V1:{"event":"DEPARTED"}$$)`
 const statusFilter = `(
   $2::varchar IS NULL
   OR ($2='HISTORY' AND ${effectiveStatus} IN ${historyStatuses})

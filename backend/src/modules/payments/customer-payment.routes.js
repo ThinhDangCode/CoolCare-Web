@@ -1,3 +1,4 @@
+import { assertTechnicianNotPenaltyLocked } from '../technicians/technician.points.js'
 import { Router } from 'express'
 import { randomUUID, createHmac, timingSafeEqual } from 'node:crypto'
 import { authenticate, requireRole } from '../../middleware/authenticate.js'
@@ -92,6 +93,7 @@ async function owned(db, userId, bookingId) {
 }
 
 async function assigned(db, userId, bookingId) {
+  await assertTechnicianNotPenaltyLocked(userId, db)
   const r = await db.query(`SELECT b.* FROM bookings b
     JOIN booking_technicians bt ON bt.booking_id=b.id
     JOIN technician_profiles tp ON tp.id=bt.technician_id
@@ -657,6 +659,7 @@ router.get(
     const id = validateUuid(req.params.bookingId)
 
     const data = await withTransaction(async (db) => {
+      await assertTechnicianNotPenaltyLocked(req.auth.userId, db)
       const r = await db.query(
         `SELECT
            p.id,
@@ -733,6 +736,7 @@ router.post(
     const id = validateUuid(req.params.paymentId)
 
     const data = await withTransaction(async (db) => {
+      await assertTechnicianNotPenaltyLocked(req.auth.userId, db)
       const p = await attempt(db, id)
 
       const tech = (

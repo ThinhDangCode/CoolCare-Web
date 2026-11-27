@@ -89,6 +89,9 @@ export class TechnicianMatchingService {
   }
 
   validateRecommendationStatus(booking) {
+    if (booking.status === 'CANCELLED' && new Date(booking.scheduled_at).getTime() <= Date.now()) {
+      throw new AppError(409, 'BOOKING_SCHEDULE_EXPIRED', 'Đã hết giờ hẹn. Vui lòng đặt lịch mới.')
+    }
     if (booking.status !== 'PENDING') {
       throw new AppError(
         409,
@@ -248,6 +251,7 @@ export class TechnicianMatchingService {
     const validTechnicianId =
       this.validateTechnicianId(technicianId)
 
+    await reconcileTechnicianRequest(validUserId, validBookingId)
     return withTransaction(async (db) => {
       // 1. Lock booking and verify customer ownership.
       const booking =
@@ -303,9 +307,11 @@ export class TechnicianMatchingService {
         FROM bookings b JOIN customer_profiles cp ON cp.id=b.customer_id
         JOIN booking_technicians bt ON bt.booking_id=b.id
         WHERE cp.user_id=$1 AND bt.technician_id=$2
+          AND bt.status='CANCELLED'
+          AND (bt.cancellation_reason LIKE 'Khách hủy:%' OR bt.cancellation_reason='Customer cancelled booking')
           AND b.status='CANCELLED' AND b.cancelled_by_id=$1
           AND b.cancelled_at >= NOW() - INTERVAL '7 days'
-          AND b.cancellation_reason NOT LIKE '[LATE_TECHNICIAN]%'`,
+          AND b.cancellation_reason NOT LIKE '[LATE_TECHNICIAN]%' AND b.cancellation_reason NOT LIKE '[TECHNICIAN_UNAVAILABLE]%'`,
         [validUserId,validTechnicianId])
       if (targeted.rows[0].total >= 3) throw new AppError(429,
         'TECHNICIAN_REQUEST_RATE_LIMIT',
@@ -362,6 +368,8 @@ export class TechnicianMatchingService {
           validTechnicianId,
           db
         )
+
+      if (!request) throw new AppError(409, 'BOOKING_SCHEDULE_EXPIRED', 'Đã hết giờ hẹn. Vui lòng đặt lịch mới.')
 
       // 7. Change the booking status.
       // This does not accept the job.

@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { pool, withTransaction } from '../../config/database.js'
 import { AppError } from '../../utils.js'
+import { remainingPointsSql } from '../technicians/technician.points.js'
 
 const userSelect = `
   SELECT u.id,
@@ -24,7 +25,10 @@ const userSelect = `
            SELECT 1
            FROM technician_profiles tp
            WHERE tp.user_id = u.id AND tp.verification_status = 'VERIFIED'
-         ) AS is_technician_verified
+         ) AS is_technician_verified,
+         EXISTS (SELECT 1 FROM technician_profiles tp
+           WHERE tp.user_id=u.id AND ${remainingPointsSql('tp.id')}=0
+         ) AS technician_penalty_locked
   FROM users u
   JOIN roles r ON r.id = u.role_id
   LEFT JOIN customer_profiles cp ON cp.user_id = u.id

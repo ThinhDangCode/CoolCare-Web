@@ -73,7 +73,7 @@ test('Set Availability Status routes require a customer token and pass only vali
   }
   const app = express()
   app.use(express.json())
-  app.use('/portal', createTechnicianPortalRouter(repository))
+  app.use('/portal', createTechnicianPortalRouter(repository, undefined, undefined, undefined, undefined, undefined, (_req, _res, next) => next()))
   app.use(errorHandler)
   const server = app.listen(0, '127.0.0.1')
   await new Promise((resolve) => server.once('listening', resolve))

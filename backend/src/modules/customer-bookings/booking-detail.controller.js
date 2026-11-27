@@ -1,5 +1,5 @@
 import { BookingDetailService } from './booking-detail.service.js'
-import { reconcileExpiredRequests } from './reconcile-technician-request.js'
+import { reconcileTechnicianRequest } from './reconcile-technician-request.js'
 
 export class BookingDetailController {
   constructor(service = new BookingDetailService()) {
@@ -7,7 +7,7 @@ export class BookingDetailController {
   }
 
   getDetail = async (req, res) => {
-    await reconcileExpiredRequests()
+    await reconcileTechnicianRequest(req.auth?.userId, req.params.bookingId)
     return res.status(200).json({
       data: await this.service.detail(req.auth?.userId, req.params.bookingId),
     })

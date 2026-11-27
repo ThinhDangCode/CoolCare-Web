@@ -13,7 +13,7 @@ export function buildTechnicianStatisticsSql(sources = {}) {
     payments: 'SELECT id,booking_id,technician_id,payment_status,settled_at,technician_earning FROM payments',
     reviews: 'SELECT id,technician_id,status,rating,created_at FROM reviews',
     complaints: 'SELECT id,technician_id,status,created_at FROM complaints',
-    penalties: 'SELECT id,technician_id,applied_at FROM technician_penalties',
+    penalties: 'SELECT id,technician_id,applied_at,penalty_points,status FROM technician_penalties',
     ...sources,
   }
   return `WITH
@@ -28,7 +28,8 @@ export function buildTechnicianStatisticsSql(sources = {}) {
     ),
     technicians AS (
       SELECT t.*,u.full_name,u.email,u.phone,u.avatar_url,u.status AS account_status,
-        CASE WHEN u.status='LOCKED' THEN 'LOCKED'
+        CASE WHEN u.status='LOCKED' OR COALESCE((SELECT SUM(p.penalty_points) FROM source_penalties p
+          WHERE p.technician_id=t.id AND p.status<>2),0)>=12 THEN 'LOCKED'
           WHEN u.status='ACTIVE' AND t.is_active THEN 'ACTIVE' ELSE 'INACTIVE' END AS status
       FROM source_technicians t JOIN source_users u ON u.id=t.user_id
     ),

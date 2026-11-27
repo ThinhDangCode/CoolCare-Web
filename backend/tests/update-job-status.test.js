@@ -30,7 +30,7 @@ function fixture({ requestStatus = 'ACCEPTED', bookingStatus = 'ACCEPTED', depar
           id: 'technician-id', user_id: userId, verification_status: 'VERIFIED',
           is_active: true, account_status: 'ACTIVE',
         }] }
-        if (sql.includes('FROM booking_technicians bt')) return { rows: [{
+        if (sql.includes('FROM booking_technicians bt') && sql.includes('FOR UPDATE OF bt,b')) return { rows: [{
           id: requestId, booking_id: 'booking-id', status: requestStatus,
           booking_status: bookingStatus, booking_code: 'BK-001', customer_user_id: 'customer-id',
         }] }
@@ -115,7 +115,7 @@ test('Update Job Status API enforces auth and returns WAITING_CONFIRMATION', asy
   })
   const app = express()
   app.use(express.json())
-  app.use('/portal', createTechnicianPortalRouter({}, {}, {}, service))
+  app.use('/portal', createTechnicianPortalRouter({}, {}, {}, service, undefined, undefined, (_req, _res, next) => next()))
   app.use(errorHandler)
   const server = app.listen(0, '127.0.0.1')
   await new Promise((resolve) => server.once('listening', resolve))

@@ -97,11 +97,12 @@ test('acceptance creates one linked technician penalty; rejection and drafts do 
       await assert.rejects(repository.resolve(rollback.id, decision, actor.id), /Simulated penalty insert failure/)
       assert.equal((await client.query('SELECT status FROM complaints WHERE id=$1', [rollback.id])).rows[0].status, 'IN_PROGRESS')
       failPenalty = false
+      const beforeExhaustion = (await client.query('SELECT u.status FROM users u JOIN technician_profiles t ON t.user_id=u.id WHERE t.id=$1', [booking.technician_id])).rows[0].status
       const exhausted = await complaint()
       const exhaustedResult = await repository.resolve(exhausted.id, { ...decision, penalty_points: 12 }, actor.id)
       assert.equal(exhaustedResult.remaining_points, 0)
       const account = (await client.query(`SELECT u.status,t.is_active,t.availability_status FROM technician_profiles t JOIN users u ON u.id=t.user_id WHERE t.id=$1`, [booking.technician_id])).rows[0]
-      assert.equal(account.status, 'LOCKED')
+      assert.equal(account.status, beforeExhaustion, 'Penalty must not change the shared user account')
       assert.equal(account.is_active, false)
       assert.equal(account.availability_status, 'OFFLINE')
       const activeBefore = (await client.query(`SELECT ${activePointsSql('$1')} AS points`, [booking.technician_id])).rows[0].points

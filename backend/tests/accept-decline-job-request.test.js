@@ -163,7 +163,7 @@ test('response API requires CUSTOMER auth, validates IDs, and returns the new st
   })
   const app = express()
   app.use(express.json())
-  app.use('/portal', createTechnicianPortalRouter({}, {}, responseService))
+  app.use('/portal', createTechnicianPortalRouter({}, {}, responseService, undefined, undefined, undefined, (_req, _res, next) => next()))
   app.use(errorHandler)
   const server = app.listen(0, '127.0.0.1')
   await new Promise((resolve) => server.once('listening', resolve))

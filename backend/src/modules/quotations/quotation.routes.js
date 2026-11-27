@@ -1,3 +1,4 @@
+import { assertTechnicianNotPenaltyLocked } from '../technicians/technician.points.js'
 import { Router } from 'express'
 import { authenticate, requireRole } from '../../middleware/authenticate.js'
 import { asyncHandler, AppError, validateUuid } from '../../utils.js'
@@ -46,6 +47,7 @@ function checkInput(body, type) {
 }
 
 async function technicianBooking(db, userId, bookingId) {
+  await assertTechnicianNotPenaltyLocked(userId, db)
   const result = await db.query(`SELECT b.id,b.status,bt.technician_id,cp.user_id AS customer_user_id
     FROM bookings b JOIN booking_technicians bt ON bt.booking_id=b.id AND bt.status='ACCEPTED'
     JOIN technician_profiles tp ON tp.id=bt.technician_id

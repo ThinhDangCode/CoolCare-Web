@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { authenticate, requireRole } from '../../middleware/authenticate.js'
 import { asyncHandler } from '../../utils.js'
+import { requireTechnicianNotPenaltyLocked } from '../technicians/technician.points.js'
 import { TechnicianPortalRepository } from './technician-portal.repository.js'
 import {
   validateCertificationIdentity,
@@ -25,9 +26,10 @@ export function createTechnicianPortalRouter(
   updateJobStatusService = new UpdateJobStatusService(),
   cancelAcceptedJobService = new CancelAcceptedJobService(),
   acServiceHistoryService = new AcServiceHistoryService(),
+  penaltyGuard = requireTechnicianNotPenaltyLocked,
 ) {
   const router = Router()
-  router.use(authenticate, requireRole('CUSTOMER'))
+  router.use(authenticate, requireRole('CUSTOMER'), penaltyGuard)
 
   router.get('/dashboard', asyncHandler(async (request, response) => {
     response.set('Cache-Control', 'no-store').json({ data: await repository.dashboard(request.auth.userId) })

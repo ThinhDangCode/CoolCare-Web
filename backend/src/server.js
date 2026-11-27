@@ -1,10 +1,11 @@
 import { createServer } from 'node:http'
 import { Server } from 'socket.io'
 import { app, setAuthSocketServer } from './app.js'
-import { ensureServiceLocationKeys, ensureVoucherMarginGuard, pool, verifyDatabaseConnection } from './config/database.js'
+import { ensureVoucherMarginGuard, pool, verifyDatabaseConnection } from './config/database.js'
 import { env, validateRuntimeEnv } from './config/env.js'
 import { configureChatSocket } from './modules/chat/chat.socket.js'
 import { setChatIo } from './modules/chat/chat.routes.js'
+import { warnLateArrivals } from './modules/customer-bookings/late-arrival-warning.js'
 import { reconcileExpiredRequests } from './modules/customer-bookings/reconcile-technician-request.js'
 import { startInvoiceEmailWorker } from './modules/invoices/invoice.routes.js'
 import { startWeeklySettlementWorker } from './modules/settlements/weekly-settlement.worker.js'
@@ -16,12 +17,14 @@ import { startMaintenanceReminderWorker } from './modules/maintenance-reminders/
 async function start() {
   validateRuntimeEnv()
   await verifyDatabaseConnection()
-  await ensureServiceLocationKeys()
   await ensureVoucherMarginGuard()
 
+  await reconcileExpiredRequests()
+  await warnLateArrivals()
   const expiryTimer = setInterval(() => {
     reconcileExpiredRequests().catch(error =>
       console.error('Technician request expiry reconciliation failed', error))
+    warnLateArrivals().catch(error => console.error('Late arrival warning failed', error))
   }, 60_000)
   expiryTimer.unref()
   const invoiceEmailTimer = startInvoiceEmailWorker()

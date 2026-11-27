@@ -1,5 +1,6 @@
 
 import { pool } from '../../config/database.js'
+import { remainingPointsSql } from '../technicians/technician.points.js'
 
 export const RECOMMENDATION_LIMIT = 50
 
@@ -268,6 +269,7 @@ export class TechnicianMatchingRepository {
 
           WHERE u.status = 'ACTIVE'
 
+            AND tp.is_active AND ${remainingPointsSql('tp.id')}>0
             AND can_recommend_technician(tp.id)
             AND COALESCE(wallet.settlement_balance, 0) > -1000000
             AND NOT EXISTS (
@@ -462,9 +464,9 @@ export class TechnicianMatchingRepository {
           requested_at,
           expires_at
         )
-        SELECT $1,$2,'SELECTED',CURRENT_TIMESTAMP,
-          LEAST(CURRENT_TIMESTAMP+INTERVAL '10 minutes',b.scheduled_at)
-        FROM bookings b WHERE b.id=$1
+        SELECT $1,$2,'SELECTED',statement_timestamp(),
+          LEAST(statement_timestamp()+INTERVAL '10 minutes',b.scheduled_at)
+        FROM bookings b WHERE b.id=$1 AND b.status=0 AND b.scheduled_at>statement_timestamp()
         RETURNING
           id,
           booking_id,
@@ -495,7 +497,7 @@ export class TechnicianMatchingRepository {
           status = 'TECHNICIAN_SELECTED',
           updated_at = CURRENT_TIMESTAMP
         WHERE id = $1
-          AND status = 'PENDING'
+          AND status = 'PENDING' AND scheduled_at > clock_timestamp()
         RETURNING
           id,
           booking_code,

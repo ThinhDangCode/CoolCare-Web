@@ -2,6 +2,7 @@ import { isVerifiedTechnician, isActiveAccount } from './technician-status.js'
 import { withTransaction } from '../../config/database.js'
 import { AppError } from '../../utils.js'
 import { debtTier } from '../technician-wallet/debt-policy.js'
+import { remainingPointsSql } from '../technicians/technician.points.js'
 
 export class AcceptDeclineJobRequestRepository {
   constructor({ transaction = withTransaction } = {}) {
@@ -38,7 +39,7 @@ export class AcceptDeclineJobRequestRepository {
 
       const requestResult = await client.query(
         `SELECT bt.id,bt.booking_id,bt.status,bt.expires_at,
-                (COALESCE(bt.expires_at,bt.requested_at+INTERVAL '10 minutes')<=CURRENT_TIMESTAMP) AS expired,
+                (COALESCE(bt.expires_at,bt.requested_at+INTERVAL '10 minutes')<=clock_timestamp()) AS expired,
                 b.status AS booking_status,b.scheduled_at,
                 b.booking_code,cp.user_id AS customer_user_id
          FROM booking_technicians bt
@@ -115,7 +116,7 @@ export class AcceptDeclineJobRequestRepository {
     }
 
     const eligibility = await client.query(
-      'SELECT can_recommend_technician($1) AS allowed',
+      `SELECT (can_recommend_technician($1) AND ${remainingPointsSql('$1')}>0) AS allowed`,
       [technician.id],
     )
     if (!eligibility.rows[0]?.allowed) {
@@ -124,8 +125,9 @@ export class AcceptDeclineJobRequestRepository {
 
     const assignment = await client.query(
       `UPDATE booking_technicians
-       SET status='ACCEPTED',responded_at=CURRENT_TIMESTAMP,decline_reason=NULL
+       SET status='ACCEPTED',responded_at=clock_timestamp(),decline_reason=NULL
        WHERE id=$1 AND technician_id=$2 AND status='SELECTED'
+         AND COALESCE(expires_at,requested_at+INTERVAL '10 minutes')>clock_timestamp()
        RETURNING id,booking_id,status,responded_at`,
       [jobRequest.id, technician.id],
     )
@@ -133,7 +135,7 @@ export class AcceptDeclineJobRequestRepository {
 
     const booking = await client.query(
       `UPDATE bookings SET status='ACCEPTED',updated_at=CURRENT_TIMESTAMP
-       WHERE id=$1 AND status='TECHNICIAN_SELECTED'
+       WHERE id=$1 AND status='TECHNICIAN_SELECTED' AND scheduled_at>clock_timestamp()
        RETURNING id,booking_code,status,updated_at`,
       [jobRequest.booking_id],
     )
@@ -157,8 +159,9 @@ export class AcceptDeclineJobRequestRepository {
   async _decline(client, technician, jobRequest, reason) {
     const assignment = await client.query(
       `UPDATE booking_technicians
-       SET status='DECLINED',responded_at=CURRENT_TIMESTAMP,decline_reason=$3
+       SET status='DECLINED',responded_at=clock_timestamp(),decline_reason=$3
        WHERE id=$1 AND technician_id=$2 AND status='SELECTED'
+         AND COALESCE(expires_at,requested_at+INTERVAL '10 minutes')>clock_timestamp()
        RETURNING id,booking_id,status,responded_at,decline_reason`,
       [jobRequest.id, technician.id, reason],
     )
@@ -167,8 +170,8 @@ export class AcceptDeclineJobRequestRepository {
     // A decline closes only this technician request, not the customer's booking.
     // The customer can select another technician without creating a new booking.
     const booking = await client.query(
-      `UPDATE bookings SET status='PENDING',updated_at=CURRENT_TIMESTAMP
-       WHERE id=$1 AND status='TECHNICIAN_SELECTED'
+      `UPDATE bookings SET status='PENDING',updated_at=clock_timestamp()
+       WHERE id=$1 AND status='TECHNICIAN_SELECTED' AND scheduled_at>clock_timestamp()
        RETURNING id,booking_code,status,updated_at`,
       [jobRequest.booking_id],
     )
