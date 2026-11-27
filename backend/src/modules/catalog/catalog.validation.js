@@ -53,7 +53,12 @@ export function validateInput(kind, body, partial = false) {
   if (!body || typeof body !== 'object' || Array.isArray(body))
     throw new AppError(422, 'VALIDATION_ERROR', 'Dữ liệu không hợp lệ.')
   for (const key of Object.keys(body))
-    if (!resources[kind].fields.includes(key)) errors[key] = 'Trường không được hỗ trợ.'
+    if (!resources[kind].fields.includes(key) && !(partial && key === 'expected_updated_at')) errors[key] = 'Trường không được hỗ trợ.'
+  if (partial && body.expected_updated_at !== undefined) {
+    if (typeof body.expected_updated_at !== 'string' || !Number.isFinite(Date.parse(body.expected_updated_at)))
+      errors.expected_updated_at = 'Refresh this item before editing.'
+    else output.expected_updated_at = body.expected_updated_at
+  }
   for (const key of resources[kind].fields) {
     let value = body[key]
     if (value === undefined) {
@@ -128,7 +133,7 @@ export function validateInput(kind, body, partial = false) {
       errors[key] = 'Nhập số nguyên dương hoặc để trống.'
     output[key] = value
   }
-  if (partial && !Object.keys(output).length) errors.body = 'Không có dữ liệu cần cập nhật.'
+  if (partial && !Object.keys(output).some(key => key !== 'expected_updated_at')) errors.body = 'Không có dữ liệu cần cập nhật.'
   requireValidBody(errors)
   return output
 }

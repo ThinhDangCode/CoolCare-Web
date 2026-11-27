@@ -349,7 +349,7 @@ export class TechnicianPortalRepository {
 
   async addCertification(userId, input) {
     const technician = await this.profile(userId)
-    return withTransaction(async (client) => {
+    return this.transaction(async (client) => {
       await this._ensureUniqueCertification(client, input)
       const certificateId = randomUUID()
       await client.query(
@@ -374,7 +374,7 @@ export class TechnicianPortalRepository {
   async resubmitCertification(userId, certificateId, input) {
     validateCertificationId(certificateId)
     const technician = await this.profile(userId)
-    return withTransaction(async (client) => {
+    return this.transaction(async (client) => {
       const current = await client.query(
         `SELECT id, verification_status FROM technician_certifications
          WHERE id=$1 AND technician_id=$2 FOR UPDATE`,

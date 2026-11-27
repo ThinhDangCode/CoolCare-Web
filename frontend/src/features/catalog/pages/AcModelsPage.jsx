@@ -192,8 +192,8 @@ export function AcModelsPage() {
       })
       setNotice(
         dialog.row.is_active
-          ? 'Đã vô hiệu hóa model. Booking lịch sử được giữ nguyên.'
-          : 'Đã kích hoạt model.'
+          ? 'AC model deactivated. Existing booking history is preserved.'
+          : 'AC model activated.'
       )
       close()
       reload()
@@ -247,7 +247,7 @@ export function AcModelsPage() {
       <section className="models-content">
         {notice && (
           <div className="catalog-notice" role="status" {...noticeHover}>
-            {notice}
+            {t(notice)}
             <button aria-label="Dismiss notification" onClick={() => setNotice('')}>
               ×
             </button>
@@ -496,7 +496,7 @@ export function AcModelsPage() {
             onBusyChange={setBusy}
             onSaved={() => {
               close()
-              setNotice('Đã cập nhật model.')
+              setNotice('AC model updated.')
               reload()
             }}
           />
@@ -627,7 +627,7 @@ function AcModelForm({ row, onCancel, onSaved, onBusyChange }) {
     try {
       await catalogRequest(`/models${row ? `/${row.id}` : ''}`, token, {
         method: row ? 'PATCH' : 'POST',
-        body,
+        body: { ...body, ...(row?.updated_at ? { expected_updated_at: row.updated_at } : {}) },
       })
       onSaved()
     } catch (error) {

@@ -160,7 +160,7 @@ export function CatalogPage() {
       <section className="catalog-content">
         {notice && (
           <div className="catalog-notice" role="status" {...noticeHover}>
-            ✓ {notice}
+            ✓ {t(notice)}
             <button aria-label="Dismiss notification" onClick={() => setNotice('')}>
               ×
             </button>
@@ -484,7 +484,7 @@ export function CatalogPage() {
             onBusyChange={setBusy}
             onSaved={() => {
               close()
-              setNotice('Đã cập nhật thành công.')
+              setNotice('Item updated successfully.')
               setLoading(true)
               setRefresh((value) => value + 1)
             }}
@@ -535,7 +535,7 @@ export function CatalogPage() {
                   dialog.type === 'delete'
                     ? { method: 'DELETE' }
                     : { method: 'PATCH', body: { is_active: !dialog.row.is_active } },
-                  dialog.type === 'delete' ? 'Đã xóa danh mục.' : 'Đã cập nhật trạng thái.'
+                  dialog.type === 'delete' ? 'Item moved to Trash.' : 'Status updated successfully.'
                 )
               }
             >
@@ -698,7 +698,7 @@ export function CatalogForm({ kind, row, token, onCancel, onSaved, onBusyChange 
       }
       await catalogRequest(`/${kind}${row ? `/${row.id}` : ''}`, token, {
         method: row ? 'PATCH' : 'POST',
-        body,
+        body: { ...body, ...(row?.updated_at ? { expected_updated_at: row.updated_at } : {}) },
       })
       onSaved()
     } catch (error) {

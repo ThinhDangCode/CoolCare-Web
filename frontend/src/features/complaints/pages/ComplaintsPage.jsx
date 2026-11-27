@@ -98,7 +98,7 @@ export function ComplaintsPage() {
   async function resolve(event) {
     event.preventDefault()
     if (resolution.trim().length < 10) {
-      setFieldError('Nội dung xử lý phải có ít nhất 10 ký tự.')
+      setFieldError('Resolution notes must contain at least 10 characters.')
       return
     }
     setBusy(true)
@@ -368,6 +368,9 @@ export function ComplaintsPage() {
               <label className="full">
                 {t('Resolution notes')} *
                 <textarea
+                  aria-invalid={Boolean(fieldError)}
+                  aria-describedby={fieldError ? 'complaint-list-resolution-error' : undefined}
+                  maxLength={5000}
                   placeholder={t('Describe the investigation, decision, and action taken...')}
                   value={resolution}
                   onChange={(e) => {
@@ -375,7 +378,11 @@ export function ComplaintsPage() {
                     setFieldError('')
                   }}
                 />
-                <small>{fieldError}</small>
+                {fieldError && (
+                  <span id="complaint-list-resolution-error" role="alert" className="figma-form-error">
+                    {t(fieldError)}
+                  </span>
+                )}
               </label>
             </div>
             {error && <div className="figma-form-error">{error}</div>}

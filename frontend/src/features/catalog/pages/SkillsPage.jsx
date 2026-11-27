@@ -143,7 +143,7 @@ function SkillForm({ row, onCancel, onSaved, onBusyChange }) {
     try {
       await catalogRequest(`/skills${row ? `/${row.id}` : ''}`, token, {
         method: row ? 'PATCH' : 'POST',
-        body: { ...values, name: values.name.trim() },
+        body: { ...values, name: values.name.trim(), ...(row?.updated_at ? { expected_updated_at: row.updated_at } : {}) },
       })
       onSaved(row ? 'Skill updated successfully.' : 'Skill created successfully.')
     } catch (err) {

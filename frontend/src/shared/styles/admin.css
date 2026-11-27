@@ -1622,6 +1622,9 @@
   font-size: 11px;
   font-weight: 700;
 }
+.complaint-resolution-dialog-body > label > .figma-form-error {
+  margin: 0;
+}
 .complaint-resolution-dialog select,
 .complaint-resolution-dialog input[type='number'],
 .complaint-resolution-dialog input[type='datetime-local'],

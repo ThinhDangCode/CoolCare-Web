@@ -42,8 +42,10 @@ export function validateReview(body,certification=false) {
   return {status:body.status,reason:body.status==='REJECTED'?reason:null,...(certification?{expected_updated_at:body.expected_updated_at}:{})}
 }
 export function validateTechnicianUpdate(body) {
-  bodyObject(body,['full_name','phone','qualification_level','years_experience','bio'])
+  bodyObject(body,['full_name','phone','qualification_level','years_experience','bio','expected_updated_at'])
   const errors={}
+  if (body.expected_updated_at !== undefined && (typeof body.expected_updated_at !== 'string' || !Number.isFinite(Date.parse(body.expected_updated_at))))
+    errors.expected_updated_at = 'Refresh the profile before editing.'
   if(typeof body.full_name!=='string' || !body.full_name.trim()) errors.full_name='Full name is required.'
   else if (/\p{N}/u.test(body.full_name)) errors.full_name='Full name must not contain numbers.'
   else if (normalizeFullName(body.full_name).length>100) errors.full_name='Full name must contain at most 100 characters.'

@@ -230,7 +230,7 @@ export function EditTechnicianDialog({ data, skillsOnly = false, onClose, onSucc
         method: 'PATCH',
         body: skillsOnly
           ? { skills }
-          : { ...form, years_experience: Number(form.years_experience) },
+          : { ...form, years_experience: Number(form.years_experience), ...(data.updated_at ? { expected_updated_at: data.updated_at } : {}) },
       })
       onSuccess()
     } catch (err) {
@@ -320,6 +320,11 @@ export function EditTechnicianDialog({ data, skillsOnly = false, onClose, onSucc
                         }
                       >
                         <option value="">{t('Choose skill')}</option>
+                        {skill.skill_id && !options.skills.some(option => option.id === skill.skill_id) && (
+                          <option value={skill.skill_id} disabled>
+                            {data.skills.find(existing => existing.skill_id === skill.skill_id)?.name ?? skill.skill_id} ({t('Inactive')})
+                          </option>
+                        )}
                         {options.skills.map((s) => (
                           <option key={s.id} value={s.id}>
                             {s.name}
@@ -340,6 +345,11 @@ export function EditTechnicianDialog({ data, skillsOnly = false, onClose, onSucc
                         }
                       >
                         <option value="">{t('All brands')}</option>
+                        {skill.ac_brand_id && !options.brands.some(option => option.id === skill.ac_brand_id) && (
+                          <option value={skill.ac_brand_id} disabled>
+                            {data.skills.find(existing => existing.ac_brand_id === skill.ac_brand_id)?.brand ?? skill.ac_brand_id} ({t('Inactive')})
+                          </option>
+                        )}
                         {options.brands.map((b) => (
                           <option key={b.id} value={b.id}>
                             {b.name}
