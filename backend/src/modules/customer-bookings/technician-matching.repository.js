@@ -274,24 +274,8 @@ export class TechnicianMatchingRepository {
             AND COALESCE(wallet.settlement_balance, 0) > -1000000
             AND NOT EXISTS (
               SELECT 1 FROM booking_technicians assigned
-              JOIN bookings existing ON existing.id=assigned.booking_id
-              JOIN bookings target_booking_time ON target_booking_time.id=$1
               WHERE assigned.technician_id=tp.id
                 AND assigned.status='ACCEPTED'
-                AND target_booking_time.scheduled_at <
-                    existing.scheduled_at + make_interval(mins => GREATEST(30,
-                      COALESCE((SELECT SUM(s.estimated_duration)::integer
-                        FROM booking_units bu
-                        JOIN booking_unit_services bus ON bus.booking_unit_id=bu.id
-                        JOIN services s ON s.id=bus.service_id
-                        WHERE bu.booking_id=existing.id), 60)))
-                AND existing.scheduled_at <
-                    target_booking_time.scheduled_at + make_interval(mins => GREATEST(30,
-                      COALESCE((SELECT SUM(s.estimated_duration)::integer
-                        FROM booking_units bu
-                        JOIN booking_unit_services bus ON bus.booking_unit_id=bu.id
-                        JOIN services s ON s.id=bus.service_id
-                        WHERE bu.booking_id=$1), 60)))
             )
 
 
@@ -322,6 +306,7 @@ export class TechnicianMatchingRepository {
 
                 WHERE ts.technician_id = tp.id
                   AND skill.is_active = TRUE
+                  AND skill.deleted_at IS NULL
                   AND skill.service_id =
                       requested.service_id
                   AND (
@@ -389,6 +374,7 @@ export class TechnicianMatchingRepository {
                 ON skill.id = ts.skill_id
               WHERE ts.technician_id = ranked.id
                 AND skill.is_active = TRUE
+                AND skill.deleted_at IS NULL
             ),
             '[]'::json
           ) AS skills,

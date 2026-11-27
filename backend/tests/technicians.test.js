@@ -63,8 +63,8 @@ test('deactivating technician capability preserves the customer account status',
     const service = new TechnicianMutations({
       audit: event => audits.push(event),
       transaction: work => work({ query: async (sql, params) => {
-        if (sql.includes('INSERT INTO technician_accounts') || sql.startsWith('SELECT id FROM technician_accounts')) return { rows: [] }
-        if (sql.startsWith('SELECT * FROM technician_profiles')) return { rows: [profile] }
+        if (sql.startsWith('SELECT id FROM technician_profiles')) return { rows: [profile], rowCount: 1 }
+        if (sql.startsWith('SELECT 1 FROM booking_technicians')) return { rows: [], rowCount: 0 }
         if (sql.startsWith('UPDATE technician_profiles')) {
           assert.deepEqual(params, ['technician-id'])
           assert.ok(sql.includes("is_active=false,availability_status='OFFLINE'"))
@@ -86,12 +86,33 @@ test('deactivating technician capability preserves the customer account status',
   }
 })
 
+test('deactivating a technician with an accepted job is rejected without changing the profile', async () => {
+  const queries = []
+  const audits = []
+  const service = new TechnicianMutations({
+    audit: event => audits.push(event),
+    transaction: work => work({ query: async sql => {
+      queries.push(sql)
+      if (sql.startsWith('SELECT id FROM technician_profiles')) return { rows: [{ id: 'technician-id' }], rowCount: 1 }
+      if (sql.startsWith('SELECT 1 FROM booking_technicians')) return { rows: [{ '?column?': 1 }], rowCount: 1 }
+      throw new Error('Unexpected query: ' + sql)
+    } }),
+  })
+  await assert.rejects(service.deactivate('technician-id', 'admin-id'), {
+    status: 409, code: 'TECHNICIAN_HAS_ACTIVE_JOB',
+  })
+  assert.equal(queries.some(sql => sql.startsWith('UPDATE')), false)
+  assert.deepEqual(audits, [])
+})
+
 test('activating a deactivated technician restores online availability', async () => {
   const profile = { id: 'technician-id', user_id: 'customer-id', verification_status: 'VERIFIED', is_active: true, availability_status: 'ONLINE' }
   const audits = []
   const service = new TechnicianMutations({
     audit: event => audits.push(event),
     transaction: work => work({ query: async (sql, params) => {
+      if (sql.startsWith('SELECT id FROM technician_profiles')) return { rows: [profile], rowCount: 1 }
+      if (sql.startsWith('SELECT 1 FROM booking_technicians')) return { rows: [], rowCount: 0 }
       if (sql.includes('INSERT INTO technician_accounts') || sql.startsWith('SELECT id FROM technician_accounts')) return { rows: [] }
       if (sql.startsWith('SELECT * FROM technician_profiles')) return { rows: [profile] }
       if (sql.startsWith('SELECT status FROM users')) return { rows: [{ status: 'ACTIVE' }] }

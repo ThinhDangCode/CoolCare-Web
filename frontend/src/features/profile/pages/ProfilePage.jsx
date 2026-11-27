@@ -258,7 +258,7 @@ export function ProfilePage() {
       setProfile(updated)
       setAvatarUrl(updated.avatarUrl ?? url)
       updateUser(updated)
-      setMessage('Ảnh đại diện đã được tải lên thành công.')
+      setMessage('Avatar uploaded successfully.')
     } catch (error) {
       if (error.status === 401) {
         clearSession()
@@ -279,7 +279,7 @@ export function ProfilePage() {
       setProfile(updated)
       setAvatarUrl('')
       updateUser(updated)
-      setMessage('Ảnh đại diện đã được gỡ thành công.')
+      setMessage('Avatar removed successfully.')
     } catch (error) {
       if (error.status === 401) {
         clearSession()
@@ -311,7 +311,7 @@ export function ProfilePage() {
       updateUser(updated)
       setStatus('ready')
       setMode('edit')
-      setMessage('Hồ sơ đã được cập nhật thành công.')
+      setMessage('Profile updated successfully.')
     } catch (error) {
       if (error.status === 401) {
         clearSession()
@@ -342,14 +342,14 @@ export function ProfilePage() {
     setStatus('saving')
     setMessage('')
     try {
-      const result = await authApi.changePassword(token, {
+      await authApi.changePassword(token, {
         currentPassword: passwords.currentPassword,
         newPassword: passwords.newPassword,
       })
       setPasswords({ currentPassword: '', newPassword: '', confirmPassword: '' })
       setStatus('ready')
       setMode('password')
-      setMessage(result.message)
+      setMessage('Password changed successfully.')
     } catch (error) {
       if (error.status === 401 && error.code !== 'INVALID_CURRENT_PASSWORD') {
         clearSession()
@@ -397,7 +397,7 @@ export function ProfilePage() {
             <div className="profile-card profile-state error-state">
               <b>!</b>
               <h2>Không thể tải hồ sơ</h2>
-              <p>{message}</p>
+              <p>{t(message)}</p>
               <button onClick={() => location.reload()}>Thử lại</button>
             </div>
           )}
@@ -463,10 +463,10 @@ export function ProfilePage() {
               )}
               {message && (
                 <div
-                  className={`profile-alert ${message.includes('thành công') ? 'success' : ''}`}
+                  className={`profile-alert ${message.endsWith('successfully.') ? 'success' : ''}`}
                   role="status"
                 >
-                  {message}
+                  {t(message)}
                 </div>
               )}
               {mode === 'view' && (

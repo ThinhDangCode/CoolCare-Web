@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useAuth } from '../../../shared/context/AuthContext.jsx'
 import { useUiPreferences } from '../../../shared/context/UiPreferencesContext.jsx'
@@ -75,6 +75,8 @@ export function ComplaintDetailPage() {
   const [complaint, setComplaint] = useState(null)
   const [status, setStatus] = useState('IN_PROGRESS')
   const [resolution, setResolution] = useState('')
+  const [resolutionError, setResolutionError] = useState('')
+  const resolutionInput = useRef(null)
   const [penaltyPoints, setPenaltyPoints] = useState('')
   const [penaltyExpiry, setPenaltyExpiry] = useState('')
   const [error, setError] = useState('')
@@ -156,12 +158,20 @@ export function ComplaintDetailPage() {
         Number(penaltyPoints) > 12)
     )
       return setError(t('Enter penalty points from 1 to 12.'))
-    if (!draft && resolution.trim().length < 10)
-      return setError(t('Resolution notes must contain at least 10 characters.'))
-    if (draft && !resolution.trim())
-      return setError(t('Enter a resolution note before saving a draft.'))
-    if (resolution.trim().length > 5000)
-      return setError(t('Resolution notes must not exceed 5,000 characters.'))
+    const length = resolution.trim().length
+    let noteError = ''
+    if (!draft && length < 10)
+      noteError = 'Resolution notes must contain at least 10 characters.'
+    else if (draft && length === 0)
+      noteError = 'Enter a resolution note before saving a draft.'
+    else if (length > 5000)
+      noteError = 'Resolution notes must not exceed 5,000 characters.'
+    setResolutionError(noteError)
+    if (noteError) {
+      setError('')
+      resolutionInput.current?.focus()
+      return
+    }
     if (!(nextStatusOptions[complaint.status] || []).includes(nextStatus))
       return setError(t('The selected status transition is not allowed.'))
     setBusy(true)
@@ -377,7 +387,10 @@ export function ComplaintDetailPage() {
                     className="complaint-process-button"
                     type="button"
                     disabled={complaint.status === 'CLOSED'}
-                    onClick={() => setShowResolution(true)}
+                    onClick={() => {
+                      setResolutionError('')
+                      setShowResolution(true)
+                    }}
                   >
                     <CheckIcon /> {t('Process Resolution')}
                   </button>
@@ -575,12 +588,23 @@ export function ComplaintDetailPage() {
                       <label>
                         {t('ADMIN RESOLUTION NOTE / ACTION TAKEN')}
                         <textarea
+                          ref={resolutionInput}
+                          aria-invalid={Boolean(resolutionError)}
+                          aria-describedby={resolutionError ? 'complaint-resolution-error' : undefined}
                           maxLength={5000}
                           disabled={busy}
                           value={resolution}
-                          onChange={(event) => setResolution(event.target.value)}
+                          onChange={(event) => {
+                            setResolution(event.target.value)
+                            setResolutionError('')
+                          }}
                           placeholder={t('Describe the investigation, decision, and action taken...')}
                         />
+                        {resolutionError && (
+                          <span id="complaint-resolution-error" role="alert" className="figma-form-error">
+                            {t(resolutionError)}
+                          </span>
+                        )}
                       </label>
                       <label className="complaint-notify-customer">
                         <input

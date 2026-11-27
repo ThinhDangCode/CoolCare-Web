@@ -31,7 +31,7 @@ test('Accept / Decline Job Request validation accepts strict actions and an opti
   ]) assert.throws(() => validateAcceptDeclineJobRequest(body), { status: 422 })
 })
 
-function repositoryFixture({ status = 'SELECTED', expiresAt = null, bookingStatus = 'TECHNICIAN_SELECTED', hasOverlappingJob = false, settlementBalance = 0, scheduledAt = '2099-01-01T00:00:00.000Z' } = {}) {
+function repositoryFixture({ status = 'SELECTED', expiresAt = null, bookingStatus = 'TECHNICIAN_SELECTED', hasActiveJob = false, settlementBalance = 0, scheduledAt = '2099-01-01T00:00:00.000Z' } = {}) {
   const calls = []
   const repository = new AcceptDeclineJobRequestRepository({
     transaction: async (operation) => operation({
@@ -43,8 +43,8 @@ function repositoryFixture({ status = 'SELECTED', expiresAt = null, bookingStatu
             is_active: true, availability_status: 'ONLINE', account_status: 'ACTIVE',
           }] }
         }
-        if (sql.includes('WITH windows AS')) {
-          return { rows: [{ conflict: hasOverlappingJob }] }
+        if (sql.includes('SELECT 1 FROM booking_technicians WHERE technician_id')) {
+          return { rowCount: hasActiveJob ? 1 : 0 }
         }
         if (sql.includes('SELECT settlement_balance FROM technician_account_balances')) {
           return { rows: [{ settlement_balance: settlementBalance }] }
@@ -121,11 +121,11 @@ test('expired, already handled, and unavailable requests cannot be changed', asy
   )
 })
 
-test('technician cannot accept another request in an overlapping service window', async () => {
-  const { repository, calls } = repositoryFixture({ hasOverlappingJob: true })
+test('technician must finish the accepted job before accepting another time slot', async () => {
+  const { repository, calls } = repositoryFixture({ hasActiveJob: true })
   await assert.rejects(
     repository.respond(userId, requestId, { action: 'ACCEPT', reason: null }),
-    { status: 409, code: 'TECHNICIAN_SCHEDULE_CONFLICT' },
+    { status: 409, code: 'TECHNICIAN_HAS_ACTIVE_JOB' },
   )
   assert.equal(calls.some(({ sql }) => sql.includes('UPDATE booking_technicians')), false)
   assert.equal(calls.some(({ sql }) => sql.includes('UPDATE bookings')), false)

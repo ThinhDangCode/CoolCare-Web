@@ -73,35 +73,13 @@ export class AcceptDeclineJobRequestRepository {
   }
 
   async _accept(client, technician, jobRequest) {
-    // Compare service windows rather than treating every accepted job as
-    // an all-day conflict. Service estimated_duration is measured in minutes.
-    const overlap = await client.query(
-      `WITH windows AS (
-         SELECT b.id, b.scheduled_at AS starts_at,
-                b.scheduled_at + make_interval(mins => GREATEST(30,
-                  COALESCE((SELECT SUM(s.estimated_duration)::integer
-                    FROM booking_units bu
-                    JOIN booking_unit_services bus ON bus.booking_unit_id=bu.id
-                    JOIN services s ON s.id=bus.service_id
-                    WHERE bu.booking_id=b.id), 60))) AS ends_at
-         FROM bookings b
-         WHERE b.id=$2 OR EXISTS (
-           SELECT 1 FROM booking_technicians bt
-           WHERE bt.booking_id=b.id AND bt.technician_id=$1
-             AND bt.status='ACCEPTED'
-         )
-       )
-       SELECT EXISTS (
-         SELECT 1 FROM windows current_job JOIN windows other_job
-           ON current_job.id=$2 AND other_job.id<>$2
-         WHERE current_job.starts_at<other_job.ends_at
-           AND other_job.starts_at<current_job.ends_at
-       ) AS conflict`,
-      [technician.id, jobRequest.booking_id],
+    const activeJob = await client.query(
+      "SELECT 1 FROM booking_technicians WHERE technician_id=$1 AND status='ACCEPTED' LIMIT 1",
+      [technician.id],
     )
-    if (overlap.rows[0]?.conflict) {
-      throw new AppError(409, 'TECHNICIAN_SCHEDULE_CONFLICT',
-        'Kỹ thuật viên có công việc trùng khung giờ đã đặt.')
+    if (activeJob.rowCount) {
+      throw new AppError(409, 'TECHNICIAN_HAS_ACTIVE_JOB',
+        'Vui lòng hoàn thành công việc hiện tại trước khi nhận công việc mới.')
     }
 
     // technician_account_balances is a view; the base account row was locked

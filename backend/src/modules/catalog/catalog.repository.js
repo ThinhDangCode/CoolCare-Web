@@ -215,6 +215,8 @@ export class CatalogRepository {
 
   async mutate(kind, id, data, action, actorId) {
     const { table } = resources[kind]
+    const { expected_updated_at: expectedUpdatedAt, ...changes } = data
+    data = changes
 
     try {
       let before
@@ -239,6 +241,11 @@ export class CatalogRepository {
               'NOT_FOUND',
               'Không tìm thấy dữ liệu.'
             )
+          }
+
+          before = existing
+          if (expectedUpdatedAt && new Date(existing.updated_at).getTime() !== new Date(expectedUpdatedAt).getTime()) {
+            throw new AppError(409, 'STALE_CATALOG', 'This item has changed. Refresh the page before saving.')
           }
 
           if (
@@ -274,6 +281,20 @@ export class CatalogRepository {
             }
 
             if (restoring) {
+              await client.query('SELECT pg_advisory_xact_lock(hashtext($1))', [`catalog:${kind}:names`])
+              const nameField = kind === 'models' ? 'model_name' : 'name'
+              const duplicate = await client.query(
+                `SELECT id FROM ${table}
+                 WHERE deleted_at IS NULL AND lower(trim(${nameField})) = lower(trim($1)) AND id <> $2
+                   ${kind === 'models' ? 'AND brand_id = $3' : ''}
+                 LIMIT 1`,
+                kind === 'models' ? [existing.model_name, id, existing.brand_id] : [existing.name, id]
+              )
+              if (duplicate.rowCount) {
+                throw new AppError(409, 'DUPLICATE_NAME', 'This name is already in use. Rename the existing item before restoring.', {
+                  [nameField]: 'This name is already in use.',
+                })
+              }
               const parent =
                 kind === 'services'
                   ? ['service_categories', existing.category_id]
@@ -326,59 +347,27 @@ export class CatalogRepository {
           }
         }
 
-        if (kind === 'skills') {
-          before = existing
-
-          if (data.service_id) {
-            const service = await client.query(
-              `SELECT id
-               FROM services
-               WHERE id = $1
-                 AND deleted_at IS NULL
-                 AND (is_active OR id = $2::uuid)
-               FOR SHARE`,
-              [
-                data.service_id,
-                existing?.service_id ?? null,
-              ]
-            )
-
-            if (!service.rowCount) {
-              throw new AppError(
-                422,
-                'VALIDATION_ERROR',
-                'Choose an active service.',
-                {
-                  service_id: 'Service is unavailable.',
-                }
-              )
-            }
+        const parentField = { services: 'category_id', models: 'brand_id', skills: 'service_id' }[kind]
+        const parentId = data[parentField] ?? existing?.[parentField]
+        const parentChanged = data[parentField] && data[parentField] !== existing?.[parentField]
+        const activating = data.is_active === true && existing?.is_active === false
+        if (parentId && (parentChanged || activating)) {
+          const parentQueries = {
+            services: 'SELECT id FROM service_categories WHERE id=$1 AND deleted_at IS NULL AND is_active FOR SHARE',
+            models: 'SELECT id FROM ac_brands WHERE id=$1 AND deleted_at IS NULL AND is_active FOR SHARE',
+            skills: `SELECT s.id FROM services s JOIN service_categories c ON c.id=s.category_id
+                     WHERE s.id=$1 AND s.deleted_at IS NULL AND s.is_active
+                       AND c.deleted_at IS NULL AND c.is_active FOR SHARE OF s,c`,
+          }
+          const parent = await client.query(parentQueries[kind], [parentId])
+          if (!parent.rowCount) {
+            const label = { services: 'category', models: 'brand', skills: 'service in an active category' }[kind]
+            const message = `Choose an active ${label}.`
+            throw new AppError(422, 'VALIDATION_ERROR', message, { [parentField]: message })
           }
         }
 
         if (kind === 'models') {
-          if (data.brand_id) {
-            const brand = await client.query(
-              `SELECT id
-               FROM ac_brands
-               WHERE id = $1
-                 AND deleted_at IS NULL
-               FOR SHARE`,
-              [data.brand_id]
-            )
-
-            if (!brand.rowCount) {
-              throw new AppError(
-                422,
-                'VALIDATION_ERROR',
-                'Hãng không tồn tại.',
-                {
-                  brand_id: 'Vui lòng chọn hãng khác.',
-                }
-              )
-            }
-          }
-
           if (data.model_name || data.brand_id) {
             await client.query(
               'SELECT pg_advisory_xact_lock(hashtext($1))',
@@ -410,24 +399,6 @@ export class CatalogRepository {
                 }
               )
             }
-          }
-        }
-
-        if (kind === 'services' && data.category_id) {
-          const category = await client.query(
-            'SELECT id FROM service_categories WHERE id=$1 AND deleted_at IS NULL FOR SHARE',
-            [data.category_id]
-          )
-
-          if (!category.rowCount) {
-            throw new AppError(
-              422,
-              'VALIDATION_ERROR',
-              'Danh mục không tồn tại.',
-              {
-                category_id: 'Vui lòng chọn danh mục khác.',
-              }
-            )
           }
         }
 
@@ -494,16 +465,20 @@ export class CatalogRepository {
         return after
       })
 
-      if (kind === 'skills') {
-        this.audit({
-          actorId,
-          action,
-          entityType: 'SKILL',
-          entityId: result.id,
-          before,
-          after: result,
-        })
-      }
+      this.audit({
+        actorId,
+        action,
+        entityType: {
+          skills: 'SKILL',
+          categories: 'SERVICE_CATEGORY',
+          brands: 'AC_BRAND',
+          models: 'AC_MODEL',
+          services: 'SERVICE',
+        }[kind],
+        entityId: result.id,
+        before,
+        after: result,
+      })
 
       return result
     } catch (error) {

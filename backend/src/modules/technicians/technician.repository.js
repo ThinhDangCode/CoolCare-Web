@@ -95,7 +95,7 @@ export class TechnicianRepository {
 
   async detail(id) {
     const result = await pool.query(`SELECT ${profileColumns},${areasColumn},${jobsColumn},
-      t.identity_number,t.identity_front_url,t.identity_back_url,t.bio,t.submitted_at,
+      t.identity_number,t.identity_front_url,t.identity_back_url,t.bio,t.submitted_at,t.updated_at,
       t.reviewed_at,t.rejection_reason,u.email_verified_at,u.phone_verified_at,t.created_at,
       reviewer.full_name AS reviewed_by
       FROM technician_profiles t JOIN users u ON u.id=t.user_id

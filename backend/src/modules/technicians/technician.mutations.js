@@ -69,6 +69,7 @@ export class TechnicianMutations {
         )
         const duplicate=await client.query(`SELECT id FROM technician_certifications
           WHERE id<>$1
+            AND verification_status='VERIFIED'
             AND lower(btrim(certificate_name))=lower(btrim($2))
             AND lower(btrim(issued_by))=lower(btrim($3))
             AND lower(btrim(certificate_number))=lower(btrim($4))
@@ -90,10 +91,17 @@ export class TechnicianMutations {
     const event=await this.transaction(async client=>{
       const before=await this.lock(client,id)
       const fields=['qualification_level','years_experience','bio']
+      if (input.expected_updated_at && new Date(before.updated_at).getTime() !== new Date(input.expected_updated_at).getTime()) {
+        throw new AppError(409, 'STALE_TECHNICIAN', 'This profile has changed. Refresh the page before saving.')
+      }
+      const userBefore = (await client.query('SELECT full_name,phone FROM users WHERE id=$1 FOR UPDATE', [before.user_id])).rows[0]
       const after=(await client.query(`UPDATE technician_profiles SET qualification_level=$2,years_experience=$3,
         bio=$4,updated_at=CURRENT_TIMESTAMP WHERE id=$1 RETURNING qualification_level,years_experience,bio`,[id,...fields.map(k=>input[k])])).rows[0]
       await client.query('UPDATE users SET full_name=$2,phone=$3::varchar,phone_verified_at=CASE WHEN phone IS DISTINCT FROM $3::varchar THEN NULL ELSE phone_verified_at END,updated_at=CURRENT_TIMESTAMP WHERE id=$1',[before.user_id,input.full_name,input.phone])
-      return {before:Object.fromEntries(fields.map(k=>[k,before[k]])),after}
+      return {
+        before: { ...Object.fromEntries(fields.map(k=>[k,before[k]])), ...userBefore },
+        after: { ...after, full_name: input.full_name, phone: input.phone },
+      }
     }).catch(error => {
       if (error.code === '23505') throw new AppError(409, 'DUPLICATE_PHONE', 'Phone number is already in use.', {
         phone: 'This phone number is already used by another account.',
@@ -105,7 +113,16 @@ export class TechnicianMutations {
   }
   async deactivate(id,actorId) {
     await this.transaction(async client=>{
-      await this.lock(client,id)
+      // Accepting and completing a job also lock this profile before changing assignments.
+      const profile = await client.query('SELECT id FROM technician_profiles WHERE id=$1 FOR UPDATE',[id])
+      if (!profile.rowCount) throw notFound()
+      const activeJob = await client.query(
+        "SELECT 1 FROM booking_technicians WHERE technician_id=$1 AND status='ACCEPTED' LIMIT 1",
+        [id],
+      )
+      if (activeJob.rowCount) {
+        throw new AppError(409,'TECHNICIAN_HAS_ACTIVE_JOB','Không thể vô hiệu hóa kỹ thuật viên khi còn công việc chưa hoàn thành.')
+      }
       await client.query("UPDATE technician_profiles SET is_active=false,availability_status='OFFLINE',updated_at=CURRENT_TIMESTAMP WHERE id=$1",[id])
     })
     this.audit({actorId,action:'DEACTIVATE_TECHNICIAN',entityType:'TECHNICIAN',entityId:id,after:{is_active:false}})
@@ -132,18 +149,49 @@ export class TechnicianMutations {
       if (technician.verification_status === 'VERIFIED' && !input.skills.length) {
         throw new AppError(422,'SKILL_REQUIRED','A verified technician must have at least one skill.')
       }
-      for(const item of input.skills){
-        if(!(await client.query('SELECT id FROM skills WHERE id=$1 AND is_active AND deleted_at IS NULL',[item.skill_id])).rows.length) throw new AppError(422,'INVALID_SKILL','Choose an active skill.')
-        if(item.ac_brand_id && !(await client.query('SELECT id FROM ac_brands WHERE id=$1 AND is_active AND deleted_at IS NULL',[item.ac_brand_id])).rows.length) throw new AppError(422,'INVALID_BRAND','Choose an active AC brand.')
+      const previous = (await client.query(
+        'SELECT skill_id,ac_brand_id,skill_level FROM technician_skills WHERE technician_id=$1 FOR UPDATE', [id]
+      )).rows
+      for (const item of input.skills) {
+        // Keep historical assignments unchanged, but validate every new or
+        // modified assignment against the complete active catalog chain.
+        const unchanged = previous.some(existing =>
+          existing.skill_id === item.skill_id &&
+          (existing.ac_brand_id ?? null) === item.ac_brand_id &&
+          existing.skill_level === item.skill_level
+        )
+        if (unchanged) continue
+        const skill = await client.query(
+          `SELECT s.id FROM skills s
+           JOIN services v ON v.id=s.service_id
+           JOIN service_categories c ON c.id=v.category_id
+           WHERE s.id=$1 AND s.is_active AND s.deleted_at IS NULL
+             AND v.is_active AND v.deleted_at IS NULL
+             AND c.is_active AND c.deleted_at IS NULL
+           FOR SHARE OF s,v,c`, [item.skill_id]
+        )
+        if (!skill.rows.length) throw new AppError(422, 'INVALID_SKILL', 'Choose a skill with an active service and category.')
+        if (item.ac_brand_id && !(await client.query(
+          'SELECT id FROM ac_brands WHERE id=$1 AND is_active AND deleted_at IS NULL FOR SHARE', [item.ac_brand_id]
+        )).rows.length) throw new AppError(422, 'INVALID_BRAND', 'Choose an active AC brand.')
       }
       await client.query('DELETE FROM technician_skills WHERE technician_id=$1',[id])
       for(const item of input.skills) await client.query('INSERT INTO technician_skills(id,technician_id,skill_id,ac_brand_id,skill_level) VALUES($1,$2,$3,$4,$5)',[randomUUID(),id,item.skill_id,item.ac_brand_id,item.skill_level])
+      await client.query('UPDATE technician_profiles SET updated_at=CURRENT_TIMESTAMP WHERE id=$1', [id])
     })
     this.audit({actorId,action:'UPDATE_TECHNICIAN_SKILLS',entityType:'TECHNICIAN',entityId:id,after:{skills:input.skills}})
     return {id,skills:input.skills}
   }
   async skillOptions() {
-    const [skills,brands]=await Promise.all([pool.query('SELECT id,name FROM skills WHERE is_active AND deleted_at IS NULL ORDER BY name'),pool.query('SELECT id,name FROM ac_brands WHERE is_active AND deleted_at IS NULL ORDER BY name')])
+    const [skills,brands]=await Promise.all([
+      pool.query(`SELECT s.id,s.name FROM skills s
+        JOIN services v ON v.id=s.service_id
+        JOIN service_categories c ON c.id=v.category_id
+        WHERE s.is_active AND s.deleted_at IS NULL
+          AND v.is_active AND v.deleted_at IS NULL
+          AND c.is_active AND c.deleted_at IS NULL ORDER BY s.name`),
+      pool.query('SELECT id,name FROM ac_brands WHERE is_active AND deleted_at IS NULL ORDER BY name'),
+    ])
     return {skills:skills.rows,brands:brands.rows}
   }
   async areas(id,input,actorId) {

@@ -174,6 +174,11 @@ test(
             .rowCount,
           brand ? 2 : 1
         )
+      await assert.rejects(
+        repository.mutate('skills', skill.id, { is_active: true }, 'TOGGLE', id),
+        { status: 422, code: 'VALIDATION_ERROR' }
+      )
+      await repository.mutate('services', service.id, { is_active: true }, 'TOGGLE', id)
       const reactivated = await repository.mutate(
         'skills',
         skill.id,
@@ -182,11 +187,12 @@ test(
         id
       )
       assert.equal(reactivated.is_active, true)
-      assert.equal(audits.length, 4)
-      assert.equal(audits[1].actorId, id)
-      assert.equal(audits[1].before.name, skill.name)
-      assert.equal(audits[1].after.name, updated.name)
-      assert.equal(audits[2].action, 'DEACTIVATE')
+      const skillAudits = audits.filter(event => event.entityType === 'SKILL')
+      assert.equal(skillAudits.length, 4)
+      assert.equal(skillAudits[1].actorId, id)
+      assert.equal(skillAudits[1].before.name, skill.name)
+      assert.equal(skillAudits[1].after.name, updated.name)
+      assert.equal(skillAudits[2].action, 'DEACTIVATE')
     } finally {
       await client.query('ROLLBACK')
       client.release()

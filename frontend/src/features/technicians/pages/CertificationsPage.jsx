@@ -205,6 +205,12 @@ export function CertificationsPage() {
     const query = new URLSearchParams({ search: keyword, status, issuer, page, limit })
     adminRequest(`/technicians/certifications?${query}`, token, { signal: controller.signal })
       .then((result) => {
+        if (controller.signal.aborted) return
+        const lastPage = Math.max(1, Math.ceil(result.total / limit))
+        if (page > lastPage) {
+          setPage(lastPage)
+          return
+        }
         setData(result)
         setError('')
       })
