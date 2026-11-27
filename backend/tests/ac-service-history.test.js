@@ -41,7 +41,12 @@ test('AC service history repository scopes access and sorts completed visits new
   assert.match(queries[0].sql, /bt\.status IN \('SELECTED','ACCEPTED'\)/)
   for (const query of queries.slice(1)) {
     assert.match(query.sql, /history_booking\.customer_id=\$2/)
-    assert.match(query.sql, /history_booking\.service_location_id = \(SELECT service_location_id/)
+    for (const field of ['service_address', 'ward', 'city']) {
+      assert.ok(query.sql.includes(`history_booking.${field}`))
+      assert.ok(query.sql.includes(`current_booking.${field}`))
+    }
+    assert.match(query.sql, /current_booking\.customer_id=\$2/)
+    assert.doesNotMatch(query.sql, /service_location_id/)
     assert.doesNotMatch(query.sql, /history_booking\.customer_address_id/)
     assert.match(query.sql, /history_booking\.status='COMPLETED'/)
   }

@@ -1,3 +1,5 @@
+import { AppError } from '../../utils.js'
+
 export const MAX_VOUCHER_PERCENT = 20
 export const MAX_VOUCHER_DISCOUNT = 50_000
 
@@ -46,4 +48,20 @@ export function voucherFitsBooking(voucher, eligibleAmount, commissionRate = nul
   if (Object.keys(voucherPolicyErrors(voucher)).length) return false
   const discount = voucherDiscount(voucher, eligibleAmount)
   return discount > 0 && discount <= bookingVoucherLimit(eligibleAmount, commissionRate)
+}
+
+// Called after INSERT RETURNING, while the payment is still uncommitted.
+// The existing database trigger computes these snapshots; a violation rolls
+// back the insert rather than installing a new database constraint.
+export function assertPaymentVoucherMargin(payment) {
+  const discount = Number(payment.platform_discount_amount ?? 0)
+  if (discount === 0) return
+  const base = Number(payment.commission_base_amount)
+  const commission = Number(payment.commission_amount)
+  if (payment.commission_base_amount == null || payment.commission_amount == null ||
+      ![discount, base, commission].every(Number.isFinite) || discount < 0 ||
+      discount > bookingVoucherLimit(base) || discount > commission) {
+    throw new AppError(409, 'VOUCHER_NOT_ELIGIBLE',
+      'Voucher vượt giới hạn giảm giá cho đơn này.')
+  }
 }

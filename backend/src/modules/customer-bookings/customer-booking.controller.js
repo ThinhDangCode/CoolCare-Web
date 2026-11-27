@@ -1,5 +1,6 @@
 import { AppError } from '../../utils.js'
 import { pool } from '../../config/database.js'
+import { sameServiceLocation } from './service-location.sql.js'
 
 export class CustomerBookingController {
   constructor(service, technicianMatchingService) {
@@ -24,7 +25,7 @@ export class CustomerBookingController {
       JOIN booking_units bu ON bu.booking_id=b.id
       JOIN ac_models am ON am.id=bu.ac_model_id
       JOIN ac_brands ab ON ab.id=bu.ac_brand_id
-      WHERE cp.user_id=$1 AND b.service_location_id=selected_address.service_location_id
+      WHERE cp.user_id=$1 AND ${sameServiceLocation('b', 'selected_address')}
         AND b.status='COMPLETED'
         AND bu.ac_brand_id IS NOT NULL AND bu.ac_model_id IS NOT NULL
       ORDER BY "brandName", "modelName"

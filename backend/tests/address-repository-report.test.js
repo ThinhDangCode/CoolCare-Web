@@ -132,6 +132,12 @@ test('AddressRepository.delete promotes the next address after deleting the defa
     return {rows:[]}
   })
   assert.equal(await repository.delete(addressId,customerId),before)
+  const detach = tx.calls.findIndex(([sql]) => sql.includes('UPDATE bookings SET customer_address_id = NULL'))
+  const remove = tx.calls.findIndex(([sql]) => sql.includes('DELETE FROM customer_addresses'))
+  assert.ok(detach >= 0 && detach < remove)
+  assert.deepEqual(tx.calls[detach][1], [addressId,customerId])
+  assert.match(tx.calls[detach][0], /WHERE customer_address_id = \$1 AND customer_id = \$2/)
+  assert.ok(tx.calls.some(([sql]) => sql.includes('FOR UPDATE')))
   assert.deepEqual(tx.calls.find(([sql]) => sql.includes('is_default = true'))[1],['next-address',customerId])
 })
 
