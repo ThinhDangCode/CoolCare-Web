@@ -48,7 +48,7 @@ export class BookingDetailRepository {
     const result = await db.query(`
       SELECT id, status, note, changed_by_id, created_at
       FROM booking_status_history WHERE booking_id = $1
-        AND (note IS NULL OR note NOT LIKE 'COOLCARE_TRAVEL_V1:%')
+        AND (note IS NULL OR (note NOT LIKE 'COOLCARE_TRAVEL_V1:%' AND note NOT LIKE 'COOLCARE_LATE_V1:%'))
       ORDER BY created_at ASC, id ASC
     `, [bookingId])
     return result.rows

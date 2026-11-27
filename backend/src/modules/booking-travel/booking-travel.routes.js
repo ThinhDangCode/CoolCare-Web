@@ -1,3 +1,4 @@
+import { assertTechnicianNotPenaltyLocked } from '../technicians/technician.points.js'
 import { Router } from 'express'
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import path from 'node:path'
@@ -56,8 +57,9 @@ function coordinates(body) {
 }
 async function getAssignment(db, userId, bookingId, lock = false) {
   validateUuid(bookingId)
+  await assertTechnicianNotPenaltyLocked(userId, db)
   const { rows } = await db.query(`
-    SELECT b.id, b.status, b.latitude, b.longitude, b.scheduled_at, tp.user_id AS technician_user_id
+    SELECT b.id, b.status, b.latitude, b.longitude, b.scheduled_at, bt.id AS assignment_id, tp.user_id AS technician_user_id
     FROM bookings b
     JOIN booking_technicians bt ON bt.booking_id=b.id
     JOIN technician_profiles tp ON tp.id=bt.technician_id
@@ -77,6 +79,8 @@ function destinationCoordinates(booking) {
 async function history(db, bookingId) {
   const { rows } = await db.query(`SELECT note, created_at FROM booking_status_history
     WHERE booking_id=$1 AND note LIKE 'COOLCARE_TRAVEL_V1:%'
+      AND created_at >= (SELECT MAX(bt.responded_at) FROM booking_technicians bt
+        WHERE bt.booking_id=$1 AND bt.status IN (2,6))
     ORDER BY created_at ASC, id ASC`, [bookingId])
   let departedAt = null, arrivedAt = null, earlyApprovedAt = null
   for (const row of rows) {
@@ -101,7 +105,7 @@ async function appendEvent(db, bookingId, userId, event) {
   // NOT a booking status transition. These notes are hidden from the status timeline.
   await db.query(`INSERT INTO booking_status_history
       (booking_id, status, changed_by_id, note, created_at)
-      VALUES ($1, 2, $2, $3, CURRENT_TIMESTAMP)`,
+      VALUES ($1, 2, $2, $3, clock_timestamp())`,
     [bookingId, userId, PREFIX + JSON.stringify({ event })])
 }
 function haversine(lat1, lng1, lat2, lng2) {
@@ -129,11 +133,15 @@ async function routeEstimate(lat, lng, targetLat, targetLng) {
 }
 async function view(db, bookingId) {
   const markers = await history(db, bookingId)
-  const cached = (await loadCache())[bookingId] || {}
+  const { rows: scheduleRows } = await db.query(`SELECT b.scheduled_at,
+    (SELECT bt.id FROM booking_technicians bt WHERE bt.booking_id=b.id AND bt.status IN (2,6)
+      ORDER BY bt.responded_at DESC NULLS LAST LIMIT 1) AS assignment_id
+    FROM bookings b WHERE b.id=$1`, [bookingId])
+  const assignmentId = scheduleRows[0]?.assignment_id
+  const cached = assignmentId ? (await loadCache())[`${bookingId}:${assignmentId}`] || {} : {}
   const status = markers.arrivedAt ? 'ARRIVED' : markers.departedAt ? 'TRAVELLING' : 'NOT_STARTED'
   // ETA is a one-time estimate at departure, not ongoing location tracking.
   const stale = status === 'TRAVELLING' && !cached.eta_at
-  const { rows: scheduleRows } = await db.query('SELECT scheduled_at FROM bookings WHERE id=$1', [bookingId])
   const scheduledAt = scheduleRows[0]?.scheduled_at || null
   const arrivedAt = markers.arrivedAt ? new Date(markers.arrivedAt) : null
   const deadline = scheduledAt ? new Date(new Date(scheduledAt).getTime() + 15 * 60000) : null
@@ -175,7 +183,8 @@ export async function startDeparture(userId, id, body, {
     ? await estimateRoute(lat, lng, destination[0], destination[1])
     : null
   await transaction(async db => {
-    await getAssignment(db, userId, id, true)
+    const current = await getAssignment(db, userId, id, true)
+    if (current.assignment_id !== booking.assignment_id) throw new AppError(409, 'ASSIGNMENT_CHANGED', 'Phân công đã thay đổi.')
     const markers = await history(db, id)
     if (markers.departedAt) throw new AppError(409, 'TRAVEL_STARTED', 'Hành trình đã được bắt đầu.')
     await appendEvent(db, id, userId, 'DEPARTED')
@@ -186,7 +195,7 @@ export async function startDeparture(userId, id, body, {
     }
   })
   const now = iso()
-  await persist(id, {
+  await persist(`${id}:${booking.assignment_id}`, {
     eta_at: estimate ? new Date(Date.now() + estimate.seconds * 1000).toISOString() : null,
     duration_seconds: estimate?.seconds ?? null,
     distance_meters: estimate?.meters ?? null,
@@ -210,7 +219,7 @@ router.post('/:id/estimate', requireRole('CUSTOMER', 'TECHNICIAN'), asyncHandler
   const estimate = destination
     ? await routeEstimate(lat, lng, destination[0], destination[1])
     : null
-  await saveCache(req.params.id, {
+  await saveCache(`${req.params.id}:${booking.assignment_id}`, {
     predeparture_duration_seconds: estimate?.seconds ?? null,
     predeparture_distance_meters: estimate?.meters ?? null,
     predeparture_estimated_at: iso(),
@@ -245,7 +254,6 @@ router.post('/:id/arrive', requireRole('CUSTOMER', 'TECHNICIAN'), asyncHandler(a
       }
     }
   })
-  await saveCache(req.params.id, { eta_at: null })
   res.set('Cache-Control', 'no-store').json({ data: await view(pool, req.params.id) })
 }))
 // The customer's explicit approval is required to begin work before the booked time.

@@ -26,13 +26,14 @@ export class CustomerBookingService {
       const cancellations = await db.query(`SELECT COUNT(*)::int AS total FROM bookings
         WHERE customer_id=$1 AND status='CANCELLED' AND cancelled_by_id=$2
           AND cancelled_at >= NOW() - INTERVAL '24 hours'
-          AND cancellation_reason NOT LIKE '[LATE_TECHNICIAN]%'`, [customer.id,userId])
+          AND cancellation_reason NOT LIKE '[LATE_TECHNICIAN]%' AND cancellation_reason NOT LIKE '[TECHNICIAN_UNAVAILABLE]%'`, [customer.id,userId])
       if (cancellations.rows[0].total >= 5) {
         throw new AppError(429, 'BOOKING_RATE_LIMIT',
           'Bạn đã hủy quá nhiều đơn trong 24 giờ; vui lòng thử lại sau.')
       }
       const overlapping = await db.query(`SELECT 1 FROM bookings
         WHERE customer_id=$1 AND status IN ('PENDING','TECHNICIAN_SELECTED','ACCEPTED')
+          AND (status='ACCEPTED' OR scheduled_at>clock_timestamp())
           AND scheduled_at BETWEEN $2::timestamptz - INTERVAL '30 minutes'
                                AND $2::timestamptz + INTERVAL '30 minutes' LIMIT 1`,
         [customer.id,input.scheduledAt])
@@ -63,9 +64,9 @@ export class CustomerBookingService {
         if (unit.acModelId) {
           const previous = await db.query(`SELECT 1 FROM bookings b
             JOIN booking_units bu ON bu.booking_id=b.id
-            WHERE b.customer_id=$1 AND b.service_location_id=$2
+            WHERE b.customer_id=$1 AND b.customer_address_id=$2
               AND b.status='COMPLETED' AND bu.ac_brand_id=$3 AND bu.ac_model_id=$4 LIMIT 1`,
-            [customer.id,address.service_location_id,unit.acBrandId,unit.acModelId])
+            [customer.id,address.id,unit.acBrandId,unit.acModelId])
           if (!previous.rowCount) throw new AppError(422, 'AC_MODEL_NOT_PREVIOUSLY_CONFIRMED',
             'Chỉ được chọn lại model máy lạnh đã được xác nhận trong đơn hoàn thành tại địa chỉ này.')
           const model = await this.repository.findModel(unit.acModelId, unit.acBrandId, db)
@@ -84,6 +85,9 @@ export class CustomerBookingService {
         throw new AppError(422, 'INVALID_TOTAL', 'Booking total is out of range.')
       }
 
+      if (new Date(input.scheduledAt).getTime() <= Date.now()) {
+        throw new AppError(409, 'BOOKING_SCHEDULE_EXPIRED', 'Giờ hẹn đã hết hạn. Vui lòng chọn giờ mới.')
+      }
       const booking = await this.repository.createBooking({
         customerId: customer.id,
         addressId: address.id,

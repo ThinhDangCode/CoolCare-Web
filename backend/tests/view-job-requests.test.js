@@ -95,7 +95,7 @@ test('View Job Requests repository derives expired requests and never returns re
     },
   })
   await repository.findJobRequests('technician-id', { status: 'EXPIRED', limit: 10, offset: 0 })
-  assert.match(queries[0].sql, /COALESCE\(bt\.expires_at,bt\.requested_at\+INTERVAL '10 minutes'\)<=CURRENT_TIMESTAMP/)
+  assert.match(queries[0].sql, /COALESCE\(bt\.expires_at,bt\.requested_at\+INTERVAL '10 minutes'\)<=clock_timestamp\(\)/)
   assert.match(queries[0].sql, /bt\.status IN \('SELECTED','ACCEPTED','DECLINED','EXPIRED','COMPLETED','CANCELLED'\)/)
   assert.doesNotMatch(queries[0].sql, /IN \('RECOMMENDED'/)
   assert.deepEqual(queries[0].params, ['technician-id', 'EXPIRED', 10, 0])
@@ -111,7 +111,7 @@ test('GET View Job Requests requires CUSTOMER auth and returns no-store data', a
   }
   const app = express()
   app.use(express.json())
-  app.use('/portal', createTechnicianPortalRouter({}, service))
+  app.use('/portal', createTechnicianPortalRouter({}, service, undefined, undefined, undefined, undefined, (_req, _res, next) => next()))
   app.use(errorHandler)
   const server = app.listen(0, '127.0.0.1')
   await new Promise((resolve) => server.once('listening', resolve))

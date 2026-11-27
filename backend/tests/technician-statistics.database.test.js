@@ -85,9 +85,9 @@ const sources = {
     ('c7','not-linked',0,'2026-10-05 00:00:00+07'::timestamptz),
     ('c8','t1',0,'2026-10-31 17:00:00+00'::timestamptz)
   ) c(id,technician_id,status,created_at)`,
-  penalties: `SELECT * FROM (VALUES ('x1','t1','2026-10-01 00:00:00+07'::timestamptz),
-    ('x2','t1','2026-10-03 00:00:00+07'::timestamptz),('x3','t4','2026-10-04 00:00:00+07'::timestamptz),
-    ('x4','t1','2026-09-30 16:59:59.999+00'::timestamptz)) p(id,technician_id,applied_at)`,
+  penalties: `SELECT * FROM (VALUES ('x1','t1','2026-10-01 00:00:00+07'::timestamptz,2,0),
+    ('x2','t1','2026-10-03 00:00:00+07'::timestamptz,2,0),('x3','t4','2026-10-04 00:00:00+07'::timestamptz,2,0),
+    ('x4','t1','2026-09-30 16:59:59.999+00'::timestamptz,2,0)) p(id,technician_id,applied_at,penalty_points,status)`,
 }
 
 async function fixtureReport(query = range, overrides = {}) {
@@ -277,7 +277,7 @@ test('live-schema independent totals reconcile while all business table checksum
       .getTechnicianStatistics({ from: '2026-01-01', to: '2026-12-31' }, 'read-only-technician-test')
     const { rows: [expected] } = await pool.query(`SELECT
       (SELECT count(*) FROM technician_profiles t JOIN users u ON u.id=t.user_id)::text AS technicians,
-      (SELECT count(*) FROM technician_profiles t JOIN users u ON u.id=t.user_id WHERE u.status='LOCKED')::text AS locked,
+      (SELECT count(*) FROM technician_profiles t JOIN users u ON u.id=t.user_id WHERE u.status='LOCKED' OR COALESCE((SELECT sum(p.penalty_points) FROM technician_penalties p WHERE p.technician_id=t.id AND p.status<>2),0)>=12)::text AS locked,
       (SELECT COALESCE(sum(p.technician_earning),0) FROM payments p JOIN technician_profiles t ON t.id=p.technician_id
         JOIN users u ON u.id=t.user_id WHERE p.payment_status='SUCCESS' AND p.settled_at>='2026-01-01 00:00:00+07'::timestamptz
         AND p.settled_at<'2027-01-01 00:00:00+07'::timestamptz)::text AS earning,

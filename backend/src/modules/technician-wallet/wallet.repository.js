@@ -1,5 +1,6 @@
 
 import { randomUUID } from 'node:crypto'
+import { remainingPointsSql } from '../technicians/technician.points.js'
 import { pool, withTransaction } from '../../config/database.js'
 import { validateUuid } from '../../utils.js'
 import { walletError } from './wallet.domain.js'
@@ -64,6 +65,7 @@ const technicianSql = `
   WHERE tp.user_id = $1
     AND UPPER(tp.verification_status::text) IN ('1', 'VERIFIED')
     AND tp.is_active = true
+    AND ${remainingPointsSql('tp.id')}>0
     AND UPPER(u.status::text) IN ('0', 'ACTIVE')
 `
 

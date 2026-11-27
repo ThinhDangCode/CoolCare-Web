@@ -10,7 +10,7 @@ const profileColumns = `t.id, t.user_id, u.full_name, u.email, u.phone, u.avatar
   u.status AS account_status, t.is_active, t.qualification_level, t.years_experience,
   ${remainingPointsSql('t.id')} AS remaining_points, ${activePointsSql('t.id')} AS active_penalty_points,
   t.rating_average, t.total_reviews, t.verification_status, t.availability_status, t.submitted_at,
-  CASE WHEN u.status = 'LOCKED' THEN 'LOCKED'
+  CASE WHEN u.status = 'LOCKED' OR ${remainingPointsSql('t.id')} = 0 THEN 'LOCKED'
        WHEN NOT t.is_active OR u.status <> 'ACTIVE' THEN 'INACTIVE' ELSE 'ACTIVE' END AS status`
 const areasColumn = `(SELECT COALESCE(json_agg(json_build_object('city',a.city,'ward',a.ward) ORDER BY a.city,a.ward), '[]'::json)
   FROM technician_areas a WHERE a.technician_id=t.id) AS areas`
@@ -75,9 +75,9 @@ export class TechnicianRepository {
     const clauses = []
     const add = (sql, value) => { values.push(value); clauses.push(sql.replaceAll('?', `$${values.length}`)) }
     if (query.search) add(`(${searchSql('u.full_name')} LIKE ? OR ${searchSql('u.email')} LIKE ? OR ${searchSql('u.phone')} LIKE ? OR ${searchSql('t.identity_number')} LIKE ?)`, searchPattern(query.search))
-    if (query.status === 'LOCKED') clauses.push("u.status='LOCKED'")
-    if (query.status === 'ACTIVE') clauses.push("u.status='ACTIVE' AND t.is_active")
-    if (query.status === 'INACTIVE') clauses.push("u.status <> 'LOCKED' AND (u.status <> 'ACTIVE' OR NOT t.is_active)")
+    if (query.status === 'LOCKED') clauses.push(`(u.status='LOCKED' OR ${remainingPointsSql('t.id')}=0)`)
+    if (query.status === 'ACTIVE') clauses.push(`u.status='ACTIVE' AND t.is_active AND ${remainingPointsSql('t.id')}>0`)
+    if (query.status === 'INACTIVE') clauses.push(`u.status <> 'LOCKED' AND ${remainingPointsSql('t.id')}>0 AND (u.status <> 'ACTIVE' OR NOT t.is_active)`)
     for (const [key, column] of [['verification','verification_status'],['qualification','qualification_level'],['availability','availability_status']]) {
       if (query[key] !== 'ALL') add(`t.${column}=?`, query[key])
     }

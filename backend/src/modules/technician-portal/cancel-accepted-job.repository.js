@@ -1,6 +1,7 @@
 import { isVerifiedTechnician, isActiveAccount } from './technician-status.js'
 import { withTransaction } from '../../config/database.js'
 import { AppError } from '../../utils.js'
+import { enforcePenaltyBalance } from '../technicians/technician.points.js'
 
 const ACCEPTED_JOB_CANCELLATION_POINTS = 2
 
@@ -31,7 +32,7 @@ export class CancelAcceptedJobRepository {
       await client.query('SELECT id FROM technician_accounts WHERE technician_id=$1 FOR UPDATE', [technician.id])
       const requestResult = await client.query(
         `SELECT bt.id,bt.booking_id,bt.status,b.status AS booking_status,b.booking_code,
-                b.technician_completed_at,cp.user_id AS customer_user_id
+                b.technician_completed_at,b.scheduled_at,cp.user_id AS customer_user_id
          FROM booking_technicians bt
          JOIN bookings b ON b.id=bt.booking_id
          JOIN customer_profiles cp ON cp.id=b.customer_id
@@ -48,6 +49,18 @@ export class CancelAcceptedJobRepository {
         throw new AppError(409, 'ACCEPTED_JOB_CANNOT_BE_CANCELLED', 'Chỉ công việc đã nhận và đang thực hiện mới có thể hủy.')
       }
 
+      const arrival = await client.query(`SELECT 1 FROM booking_status_history h
+        WHERE h.booking_id=$1 AND h.note=$2 AND h.created_at >= (
+          SELECT responded_at FROM booking_technicians WHERE id=$3) LIMIT 1`,
+        [job.booking_id, 'COOLCARE_TRAVEL_V1:{"event":"ARRIVED"}', job.id])
+      if (arrival.rowCount) throw new AppError(409, 'TECHNICIAN_ALREADY_ARRIVED',
+        'Đã xác nhận đến nơi. Vui lòng liên hệ hỗ trợ nếu cần hủy công việc.')
+
+      const paid = await client.query(`SELECT 1 FROM payments WHERE booking_id=$1 AND payment_status='SUCCESS' LIMIT 1`, [job.booking_id])
+      if (paid.rowCount) throw new AppError(409, 'PAYMENT_REVIEW_REQUIRED', 'Đơn đã thanh toán; vui lòng liên hệ hỗ trợ.')
+      const extra = await client.query(`SELECT 1 FROM quotations WHERE booking_id=$1 AND quotation_type='ADDITIONAL' LIMIT 1`, [job.booking_id])
+      if (extra.rowCount) throw new AppError(409, 'WORK_ALREADY_QUOTED', 'Đơn đã có báo giá phát sinh; vui lòng liên hệ hỗ trợ.')
+
       const assignmentResult = await client.query(
         `UPDATE booking_technicians
          SET status='CANCELLED',cancelled_at=CURRENT_TIMESTAMP,cancellation_reason=$3
@@ -58,26 +71,32 @@ export class CancelAcceptedJobRepository {
       if (!assignmentResult.rows.length) throw unavailable()
 
       const cancellationReason = `Kỹ thuật viên hủy công việc đã nhận: ${reason}`
-      // Keep the booking available for reassignment instead of cancelling it.
+      // Keep the booking only while its original appointment is still in the future.
+      // A single SQL statement chooses the state using the database clock.
       const bookingResult = await client.query(
         `UPDATE bookings
-         SET status='PENDING',updated_at=CURRENT_TIMESTAMP
+         SET status=CASE WHEN scheduled_at<=statement_timestamp() THEN 10 ELSE 0 END,
+             cancelled_at=CASE WHEN scheduled_at<=statement_timestamp() THEN clock_timestamp() ELSE NULL END,
+             cancelled_by_id=CASE WHEN scheduled_at<=statement_timestamp() THEN $3::uuid ELSE NULL END,
+             cancellation_reason=CASE WHEN scheduled_at<=statement_timestamp() THEN $2 ELSE NULL END,
+             updated_at=clock_timestamp()
          WHERE id=$1 AND status='ACCEPTED' AND technician_completed_at IS NULL
-         RETURNING id,booking_code,status,updated_at`,
-        [job.booking_id],
+         RETURNING id,booking_code,status,updated_at,cancelled_at,cancellation_reason`,
+        [job.booking_id, cancellationReason, technician.user_id],
       )
       const booking = bookingResult.rows[0]
       if (!booking) throw unavailable()
 
       await client.query(
         `INSERT INTO booking_status_history(booking_id,status,changed_by_id,note)
-         VALUES($1,'PENDING',$2,$3)`,
-        [job.booking_id, technician.user_id, cancellationReason],
+         VALUES($1,$2,$3,$4)`,
+        [job.booking_id, booking.status, technician.user_id, cancellationReason],
       )
       await client.query(
         `INSERT INTO notifications(user_id,type,title,message,reference_type,reference_id)
          VALUES($1,'BOOKING','Kỹ thuật viên đã hủy công việc',$2,'BOOKING',$3)`,
-        [job.customer_user_id, `Booking ${job.booking_code}: kỹ thuật viên đã hủy. Bạn có thể chọn kỹ thuật viên khác.`, job.booking_id],
+        [job.customer_user_id, `Booking ${job.booking_code}: kỹ thuật viên đã hủy. ${booking.status === 'CANCELLED'
+          ? 'Đã hết giờ hẹn; vui lòng đặt lịch mới.' : 'Bạn có thể chọn kỹ thuật viên khác.'}`, job.booking_id],
       )
 
       // Every accepted-job cancellation reduces recommendation priority, even
@@ -90,6 +109,7 @@ export class CancelAcceptedJobRepository {
         [technician.id, job.booking_id, ACCEPTED_JOB_CANCELLATION_POINTS, reason],
       )
       const penalty = penaltyResult.rows[0]
+      await enforcePenaltyBalance(client, technician)
 
       return { ...assignmentResult.rows[0], booking, penalty }
     })

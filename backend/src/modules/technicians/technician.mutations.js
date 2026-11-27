@@ -119,8 +119,9 @@ export class TechnicianMutations {
       const balance=(await client.query(`SELECT ${remainingPointsSql('$1')} AS remaining_points`,[id])).rows[0]
       if(balance.remaining_points===0) throw new AppError(409,'POINTS_EXHAUSTED','This technician has no remaining points.')
       if(user.status==='LOCKED') throw new AppError(409,'ACCOUNT_LOCKED','Unlock the user account before activating this technician.')
+      if(user.status!=='ACTIVE') throw new AppError(409,'ACCOUNT_INACTIVE','The user account must be active before activating this technician.')
       await client.query("UPDATE technician_profiles SET is_active=true,availability_status='ONLINE',updated_at=CURRENT_TIMESTAMP WHERE id=$1",[id])
-      await client.query("UPDATE users SET status='ACTIVE',updated_at=CURRENT_TIMESTAMP WHERE id=$1",[before.user_id])
+
     })
     this.audit({actorId,action:'ACTIVATE_TECHNICIAN',entityType:'TECHNICIAN',entityId:id,after:{is_active:true,availability_status:'ONLINE'}})
     return {id,is_active:true}

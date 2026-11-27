@@ -842,6 +842,7 @@ const messages = {
     'Technician Details': 'Chi tiết kỹ thuật viên',
     'REMAINING POINTS': 'ĐIỂM CÒN LẠI',
     'Account locked: points exhausted': 'Tài khoản bị khóa: đã hết điểm',
+    'Technician access locked: points exhausted': 'Quyền kỹ thuật viên bị khóa: đã hết điểm',
     'Reduced job priority during penalty': 'Giảm ưu tiên nhận việc trong thời gian bị phạt',
     'Normal job priority': 'Ưu tiên nhận việc bình thường',
     'Showing {count} of {total} Queue Items': 'Hiển thị {count} trên {total} mục chờ duyệt',

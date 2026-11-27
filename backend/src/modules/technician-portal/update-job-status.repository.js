@@ -57,7 +57,9 @@ export class UpdateJobStatusRepository {
         `SELECT
            bool_or(note=$2) AS departed,
            bool_or(note=$3) AS arrived
-         FROM booking_status_history WHERE booking_id=$1`,
+         FROM booking_status_history WHERE booking_id=$1
+           AND created_at >= (SELECT MAX(bt.responded_at) FROM booking_technicians bt
+             WHERE bt.booking_id=$1 AND bt.status=2)`,
         [job.booking_id,
          'COOLCARE_TRAVEL_V1:{"event":"DEPARTED"}',
          'COOLCARE_TRAVEL_V1:{"event":"ARRIVED"}'],
@@ -72,7 +74,9 @@ export class UpdateJobStatusRepository {
       if (job.scheduled_at && Date.now() < new Date(job.scheduled_at).getTime() - 15 * 60000) {
         const approval = await client.query(
           `SELECT 1 FROM booking_status_history
-           WHERE booking_id=$1 AND note=$2 LIMIT 1`,
+           WHERE booking_id=$1 AND note=$2
+             AND created_at >= (SELECT MAX(bt.responded_at) FROM booking_technicians bt
+               WHERE bt.booking_id=$1 AND bt.status=2) LIMIT 1`,
           [job.booking_id, 'COOLCARE_TRAVEL_V1:{"event":"EARLY_APPROVED"}'],
         )
         if (!approval.rowCount) {

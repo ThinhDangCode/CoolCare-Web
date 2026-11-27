@@ -16,6 +16,7 @@ function publicUser(user) {
     role: user.role,
     hasTechnicianProfile: Boolean(user.has_technician_profile),
     isTechnicianVerified: Boolean(user.is_technician_verified),
+    technicianPenaltyLocked: Boolean(user.technician_penalty_locked),
   }
 }
 
@@ -148,6 +149,7 @@ export class AuthService {
   async refreshSession(userId, sessionId) {
     const user = await this.repository.findUserById(userId)
     if (!user) throw new AppError(404, 'PROFILE_NOT_FOUND', 'Không tìm thấy hồ sơ.')
+    if (user.status !== 'ACTIVE') throw new AppError(403, 'ACCOUNT_UNAVAILABLE', 'Tài khoản hiện không thể đăng nhập.')
     if (!sessionId) return this.startSession(user)
     if (!(await this.repository.isCurrentSession(userId, sessionId))) {
       throw new AppError(401, 'SESSION_REPLACED', 'Tài khoản đã đăng nhập trên thiết bị khác.')

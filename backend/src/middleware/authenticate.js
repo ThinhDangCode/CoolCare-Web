@@ -36,8 +36,8 @@ export async function assertActiveSession(payload, db = pool) {
   if (user.session_id !== payload.jti) {
     throw new AppError(401, 'SESSION_REPLACED', 'Tài khoản đã đăng nhập trên thiết bị khác.')
   }
-  if (payload.role === 'TECHNICIAN' && user.status !== 'ACTIVE') {
-    throw new AppError(403, 'ACCOUNT_UNAVAILABLE', 'This technician account is locked or inactive.')
+  if (user.status !== 'ACTIVE') {
+    throw new AppError(403, 'ACCOUNT_UNAVAILABLE', 'Tài khoản hiện không hoạt động hoặc đã bị khóa.')
   }
 }
 

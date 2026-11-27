@@ -102,7 +102,7 @@ export function TechnicianDetailPage() {
             {canManage && !loading && !error && (
               <>
                 {!data.is_active &&
-                  data.account_status !== 'LOCKED' && (
+                  data.account_status === 'ACTIVE' && data.remaining_points !== 0 && (
                     <button className="primary" onClick={() => setAction('activate')}>
                       {t('Activate technician')}
                     </button>
@@ -160,7 +160,7 @@ export function TechnicianDetailPage() {
                     </strong>
                     <small>
                       {data.remaining_points === 0
-                        ? t('Account locked: points exhausted')
+                        ? t('Technician access locked: points exhausted')
                         : data.active_penalty_points > 0
                           ? t('Reduced job priority during penalty')
                           : t('Normal job priority')}
