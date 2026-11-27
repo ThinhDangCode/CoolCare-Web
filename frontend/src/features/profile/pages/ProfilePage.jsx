@@ -463,7 +463,7 @@ export function ProfilePage() {
               )}
               {message && (
                 <div
-                  className={`profile-alert ${message.includes('thành công') ? 'success' : ''}`}
+                  className={`profile-alert ${message.endsWith('successfully.') ? 'success' : ''}`}
                   role="status"
                 >
                   {t(message)}
